@@ -228,32 +228,60 @@ def fill_trimester_plan(template: Path, out: Path, ctx: dict) -> Path:
 
 
 # ------------------------------------------------------------------ quiz
-_OPT = re.compile(r"^\s*\(?([A-Da-d])[\)\.\-:]\s+(.*\S)\s*$")
-_ANS = re.compile(r"^\s*(?:answer|ans|الإجابة|الاجابة)\s*[:：\-]\s*\(?([A-Da-d])\)?\s*$", re.I)
+_OPT = re.compile(r"^\s*\(?([A-Ha-h])[\)\.\-:]\s+(.*\S)\s*$")
+_ANS = re.compile(r"^\s*(?:answer|ans|الإجابة|الاجابة)\s*[:：\-]\s*(.*\S)\s*$", re.I)
 _QNUM = re.compile(r"^\s*(?:Q\s*)?\d+\s*[\.\)\-:]\s*", re.I)
+_PAIR = re.compile(r"^\s*(.+?)\s*(?:=|->|→|=>|\|)\s*(.+?)\s*$")
+_TYPE_TAG = re.compile(r"^\s*\[(mcq|tf|true.?false|match(?:ing)?|essay|fill(?:.?blank)?|short)\]\s*", re.I)
+QUESTION_TYPES = ("mcq", "tf", "match", "essay", "fill")
+
+
+def _kind(q: dict) -> str:
+    if q["pairs"]:
+        return "match"
+    if q["options"]:
+        vals = [o[1].strip().lower().rstrip(".") for o in q["options"]]
+        return "tf" if len(vals) == 2 and set(vals) <= {"true", "false", "صح", "خطأ", "خطا"} else "mcq"
+    return "fill" if "___" in q["q"] else "essay"
 
 
 def parse_quiz(text: str) -> list[dict]:
-    """Questions pasted as plain text:  '1. Question?' then 'a) ...' lines, optional 'Answer: b'. Blank line between questions."""
+    """Questions as plain text. '1. Question?' then 'a) ...' lines (multiple choice / true-false), or 'term = match' lines (matching),
+    or nothing (essay / fill the blank). Optional 'Answer: ...' line. Every numbered line starts a new question."""
     questions: list[dict] = []
     cur: Optional[dict] = None
     for raw in str(text or "").replace("\r", "").split("\n"):
         line = raw.strip()
         if not line:
-            if cur and (cur["options"] or cur["answer"]):
-                cur = None
             continue
         m_ans, m_opt = _ANS.match(line), _OPT.match(line)
         if m_ans and cur:
-            cur["answer"] = m_ans.group(1).upper()
-        elif m_opt and cur:
+            cur["answer"] = m_ans.group(1).strip().strip("()")
+        elif m_opt and cur and not _QNUM.match(line):
             cur["options"].append((m_opt.group(1).upper(), m_opt.group(2)))
+        elif cur and (cur["type"].startswith("match") or cur["pairs"] or "match" in cur["q"].lower() or "وصل" in cur["q"]) and not _QNUM.match(line) and _PAIR.match(line) and not line.endswith("?"):
+            m = _PAIR.match(line)
+            cur["pairs"].append((m.group(1), m.group(2)))
         else:
-            if cur is None or cur["options"]:
-                cur = {"q": "", "options": [], "answer": ""}
+            numbered = bool(_QNUM.match(line))
+            if cur is None or numbered or cur["options"] or cur["answer"] or cur["pairs"]:
+                cur = {"q": "", "options": [], "answer": "", "pairs": [], "type": ""}
                 questions.append(cur)
-            cur["q"] = (cur["q"] + " " + _QNUM.sub("", line)).strip()
-    return [q for q in questions if q["q"]]
+            body = _QNUM.sub("", line)
+            tag = _TYPE_TAG.match(body)
+            if tag:
+                cur["type"] = tag.group(1).lower()
+                body = body[tag.end():]
+            cur["q"] = (cur["q"] + " " + body).strip()
+    out = []
+    for q in questions:
+        if not q["q"]:
+            continue
+        if q["type"].startswith("match") and not q["pairs"]:
+            q["pairs"] = []
+        q["type"] = _kind(q)
+        out.append(q)
+    return out
 
 
 def fill_quiz(template: Path, out: Path, ctx: dict) -> Path:
@@ -294,17 +322,37 @@ def fill_quiz(template: Path, out: Path, ctx: dict) -> Path:
 
     questions = ctx.get("questions") or []
     last = anchor
+    keys = []
     for i, q in enumerate(questions, 1):
+        kind = q.get("type") or _kind({"q": q["q"], "options": q.get("options") or [], "pairs": q.get("pairs") or []})
         last = add_par(last, f"{i}. {q['q']}", bold=True, space_after=2)
-        for letter, opt in q["options"]:
-            last = add_par(last, f"{letter.lower()}) {opt}", indent=22, space_after=1)
+        if kind == "match" and q.get("pairs"):
+            pairs = q["pairs"]
+            order = [(j + 1) % len(pairs) for j in range(len(pairs))]  # right column in a shifted order so it is not already matched
+            for j, (left, _r) in enumerate(pairs, 1):
+                last = add_par(last, f"{j}) {left}", indent=22, space_after=1)
+            last = add_par(last, "", space_after=1)
+            for k, j in enumerate(order):
+                last = add_par(last, f"{chr(97 + k)}) {pairs[j][1]}", indent=22, space_after=1)
+            keys.append(f"{i}- " + " ".join(f"{n + 1}-{chr(97 + order.index(n))}" for n in range(len(pairs))))
+        elif kind in ("mcq", "tf"):
+            for letter, opt in q["options"]:
+                last = add_par(last, f"{letter.lower()}) {opt}", indent=22, space_after=1)
+            if q.get("answer"):
+                keys.append(f"{i}-{q['answer'].upper()}")
+        elif kind == "essay":
+            for _ in range(2):
+                last = add_par(last, "_" * 70, indent=22, space_after=2)
+            if q.get("answer"):
+                keys.append(f"{i}- {q['answer']}")
+        else:
+            if q.get("answer"):
+                keys.append(f"{i}- {q['answer']}")
         last = add_par(last, "", space_after=4)
-    if ctx.get("with_answers") and any(q.get("answer") for q in questions):
-        from docx.enum.text import WD_BREAK
+    if ctx.get("with_answers") and keys:
         last = add_par(last, "Answer key", bold=True)
-        last.runs[0].add_break(WD_BREAK.PAGE) if False else None
-        key = "   ".join(f"{i}-{q['answer']}" for i, q in enumerate(questions, 1) if q.get("answer"))
-        last = add_par(last, key)
+        for k in keys:
+            last = add_par(last, k, space_after=1)
     out.parent.mkdir(parents=True, exist_ok=True)
     _save(doc, out)
     return out

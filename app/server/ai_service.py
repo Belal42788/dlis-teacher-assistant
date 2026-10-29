@@ -296,19 +296,45 @@ class AiMixin:
 
     def ai_generate_quiz(self, b: dict) -> dict:
         c = self._ai_context(b)
-        topic = str(b.get("topic", "")).strip()
-        if not topic:
-            raise AppError("ai_need_topic", "Write the quiz topic first.")
-        n = max(1, min(20, int(b.get("count", 5) or 5)))
+        general = str(b.get("topic", "")).strip()
         level = {"easy": "easy", "hard": "hard"}.get(str(b.get("difficulty", "")), "medium")
+        sections = b.get("sections")
+        if not isinstance(sections, list) or not sections:  # old shape: one multiple-choice section
+            sections = [{"type": "mcq", "count": b.get("count", 5), "options": 4, "topic": ""}]
+        plan = []
+        for sec in sections[:12]:
+            if not isinstance(sec, dict):
+                continue
+            kind = str(sec.get("type", "mcq"))
+            kind = kind if kind in D.QUESTION_TYPES else "mcq"
+            plan.append({"type": kind, "count": max(1, min(20, int(sec.get("count", 3) or 3))), "options": max(2, min(6, int(sec.get("options", 4) or 4))),
+                         "topic": str(sec.get("topic", "")).strip()[:300] or general})
+        has_src = bool(b.get("source_id"))
+        if not plan or (not has_src and not all(p["topic"] for p in plan)):
+            raise AppError("ai_need_topic", "Write the quiz topic first.")
+        for p in plan:
+            p["topic"] = p["topic"] or "the whole of the teacher's material"
+        total = sum(p["count"] for p in plan)
+        guide = {
+            "mcq": lambda p: f"{p['count']} multiple-choice questions, each with exactly {p['options']} choices (a, b, c ...) and ONE correct answer. Format:\n"
+                             "1. Question?\na) choice\nb) choice\nAnswer: b",
+            "tf": lambda p: f"{p['count']} true/false statements. Format:\n1. Statement.\na) True\nb) False\nAnswer: a",
+            "match": lambda p: f"{p['count']} matching question(s), each with 4 to 6 pairs. Format:\n1. Match each item with its description:\nitem one = its match\nitem two = its match\n(no Answer line)",
+            "essay": lambda p: f"{p['count']} essay / short-answer questions. Format:\n1. Question?\nAnswer: a short model answer",
+            "fill": lambda p: f"{p['count']} fill-in-the-blank sentences, with the missing word shown as ____ . Format:\n1. Sentence with a ____ here.\nAnswer: missing word",
+        }
+        parts = [f"SECTION {i}: {guide[p['type']](p)}\nTopic of this section: {p['topic']}" for i, p in enumerate(plan, 1)]
+        verb = ""
+        if b.get("verbatim"):
+            verb = ("\nUse the teacher's material word for word: take questions, statements, terms and answers from its exact wording, and do not "
+                    "add facts that are not in it.")
         system = self._system_for("quiz", "Follow the requested format exactly and add no explanations or extra text.")
-        user = (f"Subject: {c['subject']}\nGrade: {c['label']}\nTopic: {topic}\nDifficulty: {level}\n"
+        user = (f"Subject: {c['subject']}\nGrade: {c['label']}\nDifficulty: {level}\n"
                 + (f"Teacher notes: {c['notes']}\n" if c["notes"] else "")
-                + f"\nWrite exactly {n} multiple-choice questions, each with 3 or 4 choices and ONE correct answer. "
-                  "Use exactly this format, with a blank line between questions:\n\n"
-                  "1. Question text?\na) first choice\nb) second choice\nc) third choice\nAnswer: b\n")
-        text = re.sub(r"^```[a-z]*\s*|\s*```$", "", self._ask(system, user, max_tokens=2500).strip(), flags=re.I)
-        qs = [q for q in D.parse_quiz(text) if len(q["options"]) >= 2]
+                + f"\nWrite {total} questions in {len(plan)} section(s), in this order. Number the questions continuously from 1 across all sections; "
+                  "do not write section titles. Leave a blank line between questions.\n\n" + "\n\n".join(parts) + verb)
+        text = re.sub(r"^```[a-z]*\s*|\s*```$", "", self._ask(system, user, max_tokens=4000).strip(), flags=re.I)
+        qs = D.parse_quiz(text) if re.search(r"^\s*(?:Q\s*)?\d+\s*[\.\)\-:]", text, re.M) else []
         if not qs:
             raise AppError("ai_bad_output", "The AI answer was not in the expected shape. Try again.", status=502)
         return {"text": text, "questions": len(qs)}

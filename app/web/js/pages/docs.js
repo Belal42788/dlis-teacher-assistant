@@ -120,15 +120,28 @@ export async function renderDocs(root) {
     showResult(await api.post("/api/docs/quiz", { grade_id: gradeOf().id, trimester: sel.tri, week: sel.week, number: +quizNo.value || 1, text: quizText.value, with_answers: withAns.checked }));
   }) }, icon("file"), t("d_create_quiz"));
   const qTopic = h("input", { type: "text", placeholder: t("ai_topic_q"), style: { flex: "1", minWidth: "10em" } });
-  const qCount = h("input", { type: "number", min: 1, max: 20, value: 5 });
+  const secBox = h("div", { class: "qsec-list" });
+  const secs = [{ type: "mcq", count: 5, options: 4, topic: "" }];
+  const drawSecs = () => secBox.replaceChildren(...secs.map((sc, i) => {
+    const type = h("select", { onChange: (e) => { sc.type = e.target.value; drawSecs(); } }, ["mcq", "tf", "match", "essay", "fill"].map((k) => h("option", { value: k, selected: k === sc.type }, t(`qt_${k}`))));
+    const cnt = h("input", { type: "number", min: 1, max: 20, value: sc.count, "aria-label": t("ai_q_count"), style: { width: "4.5em" }, onInput: (e) => { sc.count = +e.target.value || 1; } });
+    const opts = sc.type === "mcq" ? h("label", { class: "row small" }, t("qt_choices"), h("input", { type: "number", min: 2, max: 6, value: sc.options, style: { width: "4em" }, onInput: (e) => { sc.options = +e.target.value || 4; } })) : null;
+    const topic = h("input", { type: "text", value: sc.topic, placeholder: t("qt_topic_ph"), style: { flex: "1", minWidth: "9em" }, onInput: (e) => { sc.topic = e.target.value; } });
+    return h("div", { class: "qsec" }, type, h("label", { class: "row small" }, t("ai_q_count"), cnt), opts, topic,
+      secs.length > 1 ? h("button", { class: "btn icon ghost", "aria-label": t("remove"), onClick: () => { secs.splice(i, 1); drawSecs(); } }, icon("trash")) : null);
+  }));
+  drawSecs();
+  const addSec = h("button", { class: "btn small", onClick: () => { secs.push({ type: "mcq", count: 3, options: 4, topic: "" }); drawSecs(); } }, icon("plus"), t("qt_add"));
+  const verbatim = h("input", { type: "checkbox" });
   const qLevel = h("select", {}, ["easy", "medium", "hard"].map((l) => h("option", { value: l, selected: l === "medium" }, t(`ai_${l}`))));
   const quizAi = aiButton(t("ai_write"), async () => {
-    if (!qTopic.value.trim()) { toast(t("ai_need_topic"), "error"); return null; }
-    const r = await api.post("/api/ai/quiz", { grade_id: gradeOf().id, topic: qTopic.value.trim(), count: +qCount.value || 5, difficulty: qLevel.value, source_id: sid(srcQz) });
+    if (!sid(srcQz) && !qTopic.value.trim() && secs.some((x) => !x.topic.trim())) { toast(t("ai_need_topic"), "error"); return null; }
+    const r = await api.post("/api/ai/quiz", { grade_id: gradeOf().id, topic: qTopic.value.trim(), sections: secs, difficulty: qLevel.value, source_id: sid(srcQz), verbatim: verbatim.checked });
     quizText.value = r.text; countQ(); return true;
   });
   const quizPanel = h("div", { class: "panel" }, h("h3", {}, t("d_quiz_title")), h("p", { class: "muted small" }, t("d_quiz_lead")), aiNeeded(), srcQz ? srcQz.el : null,
-    h("div", { class: "ai-bar" }, qTopic, h("label", { class: "row" }, t("ai_q_count"), qCount), qLevel, quizAi),
+    h("div", { class: "ai-bar" }, qTopic, qLevel),
+    secBox, h("div", { class: "row", style: { margin: ".4rem 0" } }, addSec, srcQz ? h("label", { class: "row small" }, verbatim, t("qt_verbatim")) : null, h("span", { class: "grow" }), quizAi),
     h("label", { class: "row", style: { marginBottom: ".6rem" } }, h("b", {}, t("d_quiz_n")), quizNo),
     quizText, found,
     h("div", { class: "row", style: { marginTop: ".6rem" } },

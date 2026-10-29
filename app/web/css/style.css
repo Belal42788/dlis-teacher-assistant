@@ -627,3 +627,6 @@ table.wc .dot { display: inline-block; width: .6rem; height: .6rem; border-radiu
 .df-list { list-style: none; padding: 0; margin: 0 0 .8rem; display: grid; gap: .5rem; }
 .df-list li { padding: .5rem .8rem; background: var(--blue-wash); border-radius: 10px; }
 .df-list b { direction: ltr; unicode-bidi: plaintext; }
+
+.qsec-list { display: grid; gap: .5rem; margin: .5rem 0; }
+.qsec { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: .5rem; border: 1px solid var(--line, #d9dce8); border-radius: 10px; background: #fafbff; }

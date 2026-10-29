@@ -990,3 +990,20 @@ class TestPackaging(unittest.TestCase):
         for lang in ("ar", "en"):
             for s in h[lang]:
                 self.assertTrue(s["title"] and s["steps"], (lang, s["id"]))
+
+
+class TestQuizTypes(unittest.TestCase):
+    def test_mixed_types_parse_and_render(self):
+        import tempfile
+        from pathlib import Path
+        from app.core import documents as D
+        text = ("1. Capital?\na) Cairo\nb) Giza\nAnswer: a\n\n2. The Nile is ____.\nAnswer: long\n\n3. Why?\nAnswer: because\n\n"
+                "4. Match:\nsun = star\nmoon = satellite\n\n5. Sky is blue.\na) True\nb) False\nAnswer: a")
+        qs = D.parse_quiz(text)
+        self.assertEqual([q["type"] for q in qs], ["mcq", "fill", "essay", "match", "tf"])
+        with tempfile.TemporaryDirectory() as d:
+            out = D.fill_quiz(D.template_path("quiz"), Path(d) / "q.docx", {"grade_label": "4", "trimester": 1, "week": 2, "number": 1,
+                                                                           "questions": qs, "with_answers": True})
+            from docx import Document
+            body = "\n".join(p.text for p in Document(str(out)).paragraphs)
+            self.assertIn("1) sun", body); self.assertIn("Answer key", body); self.assertIn("2- long", body)
