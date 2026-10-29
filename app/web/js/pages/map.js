@@ -1,7 +1,7 @@
 import { h, icon, confirmBox } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { t } from "../i18n.js";
-import { roomLabel } from "../labels.js";
+import { roomLabel, mapName } from "../labels.js";
 
 const memo = { floor: "", sel: "" };
 const rnd = () => Math.random().toString(36).slice(2, 10);
@@ -25,16 +25,16 @@ export async function renderMap(root) {
   const search = h("input", { type: "search", placeholder: t("mp_search"), "aria-label": t("mp_search"), onInput: (e) => { query = e.target.value.trim().toLowerCase(); draw(); } });
   const editBtn = h("button", { class: "btn", onClick: () => { edit = !edit; editBtn.classList.toggle("primary", edit); draw(); } }, icon("edit"), t("mp_edit"));
 
-  function matches(r) { return query && (r.name.toLowerCase().includes(query) || r.person.toLowerCase().includes(query) || r.notes.toLowerCase().includes(query)); }
+  function matches(r) { return query && (r.name.toLowerCase().includes(query) || mapName(r.name).toLowerCase().includes(query) || r.person.toLowerCase().includes(query) || r.notes.toLowerCase().includes(query)); }
   function drawTabs() {
     tabs.replaceChildren(...floors.map((f) => h("button", { class: "btn" + (f.id === memo.floor ? " primary" : ""), onClick: () => { memo.floor = f.id; memo.sel = ""; draw(); } }, f.name)),
       edit ? h("button", { class: "btn ghost", onClick: () => { const f = { id: rnd(), name: t("mp_floor_n", { n: floors.length + 1 }), rooms: [] }; floors.push(f); memo.floor = f.id; save(); draw(); } }, icon("plus"), t("mp_add_floor")) : null);
   }
   function roomEl(r, f, oy = 0, gh = GH) {
     const pick = () => { memo.sel = r.id; memo.floor = f.id; draw(); };
-    return h("div", { class: `map-room k-${r.kind}${r.id === memo.sel ? " sel" : ""}${matches(r) ? " hit" : ""}`, tabindex: 0, role: "button", "aria-label": r.name,
+    return h("div", { class: `map-room k-${r.kind}${r.id === memo.sel ? " sel" : ""}${matches(r) ? " hit" : ""}`, tabindex: 0, role: "button", "aria-label": mapName(r.name),
       style: { left: `${r.x / GW * 100}%`, top: `${(r.y - oy) / gh * 100}%`, width: `${r.w / GW * 100}%`, height: `${r.h / gh * 100}%` },
-      onClick: pick, onKeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } } }, h("span", {}, r.name));
+      onClick: pick, onKeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } } }, h("span", {}, edit ? r.name : mapName(r.name)));
   }
   function drawCanvas() {
     const f = curFloor();
@@ -47,12 +47,26 @@ export async function renderMap(root) {
     }), !f || !f.rooms.length ? h("div", { class: "map-empty" }, t("mp_empty_edit")) : null);
   }
   // The whole school as one drawing: the building seen from the front, top floor first.
+  // Rooms are laid out automatically (equal widths, no gaps) in three blocks: left wing, middle, right wing.
+  function flowRoom(r, f) {
+    const pick = () => { memo.sel = r.id; memo.floor = f.id; draw(); };
+    return h("div", { class: `bld-room k-${r.kind}${r.id === memo.sel ? " sel" : ""}${matches(r) ? " hit" : ""}`, tabindex: 0, role: "button", "aria-label": mapName(r.name),
+      onClick: pick, onKeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } } }, h("span", {}, mapName(r.name)));
+  }
+  function wingEl(rooms, f, cls, maxCols) {
+    const n = rooms.length;
+    const cols = Math.max(1, Math.min(maxCols, n));
+    return h("div", { class: `bld-wing ${cls}`, style: { gridTemplateColumns: `repeat(${cols}, 1fr)`, flex: `${cls === "mid" ? 1 : 2} 1 0` } }, rooms.map((r) => flowRoom(r, f)));
+  }
   function drawBuilding() {
-    const rows = [...floors].reverse().map((f) => h("div", { class: "bld-floor" },
-      h("div", { class: "bld-label" }, h("span", {}, f.name)),
-      h("div", { class: "bld-rooms", style: { aspectRatio: `${GW} / 10` } },
-        h("i", { class: "bld-wing", style: { left: `${9 / GW * 100}%`, width: `${6 / GW * 100}%` } }),
-        f.rooms.map((r) => roomEl(r, f, 1, GH - 2)))));
+    const rows = [...floors].reverse().map((f) => {
+      const order = (a, b) => a.y - b.y || a.x - b.x;
+      const left = f.rooms.filter((r) => r.x + r.w / 2 < 9).sort(order);
+      const right = f.rooms.filter((r) => r.x + r.w / 2 >= 15).sort(order);
+      const mid = f.rooms.filter((r) => r.x + r.w / 2 >= 9 && r.x + r.w / 2 < 15).sort(order);
+      const wings = [left.length ? wingEl(left, f, "left", 3) : null, mid.length ? wingEl(mid, f, "mid", 1) : null, right.length ? wingEl(right, f, "right", 3) : null].filter(Boolean);
+      return h("div", { class: "bld-floor" }, h("div", { class: "bld-label" }, h("span", {}, mapName(f.name))), h("div", { class: "bld-rooms" }, wings));
+    });
     building.replaceChildren(h("div", { class: "bld-roof" }), h("div", { class: "bld-body" }, rows), h("div", { class: "bld-ground" }),
       floors.length ? null : h("div", { class: "map-empty" }, t("mp_empty")));
   }
@@ -96,7 +110,7 @@ export async function renderMap(root) {
     }
     if (!r) { side.replaceChildren(h("p", { class: "muted" }, t("mp_pick"))); return; }
     const linked = structure.rooms.find((x) => x.id === r.room_id);
-    side.replaceChildren(h("h3", {}, r.name), h("div", { class: `map-kind k-${r.kind}` }, label(r.kind)), h("div", { class: "muted small" }, f.name),
+    side.replaceChildren(h("h3", {}, mapName(r.name)), h("div", { class: `map-kind k-${r.kind}` }, label(r.kind)), h("div", { class: "muted small" }, mapName(f.name)),
       linked ? h("p", {}, icon("classes"), " ", roomLabel(linked, structure)) : null,
       r.person ? h("p", {}, icon("user"), " ", h("b", {}, r.person)) : null,
       r.phone ? h("p", {}, icon("phone"), " ", h("a", { href: `tel:${r.phone.replace(/[^+\d]/g, "")}`, dir: "ltr" }, r.phone)) : null,

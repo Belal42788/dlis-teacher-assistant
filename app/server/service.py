@@ -259,15 +259,22 @@ class Service(DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesM
         return self.get_structure()
 
     def get_students(self, room_id: str) -> dict:
-        from ..core.translit import to_english
+        from ..core.translit import to_english, to_arabic, _AR
+        _has_ar = lambda v: bool(_AR.search(v))
         store = self._need_store()
         self._room(room_id)
         full = store.load_students_full(room_id)
+        fixed = False
+        for x in full:  # English-only name -> keep it as the English spelling and fill an Arabic one
+            if x["name"] and not _has_ar(x["name"]):
+                x["english"], x["name"], fixed = x["name"], to_arabic(x["name"]), True
+        if fixed:
+            store.save_students_full(room_id, full)
         return {"room_id": room_id, "names": [x["name"] for x in full], "english": [x["english"] for x in full],
                 "auto": [to_english(x["name"]) for x in full]}
 
     def put_students(self, room_id: str, names: list, english: Optional[list] = None) -> dict:
-        from ..core.translit import to_english
+        from ..core.translit import to_english, to_arabic, _AR
         store = self._need_store()
         self._room(room_id)
         if not isinstance(names, list):
@@ -277,9 +284,13 @@ class Service(DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesM
         seen, clean = set(), []
         for i, n in enumerate(names):
             n = " ".join(str(n).split())
+            typed_en = ""
+            if n and not _AR.search(n):  # typed in English only: keep as the English spelling, make the Arabic one
+                typed_en, n = n, to_arabic(n)
             if n and n.casefold() not in seen:
                 seen.add(n.casefold())
                 en = " ".join(str(english[i]).split()) if i < len(english) and english[i] is not None else old.get(n, "")
+                en = en or typed_en
                 clean.append({"name": n, "english": "" if en == to_english(n) else en})  # only keep what the teacher changed
         store.save_students_full(room_id, clean)
         return {"room_id": room_id, "names": [c["name"] for c in clean], "english": [c["english"] for c in clean],

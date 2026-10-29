@@ -1,3 +1,4 @@
+import { hubTabs } from "../components/hubtabs.js";
 import { h, icon, confirmBox } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { t } from "../i18n.js";
@@ -8,7 +9,7 @@ export async function renderLog(root) {
   const structure = await api.get("/api/structure");
   const q = new URLSearchParams((location.hash.split("?")[1]) || "");
   if (!structure.rooms.length) {
-    root.replaceChildren(h("div", { class: "page" }, h("div", { class: "banner warn" }, icon("warn"), h("div", {}, t("d_need_rooms"), " ", h("a", { href: "#/classes" }, t("nav_classes"))))));
+    root.replaceChildren(h("div", { class: "page" }, hubTabs("classes", "log"), h("div", { class: "banner warn" }, icon("warn"), h("div", {}, t("d_need_rooms"), " ", h("a", { href: "#/classes" }, t("nav_classes"))))));
     return;
   }
   // open on the class asked for, else the class logged most recently
@@ -37,7 +38,7 @@ export async function renderLog(root) {
             h("button", { class: "btn icon ghost", "aria-label": t("remove"), onClick: async () => { if (await confirmBox(t("log_delete_confirm"), { okLabel: t("remove") })) { await guarded(() => api.post(`/api/log/${e.id}/delete`, {})); draw(); } } }, icon("trash")))))))) :
         h("div", { class: "paper empty" }, h("h3", {}, t("log_none"))));
   }
-  root.replaceChildren(h("div", { class: "page" },
+  root.replaceChildren(h("div", { class: "page" }, hubTabs("classes", "log"),
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_log")), h("p", {}, t("log_lead")))),
     h("div", { class: "panel" }, h("label", {}, h("span", { class: "label" }, t("d_class")), sel)), body));
   await draw();

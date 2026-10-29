@@ -20,7 +20,7 @@ MAX_BODY = 40 * 1024 * 1024
 # Windows can map .js to text/plain, which breaks ES modules, so we state the types ourselves.
 _TYPES = {".js": "application/javascript", ".mjs": "application/javascript", ".css": "text/css",
           ".html": "text/html", ".svg": "image/svg+xml", ".json": "application/json", ".png": "image/png",
-          ".ico": "image/x-icon", ".woff2": "font/woff2"}
+          ".ico": "image/x-icon", ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf", ".otf": "font/otf"}
 
 
 _SLOW = re.compile(r"/api/ai/(chat|test|models|lesson|quiz|trimester|revision)|/api/slides/(source|plan|image|image-test)|/api/sources/(import|[0-9a-f]+/(read|digest))")

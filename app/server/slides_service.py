@@ -18,15 +18,15 @@ from ..core.pptx_builder import build_deck
 
 # What suits each stage: age, how much text, and how the pictures should look.
 STAGES = {
-    "kg": {"age": "4-6 years old", "words": "no more than 6 words per slide (one short sentence or just a label)", "size": "very large letters",
+    "kg": {"age": "4-6 years old", "words": "2 short lines of 4-6 words each, plus one short sentence of explanation", "n": "2", "size": "very large letters",
            "look": "cartoon", "extra": "Use friendly animal or child characters, one big object per slide, bright primary colours, rounded shapes and repetition. Letters and numbers can be shown big and playful."},
-    "lower": {"age": "6-9 years old", "words": "no more than 12 words per slide (1-2 short sentences)", "size": "very large letters",
+    "lower": {"age": "6-9 years old", "words": "3 short sentences of 6-10 words each, plus a 1-2 sentence explanation", "n": "3", "size": "very large letters",
               "look": "storybook", "extra": "Use a warm storybook illustration style with one or two friendly recurring characters guiding the lesson. Show the idea as a picture first, words second."},
-    "upper": {"age": "9-12 years old", "words": "no more than 25 words per slide (2-3 short bullet points)", "size": "large, easy-to-read letters",
+    "upper": {"age": "9-12 years old", "words": "4 bullet points of 10-15 words each (full sentences), plus a 2-3 sentence explanation with an example", "n": "4", "size": "large, easy-to-read letters",
               "look": "colorful", "extra": "Use colourful flat illustrations with simple labelled diagrams, step-by-step arrows and 'did you know?' callouts. Keep a fun but not childish tone."},
-    "middle": {"age": "12-15 years old", "words": "no more than 35 words per slide", "size": "large, clear letters",
+    "middle": {"age": "12-15 years old", "words": "5 bullet points of 12-20 words each (full informative sentences), plus a 3-4 sentence explanation with an example", "n": "5", "size": "large, clear letters",
                "look": "infographic", "extra": "Use a modern infographic style: icons, flow charts, timelines, comparison tables and labelled diagrams. Clean layout, strong visual hierarchy, real-world examples."},
-    "high": {"age": "15-18 years old", "words": "no more than 50 words per slide", "size": "clear, professional letters",
+    "high": {"age": "15-18 years old", "words": "5 bullet points of 15-25 words each (precise full sentences), plus a 3-4 sentence explanation with an example", "n": "5", "size": "clear, professional letters",
              "look": "pro", "extra": "Use a clean, professional and mature style: precise technical diagrams, charts, realistic or semi-realistic images, and well-defined terms. Scientific/technical accuracy matters more than decoration."},
 }
 IMG_STYLE = {"simple": "minimal flat icon style", "colorful": "bright colourful flat illustration", "cartoon": "cute friendly cartoon style for children",
@@ -190,26 +190,38 @@ class SlidesMixin:
         return d
 
     def image_state(self) -> dict:
-        img = self._ai_data().get("image") or {}
-        return {"provider": "cloudflare", "configured": bool(img.get("account_id") and img.get("api_token")),
-                "account_id": img.get("account_id", ""), "has_token": bool(img.get("api_token"))}
+        d = self._ai_data()
+        img = d.get("image") or {}
+        cf_ok = bool(img.get("account_id") and img.get("api_token"))
+        provider = img.get("provider") or ("cloudflare" if cf_ok else "pollinations")
+        ready = {"pollinations": True, "wikimedia": True, "cloudflare": cf_ok, "huggingface": bool(img.get("hf_token")),
+                 "gemini": bool(((d.get("providers") or {}).get("gemini") or {}).get("api_key"))}
+        return {"provider": provider, "configured": bool(ready.get(provider)), "ready": ready,
+                "providers": [{"id": p["id"], "label": p["label"], "real": p["real"]} for p in image_client.IMAGE_PROVIDERS],
+                "account_id": img.get("account_id", ""), "has_token": bool(img.get("api_token")), "has_hf": bool(img.get("hf_token"))}
 
     def image_save(self, b: dict) -> dict:
         d = self._ai_data()
         cur = d.setdefault("image", {})
+        if b.get("provider"):
+            if b["provider"] not in {p["id"] for p in image_client.IMAGE_PROVIDERS}:
+                raise AppError("bad_request", "Unknown picture service.", status=400)
+            cur["provider"] = b["provider"]
         if b.get("api_token") == "__clear__":
             cur.pop("api_token", None)
         else:
             acc = str(b.get("account_id", "")).strip()
             tok = str(b.get("api_token", "")).strip()
+            hf = str(b.get("hf_token", "")).strip()
             if acc:
                 if not re.fullmatch(r"[0-9a-fA-F]{16,64}", acc):
                     raise AppError("img_bad_account", "The Account ID looks wrong. It is about 32 letters and numbers.", status=400)
                 cur["account_id"] = acc
-            if tok:
-                if not tok.isascii():
-                    raise AppError("ai_bad_key", "The key has characters that are not allowed. Copy it again.", status=400)
-                cur["api_token"] = tok
+            for key, val in (("api_token", tok), ("hf_token", hf)):
+                if val:
+                    if not val.isascii():
+                        raise AppError("ai_bad_key", "The key has characters that are not allowed. Copy it again.", status=400)
+                    cur[key] = val
         self._ai_write(d)
         return self.image_state()
 
@@ -219,10 +231,26 @@ class SlidesMixin:
             raise AppError("img_not_set", "Set up the picture service first.", status=409)
         return img["account_id"], img["api_token"]
 
+    def _make_picture(self, prompt: str, search: str, steps: int = 8) -> bytes:
+        st = self.image_state()
+        prov = st["provider"]
+        if not st["ready"].get(prov):
+            raise AppError("img_not_set", "Set up the picture service first.", status=409)
+        d = self._ai_data()
+        if prov == "pollinations":
+            return image_client.pollinations_image(prompt)
+        if prov == "huggingface":
+            return image_client.huggingface_image(d["image"]["hf_token"], prompt)
+        if prov == "gemini":
+            return image_client.gemini_image(d["providers"]["gemini"]["api_key"], prompt)
+        if prov == "wikimedia":
+            return image_client.wikimedia_image(search)
+        acc, tok = self._cf()
+        return image_client.cloudflare_image(acc, tok, prompt, steps=steps)
+
     def image_test(self, b: dict) -> dict:
         self.image_save(b)
-        acc, tok = self._cf()
-        raw = image_client.cloudflare_image(acc, tok, "a simple blue circle on a white background", steps=2)
+        raw = self._make_picture("a simple blue circle on a white background", "blue circle", steps=2)
         return {"ok": True, "bytes": len(raw)}
 
     def slide_image(self, b: dict) -> dict:
@@ -236,8 +264,7 @@ class SlidesMixin:
         full = (f"{redact(prompt, names)}. {look}. Clean flat vector illustration like a classroom poster, one clear subject in the centre, "
                 f"simple shapes, bold clean outlines, bright friendly colours, plain white background, sharp and uncluttered. "
                 f"No text, no letters, no numbers, no words, no logos, no watermark.")
-        acc, tok = self._cf()
-        raw = image_client.cloudflare_image(acc, tok, full, steps=8)
+        raw = _as_jpeg(self._make_picture(full, redact(prompt, names)))
         iid = uuid.uuid4().hex
         (self._image_dir() / f"{iid}.jpg").write_bytes(raw)
         return {"id": iid, "data_url": "data:image/jpeg;base64," + base64.b64encode(raw).decode()}
@@ -257,12 +284,12 @@ class SlidesMixin:
                 + (f"Teacher notes: {c['notes']}\n" if c["notes"] else "")
                 + f"\nThe lesson topic is \"{topic}\". Make the slides about this topic only, even if the notes or material mention something else.\n"
                 + f"\nMake exactly {n} slides (not counting the title slide). Slide 1 is what we will learn, the last slide is a short recap. "
-                  f"Each slide: at most 3 short bullets, {stage['words']}. "
+                  f"Each slide: {stage['words']}. The slides must be rich and useful for teaching, not empty. "
                   f"Write title, bullets and notes in {'Arabic' if arabic else 'simple English'}. "
-                  "notes = what the teacher says (2-3 sentences). image_prompt = ONE English sentence describing a clear illustration "
+                  "explain = a short paragraph under the bullets that explains the idea in simple words. notes = what the teacher says (2-3 sentences). image_prompt = ONE English sentence describing a clear illustration "
                   "that explains the idea (no text inside the picture).\n"
-                  '\nReturn: {"slides": [{"title": "...", "bullets": ["..."], "notes": "...", "image_prompt": "..."}]}')
-        data = _json_from_slides(self._ask(system, user, max_tokens=4000))
+                  '\nReturn: {"slides": [{"title": "...", "bullets": ["..."], "explain": "...", "notes": "...", "image_prompt": "..."}]}')
+        data = _json_from_slides(self._ask(system, user, max_tokens=6000))
         slides = []
         for x in data[:n]:
             if not isinstance(x, dict):
@@ -270,10 +297,10 @@ class SlidesMixin:
             bl = x.get("bullets")
             bl = [str(i).strip() for i in bl] if isinstance(bl, list) else [str(bl).strip()] if bl else []
             slides.append({"title": str(x.get("title", "")).strip()[:120], "bullets": [i for i in bl if i][:5],
-                           "notes": str(x.get("notes", "")).strip()[:800], "image_prompt": str(x.get("image_prompt", "")).strip()[:400]})
+                           "explain": str(x.get("explain", "")).strip()[:700], "notes": str(x.get("notes", "")).strip()[:800], "image_prompt": str(x.get("image_prompt", "")).strip()[:400]})
         if not slides:
             raise AppError("ai_bad_output", "The AI answer was not in the expected shape. Try again.", status=502)
-        return {"slides": slides, "stage": stage_of(c["grade"].id)}
+        return {"slides": slides, "stage": stage_of(c["grade"].id), "model": getattr(self, "last_model", "")}
 
     def slide_build(self, b: dict) -> dict:
         store = self._need_store()
@@ -294,7 +321,7 @@ class SlidesMixin:
                 image = str(self._image_dir() / f"{iid}.jpg")
             bl = x.get("bullets")
             slides.append({"title": D._clean(x.get("title")), "bullets": [D._clean(i) for i in (bl if isinstance(bl, list) else [])],
-                           "notes": D._clean(x.get("notes")), "image_path": image})
+                           "explain": D._clean(x.get("explain")), "notes": D._clean(x.get("notes")), "image_path": image})
         subject = store.load_settings().subject
         deck = {"title": D._clean(title), "subtitle": " · ".join(p for p in (subject, grade.name) if p),
                 "language": "ar" if b.get("language") == "ar" else "en", "stage": stage_of(grade.id), "slides": slides}
@@ -316,6 +343,20 @@ class SlidesMixin:
         res = self._result(out)
         res["slides"] = len(slides) + 1
         return res
+
+
+def _as_jpeg(raw: bytes) -> bytes:
+    """Whatever the picture service sent, keep one small JPEG (the slides need nothing bigger)."""
+    try:
+        import io
+        from PIL import Image
+        im = Image.open(io.BytesIO(raw)).convert("RGB")
+        im.thumbnail((1400, 1400))
+        out = io.BytesIO()
+        im.save(out, "JPEG", quality=88)
+        return out.getvalue()
+    except Exception:  # noqa: BLE001
+        return raw
 
 
 def _json_from_slides(text: str) -> list:

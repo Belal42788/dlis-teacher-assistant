@@ -253,7 +253,8 @@ class AiMixin:
         """Every request goes through here, so names are always removed."""
         cfg = self._ai_config()
         names = self._all_student_names()
-        return self._chat_auto(cfg, redact(system, names), redact(user, names), **kw)[0]
+        text, self.last_model = self._chat_auto(cfg, redact(system, names), redact(user, names), **kw)
+        return text
 
     def _system_for(self, key: str, fixed: str) -> str:
         """The teacher's (or our) wording, then the rules the app needs for its own output format."""

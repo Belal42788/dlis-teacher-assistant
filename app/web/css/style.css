@@ -1,6 +1,9 @@
 /* DLIS Teacher Assistant — palette taken from the school logo:
    cerulean #5aaed2 / teal #3e8aa6 / deep indigo #2a2a72 / fresh green #a2c65a. Compact, calm, a little depth. */
 
+/* The teacher may drop a font file in app/web/fonts (see README.txt there): it is used for everything if it exists. */
+@font-face { font-family: "DLIS Arabic"; src: url("/fonts/arabic.ttf"); font-weight: 100 1000; font-display: swap; }
+@font-face { font-family: "DLIS Arabic"; src: url("/fonts/arabic-bold.ttf"); font-weight: 700; font-display: swap; }
 :root {
   --ink: #1c1f4d;
   --ink-2: #444a6e;
@@ -21,8 +24,8 @@
   --green-wash: #e5f4e9;
   --radius: 7px;
   --shadow: 0 1px 2px rgba(28, 31, 77, .06), 0 4px 14px rgba(28, 31, 77, .05);
-  --font: "Segoe UI Variable Text", "Segoe UI", "SF Pro Text", -apple-system, "SF Arabic", "Noto Sans Arabic", "Geeza Pro", "Tahoma", "Helvetica Neue", Arial, sans-serif;
-  --font-head: "Dubai", "Segoe UI Variable Display", "Segoe UI", "SF Arabic", -apple-system, "Noto Kufi Arabic", "Geeza Pro", "Tahoma", Arial, sans-serif;
+  --font: "DLIS Arabic", "Cairo", "Tajawal", "Segoe UI Variable Text", "Segoe UI", "SF Pro Text", -apple-system, "SF Arabic", "Noto Sans Arabic", "Geeza Pro", "Tahoma", "Helvetica Neue", Arial, sans-serif;
+  --font-head: "DLIS Arabic", "Cairo", "Dubai", "Segoe UI Variable Display", "Segoe UI", "SF Arabic", -apple-system, "Noto Kufi Arabic", "Geeza Pro", "Tahoma", Arial, sans-serif;
   --amber: #f2a93b;
   --step--1: 0.84rem;
   --step-0: 1rem;
@@ -430,14 +433,14 @@ details.help ol { margin: .7rem 0 .2rem; padding-inline-start: 1.4rem; display: 
 .opt-row > label { display: flex; flex-direction: column; gap: .25rem; }
 .opt-row .label { font-weight: 600; font-size: .9rem; }
 .time12 { display: inline-flex; gap: .25rem; align-items: center; }
-.time12 select { width: auto; min-width: 4.2em; }
+.time12 select { width: auto; min-width: 4.2em; } .time12 select:last-child { min-width: 5.6em; padding-inline-end: 1.6em; }
 
 /* ---------- slide editor ---------- */
-.slide-card { display: grid; grid-template-columns: 2.4em 1fr 190px; gap: .8rem; align-items: start; padding: .8rem; margin-bottom: .7rem; border: 1px solid #d6e8f1; border-radius: 12px; background: #fff; }
+.slide-card { display: grid; grid-template-columns: 2.4em 1fr 260px; gap: .8rem; align-items: start; padding: .8rem; margin-bottom: .7rem; border: 1px solid #d6e8f1; border-radius: 12px; background: #fff; }
 .slide-no { width: 2em; height: 2em; border-radius: 50%; background: #2f82a8; color: #fff; display: grid; place-items: center; font-weight: 700; }
 .slide-body { display: grid; gap: .5rem; min-width: 0; }
 .slide-body input, .slide-body textarea { width: 100%; }
-.slide-pic { width: 190px; height: 190px; object-fit: cover; border-radius: 10px; border: 1px solid #d6e8f1; background: #f1f7fb; }
+.slide-pic { width: 260px; height: 220px; object-fit: contain; border-radius: 10px; border: 1px solid #d6e8f1; background: #f1f7fb; }
 .slide-pic.empty { display: grid; place-items: center; color: #9bb7c6; }
 @media (max-width: 720px) { .slide-card { grid-template-columns: 2.4em 1fr; } .slide-pic { grid-column: 1 / -1; width: 100%; height: 160px; } }
 
@@ -466,9 +469,17 @@ details.help ol { margin: .7rem 0 .2rem; padding-inline-start: 1.4rem; display: 
 .bld-floor:first-child { border-top: 0; }
 .bld-label { background: #2a2a72; color: #fff; display: grid; place-items: center; }
 .bld-label span { writing-mode: vertical-rl; transform: rotate(180deg); font-weight: 700; font-size: .85rem; letter-spacing: .02em; white-space: nowrap; }
-.bld-rooms { position: relative; width: 100%; background: #f4f9fc; }
-.bld-wing { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, rgba(42,42,114,.05) 0 8px, transparent 8px 16px); border-inline: 2px dashed rgba(42,42,114,.25); }
-.bld-rooms .map-room { border-radius: 4px; border-width: 1.5px; }
+.bld-rooms { display: flex; gap: 10px; padding: 10px 12px; background: #f4f9fc; direction: ltr; perspective: 1100px; align-items: stretch; }
+.bld-wing { display: grid; gap: 6px; grid-auto-rows: minmax(64px, auto); transform-style: preserve-3d; min-width: 0; }
+.bld-wing.left { transform: rotateY(9deg); transform-origin: right center; }
+.bld-wing.right { transform: rotateY(-9deg); transform-origin: left center; }
+.bld-wing.mid { transform: translateZ(26px); }
+.bld-room { position: relative; box-sizing: border-box; display: grid; place-items: center; padding: 4px 6px; text-align: center; cursor: pointer; border: 2px solid rgba(31,42,92,.4); border-radius: 6px; font-weight: 700; font-size: clamp(.62rem, 1.05vw, .88rem); color: #1f2a5c; box-shadow: 4px 5px 0 rgba(31,42,92,.28), 6px 8px 10px rgba(31,42,92,.18); transition: transform .12s; }
+.bld-room::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 22%; background: linear-gradient(180deg, rgba(255,255,255,.7), rgba(255,255,255,0)); border-radius: 4px 4px 0 0; pointer-events: none; }
+.bld-room span { position: relative; line-height: 1.2; overflow-wrap: anywhere; }
+.bld-room:hover { transform: translateZ(10px) translateY(-2px); }
+.bld-room.sel { outline: 3px solid #1f2a5c; z-index: 2; }
+.bld-room.hit { outline: 3px solid #e8a317; z-index: 3; }
 .bld-ground { height: 16px; background: linear-gradient(180deg, #7aa75a, #5d8a3f); border-radius: 0 0 8px 8px; margin-inline: -2%; }
 @media (max-width: 900px) { .map-wrap { grid-template-columns: 1fr; } }
 
@@ -557,18 +568,29 @@ a.seg-btn { text-decoration: none; text-align: center; }
 .builder { padding: .55rem 1rem; }
 .builder > summary { font-weight: 700; color: var(--ink); }
 
-/* ---------- weekly checklist ---------- */
-table.wc { width: 100%; border-collapse: separate; border-spacing: 3px; table-layout: fixed; }
-table.wc th, table.wc td { padding: 0; text-align: center; vertical-align: middle; }
-table.wc thead th { font-size: var(--step--1); color: var(--ink-2); font-weight: 700; background: var(--blue-wash); line-height: 1.3; }
-table.wc tbody th { text-align: start; white-space: nowrap; font-weight: 700; width: 6.5rem; padding-inline: .4rem; font-size: .92rem; }
-table.wc thead th { padding: .4rem .25rem; border-radius: 8px; }
-table.wc .dot { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; }
-.wc-cell { display: flex; flex-direction: row; gap: .3rem; align-items: center; justify-content: center; width: 100%; min-width: 0; padding: .45rem .2rem; border-radius: 9px; border: 1px solid var(--rule); background: #f4f7fa; color: var(--muted); font: inherit; font-weight: 700; cursor: pointer; line-height: 1.2; }
-.wc-cell .wc-txt { font-size: .72rem; font-weight: 600; }
-.wc-cell.done { background: var(--green-wash); border-color: #9fd0ab; color: var(--green); }
-.wc-cell.no { background: var(--margin-wash); border-color: #efb5ae; color: var(--margin); }
-.wc-cell:hover { filter: brightness(.97); }
+/* ---------- weekly follow-up (one compact table) ---------- */
+.wc-panel { padding-bottom: 1rem; }
+.wc-pick { display: grid; grid-template-columns: minmax(8rem, 12rem) minmax(12rem, 22rem); gap: .8rem; margin: .6rem 0; }
+.wc-scroll { overflow-x: auto; }
+table.wc { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; min-width: 640px; }
+table.wc col.wc-name { width: 6.2rem; }
+table.wc th, table.wc td { padding: 3px; text-align: center; vertical-align: middle; border-bottom: 1px solid var(--rule); }
+table.wc thead th { background: var(--blue-wash); color: var(--indigo); font-weight: 700; font-size: .85rem; line-height: 1.25; padding: .35rem .2rem; border-bottom: 1px solid #d3e4ee; }
+table.wc thead th.wc-g { border-inline-start: 2px solid #fff; }
+table.wc thead th.wc-sub { font-size: .75rem; font-weight: 600; color: var(--ink-2); background: #f3f8fb; }
+table.wc thead th.wc-corner { border-start-start-radius: 10px; text-align: start; padding-inline: .5rem; }
+table.wc tbody th { text-align: start; white-space: nowrap; font-weight: 700; font-size: .92rem; padding-inline: .5rem; }
+table.wc tbody tr:hover > * { background: #f7fbfd; }
+table.wc .dot { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; margin-inline-end: .2rem; }
+.wc-cell { display: grid; place-items: center; width: 100%; height: 2rem; border-radius: 8px; border: 1.5px solid var(--rule-strong); background: #fff; color: var(--muted); font: inherit; font-weight: 800; font-size: 1.05rem; cursor: pointer; padding: 0; }
+.wc-cell.done { background: #e4f3e7; border-color: #8cc79a; color: #2d7a43; }
+.wc-cell.no { background: #fdecec; border-color: #efb5ae; color: var(--margin); }
+.wc-cell.auto { border-style: dashed; }
+.wc-cell:hover { filter: brightness(.96); }
+.wc-key { display: inline-grid; place-items: center; width: 1.2rem; height: 1.2rem; border-radius: 5px; border: 1.5px solid var(--rule-strong); margin-inline-end: .25rem; font-size: .75rem; font-weight: 800; vertical-align: middle; background: #fff; }
+.wc-key.done { background: #e4f3e7; border-color: #8cc79a; color: #2d7a43; } .wc-key.no { background: #fdecec; border-color: #efb5ae; color: var(--margin); }
+.tasks-h { margin: 1.4rem 0 .6rem; font-size: var(--step-1); }
+
 
 /* ---------- chat, laid out like Claude: saved chats on the side, one conversation, the box at the bottom ---------- */
 .chat-app { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 1rem; align-items: start; }

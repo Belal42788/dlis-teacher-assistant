@@ -107,3 +107,51 @@ def to_english(name: str) -> str:
             out.append(_spell(w))
         i += 1
     return " ".join(out)
+
+
+_EN2AR = {}
+for _k, _v in WORDS.items():
+    _EN2AR.setdefault(_v.lower().replace(" ", ""), _k)
+_EN2AR.update({"abdel": "عبد", "abd": "عبد", "el": "ال", "al": "ال", "mohamed": "محمد", "mohammed": "محمد", "muhammad": "محمد",
+               "ahmed": "أحمد", "ahmad": "أحمد", "mahmoud": "محمود", "ali": "علي", "omar": "عمر", "youssef": "يوسف", "yousef": "يوسف"})
+_DIGRAPHS = [("sh", "ش"), ("kh", "خ"), ("gh", "غ"), ("th", "ث"), ("ee", "ي"), ("oo", "و"), ("ou", "و"), ("aa", "ا"), ("ei", "ي"), ("ai", "ي")]
+_SINGLE = {"a": "ا", "b": "ب", "c": "ك", "d": "د", "e": "ي", "f": "ف", "g": "ج", "h": "ه", "i": "ي", "j": "ج", "k": "ك", "l": "ل",
+           "m": "م", "n": "ن", "o": "و", "p": "ب", "q": "ق", "r": "ر", "s": "س", "t": "ت", "u": "و", "v": "ف", "w": "و", "x": "كس",
+           "y": "ي", "z": "ز"}
+
+
+def _en_word(w: str) -> str:
+    lw = w.lower()
+    if lw in _EN2AR:
+        return _EN2AR[lw]
+    out, i = [], 0
+    while i < len(lw):
+        for d, a in _DIGRAPHS:
+            if lw.startswith(d, i):
+                out.append(a); i += 2; break
+        else:
+            ch = lw[i]
+            if ch in "aeiou" and 0 < i:  # inner short vowels are normally not written
+                if ch in "ou" or i == len(lw) - 1 and ch in "ai":
+                    out.append(_SINGLE[ch])
+            else:
+                out.append(_SINGLE.get(ch, ch))
+            i += 1
+    return "".join(out)
+
+
+def to_arabic(name: str) -> str:
+    """'Mohamed Ahmed' -> 'محمد أحمد' (best effort; the teacher can edit). Text that already has Arabic is returned unchanged."""
+    name = " ".join(str(name or "").split())
+    if not name or _AR.search(name):
+        return name
+    ws = name.split(" ")
+    out, i = [], 0
+    while i < len(ws):
+        if ws[i].lower() in ("abdel", "abd") and i + 1 < len(ws):
+            nxt = ws[i + 1]
+            out.append("عبد" + (_en_word(nxt) if nxt.lower() not in ("allah", "ullah") else "الله")); i += 2; continue
+        if ws[i].lower() in ("el", "al") and i + 1 < len(ws):
+            out.append("ال" + _en_word(ws[i + 1])); i += 2; continue
+        out.append(_en_word(ws[i])); i += 1
+    return " ".join(out)

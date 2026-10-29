@@ -45,10 +45,9 @@ function show(item, key, minutesLeft) {
   card.append(
     h("div", { class: "rem-head" }, icon("clock"), h("b", {}, when)),
     h("div", { class: "rem-actions" },
-      h("button", { class: "btn small primary", onClick: () => { handled.delete(key); if (item.alarm) alarmSnooze.set(key, { wake: Date.now() + 5 * 60000, item }); else snoozed.set(key, Date.now() + 5 * 60000); close(); } }, t("rem_snooze")),
+      h("button", { class: "btn small", onClick: () => { handled.delete(key); if (item.alarm) alarmSnooze.set(key, { wake: Date.now() + 5 * 60000, item }); else snoozed.set(key, Date.now() + 5 * 60000); close(); } }, t("rem_snooze")),
       h("button", { class: "btn small", onClick: () => { handled.add(key); close(); } }, t("rem_dismiss")),
-      item.alarm ? null : h("button", { class: "btn small ghost", onClick: async () => { await save({ muted_date: todayIso() }); close(); toast(t("rem_muted_today")); } }, t("rem_mute_today")),
-      item.alarm ? null : h("button", { class: "btn small ghost", onClick: async () => { await save({ enabled: false }); close(); toast(t("rem_off_note")); } }, t("rem_off_always"))));
+      item.alarm ? null : h("button", { class: "btn small", onClick: async () => { await save({ muted_date: todayIso() }); close(); toast(t("rem_muted_today")); } }, t("rem_mute_today"))));
   container().append(card);
   beep();
   // keep ringing until the teacher answers, or until the chosen ring time is over (0 = until answered)

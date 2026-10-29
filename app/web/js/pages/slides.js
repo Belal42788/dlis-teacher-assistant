@@ -6,7 +6,7 @@ import { sourcePicker } from "../components/source_pick.js";
 import { gradeName, triName, fmtShort } from "../labels.js";
 
 // What the teacher typed and the slides being edited stay here while they visit other tabs (nothing is saved to disk until the file is made).
-const memo = { grade: "", tri: "", week: "", topic: "", objectives: "", count: 10, lang: "en", look: "auto", notes: "", prompt: "", source: "", slides: [], built: null };
+const memo = { model: "", grade: "", tri: "", week: "", topic: "", objectives: "", count: 10, lang: "en", look: "auto", notes: "", prompt: "", source: "", slides: [], built: null };
 
 export async function renderSlides(root) {
   const [structure, ov, ai, img] = await Promise.all([api.get("/api/structure"), api.get("/api/overview"), api.get("/api/ai"), api.get("/api/slides/image-config")]);
@@ -62,29 +62,43 @@ export async function renderSlides(root) {
 
   // ================= build the slides here
   let imgState = img;
+  const provSel = h("select", { "aria-label": t("sl_img_title"), onChange: () => drawImgFields() }, imgState.providers.map((p) => h("option", { value: p.id }, p.label)));
+  provSel.value = imgState.provider;
   const cfAcc = h("input", { type: "text", dir: "ltr", autocomplete: "off", value: imgState.account_id, placeholder: "Account ID" });
   const cfTok = h("input", { type: "password", dir: "ltr", autocomplete: "off", placeholder: imgState.has_token ? "••••••••••••" : "API Token" });
+  const hfTok = h("input", { type: "password", dir: "ltr", autocomplete: "off", placeholder: imgState.has_hf ? "••••••••••••" : "Hugging Face token (hf_...)" });
   const cfOut = h("span", { class: "muted small" });
-  const cfSave = h("button", { class: "btn", onClick: () => busy(cfSave, async () => { imgState = await api.put("/api/slides/image-config", { account_id: cfAcc.value.trim(), api_token: cfTok.value.trim() }); cfTok.value = ""; toast(t("saved")); drawDeck(); }) }, icon("check"), t("sl_img_save"));
-  const cfTest = h("button", { class: "btn", onClick: () => busy(cfTest, async () => { cfOut.textContent = t("ai_testing"); try { await api.post("/api/slides/image-test", { account_id: cfAcc.value.trim(), api_token: cfTok.value.trim() }); imgState = await api.get("/api/slides/image-config"); cfOut.textContent = "✓ " + t("sl_img_ok"); drawDeck(); } catch (e) { cfOut.textContent = ""; throw e; } }) }, t("ai_test"));
+  const fields = h("div", {});
+  const payload = () => ({ provider: provSel.value, account_id: cfAcc.value.trim(), api_token: cfTok.value.trim(), hf_token: hfTok.value.trim() });
+  function drawImgFields() {
+    const p = provSel.value;
+    fields.replaceChildren(p === "cloudflare" ? h("div", {}, h("ol", { class: "small" }, [1, 2, 3].map((i) => h("li", {}, t(`sl_img_step${i}`)))),
+        h("div", { class: "row" }, h("button", { class: "btn small", onClick: () => guarded(() => api.post("/api/open-url", { url: "https://dash.cloudflare.com/profile/api-tokens" })) }, icon("link"), t("sl_img_open"))),
+        h("div", { class: "grid2", style: { marginTop: ".6rem" } }, h("label", { class: "field" }, h("span", { class: "label" }, "Account ID"), cfAcc), h("label", { class: "field" }, h("span", { class: "label" }, "API Token"), cfTok)))
+      : p === "huggingface" ? h("div", {}, h("p", { class: "small muted" }, t("sl_img_hf")), h("label", { class: "field" }, h("span", { class: "label" }, "Token"), hfTok))
+      : p === "gemini" ? h("p", { class: "small muted" }, t(imgState.ready.gemini ? "sl_img_gemini_ok" : "sl_img_gemini_no"))
+      : p === "wikimedia" ? h("p", { class: "small muted" }, t("sl_img_wiki")) : h("p", { class: "small muted" }, t("sl_img_poll")));
+  }
+  drawImgFields();
+  const cfSave = h("button", { class: "btn", onClick: () => busy(cfSave, async () => { imgState = await api.put("/api/slides/image-config", payload()); cfTok.value = ""; hfTok.value = ""; toast(t("saved")); drawDeck(); }) }, icon("check"), t("sl_img_save"));
+  const cfTest = h("button", { class: "btn", onClick: () => busy(cfTest, async () => { cfOut.textContent = t("ai_testing"); try { await api.post("/api/slides/image-test", payload()); imgState = await api.get("/api/slides/image-config"); cfOut.textContent = "✓ " + t("sl_img_ok"); drawDeck(); } catch (e) { cfOut.textContent = ""; throw e; } }) }, icon("spark"), t("sl_img_test"));
   const imgSetup = h("details", { class: "more" }, h("summary", {}, t("sl_img_title")),
-    h("p", { class: "muted small" }, t("sl_img_lead")), h("ol", { class: "small" }, [1, 2, 3].map((i) => h("li", {}, t(`sl_img_step${i}`)))),
-    h("div", { class: "row" }, h("button", { class: "btn small", onClick: () => guarded(() => api.post("/api/open-url", { url: "https://dash.cloudflare.com/profile/api-tokens" })) }, icon("link"), t("sl_img_open"))),
-    h("div", { class: "grid2", style: { marginTop: ".6rem" } }, h("label", { class: "field" }, h("span", { class: "label" }, "Account ID"), cfAcc), h("label", { class: "field" }, h("span", { class: "label" }, "API Token"), cfTok)),
+    h("p", { class: "muted small" }, t("sl_img_lead2")), h("label", { class: "field" }, h("span", { class: "label" }, t("sl_img_service")), provSel), fields,
     h("div", { class: "row" }, cfSave, cfTest, cfOut));
 
   const deckBox = h("div", {});
+  const modelLine = h("p", { class: "muted small dir-ltr", style: { margin: ".3rem 0" } });
   const result = h("div", {});
   const planBtn = h("button", { class: "btn primary", disabled: !ai.ready, onClick: () => busy(planBtn, async () => {
     if (memo.slides.length && !(await confirmBox(t("sl_replace_confirm"), { okLabel: t("ok"), danger: false }))) return;
     const r = await api.post("/api/slides/plan", { ...body(), slides: Math.max(4, (+count.value || 10) - 1) });
-    memo.slides = r.slides.map((s) => ({ ...s, image_id: "", data_url: "" })); memo.built = null; drawDeck(); toast(t("ai_filled"));
+    memo.slides = r.slides.map((s) => ({ ...s, image_id: "", data_url: "" })); memo.built = null; memo.model = r.model || ""; drawDeck(); toast(t("ai_filled"));
   }) }, icon("spark"), t("sl_plan"));
   const makeAllBtn = h("button", { class: "btn", onClick: () => makeAll() }, icon("file"), t("sl_all_pics"));
-  const addBtn = h("button", { class: "btn", onClick: () => { memo.slides.push({ title: "", bullets: [], notes: "", image_prompt: "", image_id: "", data_url: "" }); drawDeck(); } }, icon("plus"), t("sl_add"));
+  const addBtn = h("button", { class: "btn", onClick: () => { memo.slides.push({ title: "", bullets: [], explain: "", notes: "", image_prompt: "", image_id: "", data_url: "" }); drawDeck(); } }, icon("plus"), t("sl_add"));
   const buildBtn = h("button", { class: "btn primary", onClick: () => busy(buildBtn, async () => {
     memo.built = await api.post("/api/slides/build", { grade_id: gradeSel.value, title: topic.value.trim(), language: lang.value, trimester: +triSel.value, week: weekSel.value ? +weekSel.value : 0,
-      slides: memo.slides.map((s) => ({ title: s.title, bullets: s.bullets, notes: s.notes, image_id: s.image_id })) });
+      slides: memo.slides.map((s) => ({ title: s.title, bullets: s.bullets, explain: s.explain || "", notes: s.notes, image_id: s.image_id })) });
     drawDeck();
   }) }, icon("file"), t("sl_build"));
 
@@ -112,6 +126,7 @@ export async function renderSlides(root) {
     const ready = imgState.configured;
     makeAllBtn.style.display = ready && memo.slides.length ? "" : "none";
     buildBtn.style.display = memo.slides.length ? "" : "none";
+    modelLine.textContent = memo.model && memo.slides.length ? t("sl_model", { model: memo.model }) : "";
     deckBox.replaceChildren(...memo.slides.map((s, i) => {
       const picBtn = h("button", { class: "btn small", disabled: !ready, title: ready ? "" : t("sl_img_first"), onClick: () => makePic(s, picBtn) }, icon("spark"), s.image_id ? t("sl_pic_again") : t("sl_pic_make"));
       return h("div", { class: "slide-card" },
@@ -119,6 +134,7 @@ export async function renderSlides(root) {
         h("div", { class: "slide-body" },
           h("input", { type: "text", value: s.title, placeholder: t("sl_s_title"), "aria-label": t("sl_s_title"), onInput: (e) => { s.title = e.target.value; } }),
           h("textarea", { rows: 3, placeholder: t("sl_s_bullets"), "aria-label": t("sl_s_bullets"), onInput: (e) => { s.bullets = e.target.value.split("\n").map((x) => x.trim()).filter(Boolean); } }, s.bullets.join("\n")),
+          h("textarea", { rows: 3, placeholder: t("sl_s_explain"), "aria-label": t("sl_s_explain"), onInput: (e) => { s.explain = e.target.value; } }, s.explain || ""),
           h("details", { class: "more" }, h("summary", {}, t("sl_s_more")),
             h("label", { class: "field" }, h("span", { class: "label" }, t("sl_s_notes")), h("textarea", { rows: 2, onInput: (e) => { s.notes = e.target.value; } }, s.notes)),
             h("label", { class: "field" }, h("span", { class: "label" }, t("sl_s_imgprompt")), h("input", { type: "text", dir: "ltr", value: s.image_prompt, onInput: (e) => { s.image_prompt = e.target.value; } }))),
@@ -150,7 +166,7 @@ export async function renderSlides(root) {
         h("label", {}, h("span", { class: "label" }, t("sl_look")), look)),
       h("label", { class: "field" }, h("span", { class: "label" }, t("sl_notes")), notes)),
     h("div", { class: "panel" }, h("h3", {}, t("sl_build_title")), h("p", { class: "muted small" }, t("sl_build_lead")), imgSetup,
-      h("div", { class: "row", style: { margin: ".8rem 0" } }, planBtn, addBtn, makeAllBtn, buildBtn), result, deckBox),
+      h("div", { class: "row", style: { margin: ".8rem 0" } }, planBtn, addBtn, makeAllBtn, buildBtn), result, modelLine, deckBox),
     h("div", { class: "panel" }, h("h3", {}, t("sl_nlm_title")), h("p", { class: "muted small" }, t("sl_nlm_lead")),
       h("div", { class: "row" }, promptBtn,
         h("button", { class: "btn", onClick: () => copy(promptBox) }, icon("copy"), t("chat_copy")),

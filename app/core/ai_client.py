@@ -35,6 +35,35 @@ def _http(method: str, url: str, headers: dict, body: dict | None = None, timeou
     return _http_once(method, url, headers, body, timeout, ssl.create_default_context())
 
 
+def http_bytes(method: str, url: str, headers: dict | None = None, body: dict | None = None, timeout: int = 120) -> bytes:
+    """Like `_http` but returns the raw answer (a picture). Same certificate fallback."""
+    def once(ctx):
+        data = json.dumps(body).encode("utf-8") if body is not None else None
+        req = urllib.request.Request(url, data=data, method=method, headers={"User-Agent": "DLIS-Teacher-Assistant", **(headers or {})})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout, context=ctx) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            detail = ""
+            try:
+                detail = e.read().decode("utf-8", "replace")[:200]
+            except Exception:
+                pass
+            raise _map_status(e.code, detail) from e
+        except TimeoutError as e:
+            raise AppError("ai_timeout", "The picture service took too long to answer.", status=504) from e
+        except urllib.error.URLError as e:
+            if isinstance(e.reason, ssl.SSLCertVerificationError):
+                raise AppError("ai_ssl", "This network does not allow a secure connection (a school firewall?).", status=502) from e
+            raise AppError("ai_offline", "Could not reach the picture service. Check the internet connection.", status=502) from e
+    try:
+        return once(_ssl_context())
+    except AppError as e:
+        if e.code != "ai_ssl":
+            raise
+    return once(ssl.create_default_context())
+
+
 def _http_once(method: str, url: str, headers: dict, body: dict | None, timeout: int, ctx: ssl.SSLContext) -> dict:
     data = json.dumps(body).encode("utf-8") if body is not None else None
     req = urllib.request.Request(url, data=data, method=method, headers={"User-Agent": "DLIS-Teacher-Assistant", **headers})

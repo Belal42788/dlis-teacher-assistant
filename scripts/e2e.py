@@ -131,7 +131,7 @@ try:
         page.click(".lesson .btn >> text=سجّل الحصة >> nth=0"); page.fill(".modal input[type=text] >> nth=0", "Hardware")
         page.fill(".modal input[type=number] >> nth=0", "12"); page.fill(".modal input[type=number] >> nth=1", "30"); page.fill(".modal input[type=text] >> nth=1", "ابدأ بكويز")
         page.click(".modal footer .btn.primary"); page.wait_for_selector(".last-log .remember"); page.wait_for_selector("text=عدّل التسجيل"); shot("17g_log_today")
-        page.click(".nav a[data-page=log]"); page.wait_for_selector(".tasks-table td >> text=Hardware"); shot("17h_log_page")
+        page.click(".nav a[data-page=classes]"); page.click("a.seg-btn[href='#/log']"); page.wait_for_selector(".tasks-table td >> text=Hardware"); shot("17h_log_page")
         page.click(".nav a[data-page=today]"); page.wait_for_selector(".today-tasks")
         # one-day changes on Today: cancel + undo, then a cover lesson, then back to normal
         page.wait_for_selector(".lesson .btn >> text=إلغاء النهارده"); n0 = page.locator(".lesson:not(.cancelled)").count()
@@ -183,7 +183,7 @@ try:
         shot("17k_slide_editor")
         page.click("text=اعمل ملف PowerPoint"); page.wait_for_selector("text=ملف PowerPoint جاهز")
         # weekly checklist: click a cell to change its state (not yet -> done)
-        page.click(".nav a[data-page=tasks]"); page.click("a.seg-btn[href='#/weekly']"); page.wait_for_selector("table.wc")
+        page.click(".nav a[data-page=tasks]"); page.wait_for_selector("table.wc")
         page.click("table.wc .wc-cell >> nth=0"); page.wait_for_selector("table.wc .wc-cell.done"); shot("17n_weekly")
         # my slides: import an image-only PDF, the app reads it with the (fake) vision AI, then the revision page can use it
         from PIL import Image as _I
@@ -198,11 +198,11 @@ try:
         page.click("text=أضف دور"); page.click(".map-side >> text=أضف غرفة"); page.wait_for_selector(".map-room.sel")
         page.fill(".map-side input[type=text] >> nth=1", "Principal office"); page.select_option(".map-side select >> nth=0", "admin"); page.fill(".map-side input[dir=ltr]", "0100 555 1234")
         box = page.locator(".map-room.sel").bounding_box(); page.mouse.move(box["x"] + 20, box["y"] + 20); page.mouse.down(); page.mouse.move(box["x"] + 220, box["y"] + 90, steps=5); page.mouse.up()
-        page.wait_for_timeout(700); page.click("text=تعديل الخريطة"); page.click(".map-room >> text=Principal office"); page.wait_for_selector("a[href='tel:01005551234']"); shot("17l_map")
-        page.reload(); page.wait_for_selector(".nav"); page.click(".nav a[data-page=map]"); page.wait_for_selector(".map-room >> text=Principal office")
+        page.wait_for_timeout(700); page.click("text=تعديل الخريطة"); page.click(".bld-room >> text=Principal office"); page.wait_for_selector("a[href='tel:01005551234']"); shot("17l_map")
+        page.reload(); page.wait_for_selector(".nav"); page.click(".nav a[data-page=map]"); page.wait_for_selector(".bld-room >> text=Principal office")
         # layout: sidebar fills the window height, and every page scrolls inside itself
         page.set_viewport_size({"width": 1280, "height": 500})
-        for name in ("today", "classes", "docs", "chat", "slides", "map", "log", "tasks", "settings"):
+        for name in ("today", "classes", "docs", "chat", "slides", "map", "tasks", "settings"):
             page.click(f".nav a[data-page={name}]"); page.wait_for_timeout(500)
             m = page.evaluate("(() => { const m = document.querySelector('.main'), s = document.querySelector('.side'); m.scrollTop = 0; return {side: s.getBoundingClientRect().height, win: innerHeight, sh: m.scrollHeight, ch: m.clientHeight, doc: document.documentElement.scrollHeight} })()")
             assert abs(m["side"] - m["win"]) < 2, (name, m)
@@ -221,9 +221,8 @@ try:
             go("timetable"); snap("timetable")
             go("calendar"); snap("calendar")
             go("tasks"); snap("tasks")
-            page.click("a.seg-btn[href='#/weekly']"); snap("tasks_weekly_followup")
             page.click("a.seg-btn[href='#/reminders']"); snap("tasks_new_reminder")
-            go("log"); snap("lesson_log")
+            go("classes"); page.click("a.seg-btn[href='#/log']"); snap("classes_lesson_log")
             go("docs")
             for tab_ in ("wk", "lp", "quiz", "rv", "gs", "tp", "ai"):
                 page.click(f".seg-btn[data-tab={tab_}]"); snap(f"files_{tab_}")

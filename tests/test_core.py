@@ -271,7 +271,7 @@ class TestRoster(unittest.TestCase):
             self.assertEqual(svc.get_students("g4-a")["names"], [])
             svc.put_students("kg1-a", ["Only one"])
             svc.get_structure()
-            self.assertEqual(svc.get_students("kg1-a")["names"], ["Only one"])
+            self.assertEqual(svc.get_students("kg1-a")["names"], ["ونلي ون"])
 
 
 class TestWeekendHolidays(unittest.TestCase):
@@ -341,8 +341,12 @@ class TestDocsAndTasks(unittest.TestCase):
     def test_weekly_checklist(self):
         w = self.svc.get_weekly(0, 8)
         self.assertEqual(w["tasks"][0], "attendance"); self.assertEqual(len(w["rows"]), 2); self.assertEqual(w["done"], 0)
-        w = self.svc.set_weekly({"trimester": 0, "week": 8, "grade_id": "g4", "task": "quiz", "state": "done"})
-        self.assertEqual(next(r for r in w["rows"] if r["grade_id"] == "g4")["states"]["quiz"], "done"); self.assertEqual(w["done"], 1)
+        self.assertEqual([g["id"] for g in w["groups"]], ["attendance", "presentation", "lesson_plan", "quiz", "weekly_plan"])
+        w = self.svc.set_weekly({"trimester": 0, "week": 8, "grade_id": "g4", "task": "quiz_sent", "state": "done"})
+        self.assertEqual(next(r for r in w["rows"] if r["grade_id"] == "g4")["states"]["quiz_sent"], "done"); self.assertEqual(w["done"], 1)
+        self.svc.make_lesson_plan({"grade_id": "g4", "trimester": 0, "week": 8, "content": {"topic": "Hardware"}})   # the file exists: "made" ticks itself
+        r4 = next(r for r in self.svc.get_weekly(0, 8)["rows"] if r["grade_id"] == "g4")
+        self.assertEqual(r4["states"]["lesson_plan_made"], "done"); self.assertTrue(r4["auto"]["lesson_plan_made"]); self.assertEqual(r4["states"]["lesson_plan_sent"], "wait")
         self.assertEqual(self.svc.get_weekly(0, 9)["done"], 0)   # each week has its own marks
         with self.assertRaises(AppError):
             self.svc.set_weekly({"trimester": 0, "week": 8, "grade_id": "g4", "task": "nope", "state": "done"})

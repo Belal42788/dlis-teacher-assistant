@@ -4,7 +4,8 @@ import { t } from "../i18n.js";
 // Pages that belong together share one menu entry and a small tab row at the top.
 const GROUPS = {
   slides: [["slides", "hub_make_slides"], ["sources", "nav_sources"]],
-  tasks: [["tasks", "hub_tasks"], ["weekly", "hub_weekly"], ["reminders", "hub_reminders"]],
+  classes: [["classes", "hub_students"], ["log", "nav_log"]],
+  tasks: [["tasks", "hub_tasks"], ["reminders", "hub_reminders"]],
 };
 export function hubTabs(group, active) {
   return h("div", { class: "seg", role: "tablist" }, GROUPS[group].map(([id, key]) =>

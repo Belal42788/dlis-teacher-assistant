@@ -83,7 +83,7 @@ class ApiTests(unittest.TestCase):
                       {"filename": "list.csv", "data_b64": base64.b64encode("Name\nلمى\nيوسف".encode()).decode()})
         self.assertEqual(f["names"], ["لمى", "يوسف"])
         self.call("PUT", "/api/rooms/g4-a/students", {"names": r["names"]})
-        self.assertEqual(self.call("GET", "/api/rooms/g4-a/students")["names"], ["Sara", "Omar"])
+        self.assertEqual(self.call("GET", "/api/rooms/g4-a/students")["names"], ["سارة", "عمر"])
         self.call("GET", "/api/rooms/nope/students", expect=404)
         self.call("GET", "/api/rooms/..%2F..%2Fx/students", expect=404)
         self.assertEqual([x for x in self.call("GET", "/api/structure")["rooms"] if x["id"] == "g4-a"][0]["student_count"], 2)

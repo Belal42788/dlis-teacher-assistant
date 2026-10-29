@@ -3,6 +3,7 @@ import { h, icon, toast } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { t } from "../i18n.js";
 import { tasksTable } from "../components/tasks_table.js";
+import { weeklyPanel } from "./weekly.js";
 
 export async function renderTasks(root) {
   let data = await api.get("/api/tasks");
@@ -22,6 +23,8 @@ export async function renderTasks(root) {
 
   root.replaceChildren(h("div", { class: "page" }, hubTabs("tasks", "tasks"),
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_tasks")), h("p", {}, t("t_lead")))),
+    await weeklyPanel(),
+    h("h2", { class: "tasks-h" }, t("hub_tasks")),
     h("div", { class: "panel" }, h("div", { class: "task-add" }, title, imp, deadline, h("button", { class: "btn primary", onClick: add }, icon("plus"), t("t_add")))),
     list));
   draw();

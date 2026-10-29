@@ -68,6 +68,33 @@ def _text(slide, x, y, w, h, lines, size, rtl, bold=False, color=NAVY, bullets=F
     return tb
 
 
+def _fit(size: int, chars: int, width: float, height: float) -> int:
+    """Largest font (not above `size`) that lets this much text fit the box."""
+    for pt in range(size, 13, -1):
+        per_line = max(8, int(width * 72 / (pt * 0.5)))      # characters in one line
+        lines = chars / per_line * 1.1 + 3                    # a little slack for bullet breaks and the explanation
+        if lines * pt * 1.3 / 72 <= height:
+            return pt
+    return 14
+
+
+def _rich_text(slide, x, y, w, h, bullets, explain, size, rtl):
+    """Bullets, then a smaller explanation paragraph, in one box."""
+    tb = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
+    tf = tb.text_frame; tf.word_wrap = True; tf.vertical_anchor = MSO_ANCHOR.TOP
+    tf.margin_left = tf.margin_right = Inches(0.1)
+    first = True
+    for line in bullets:
+        p = tf.paragraphs[0] if first else tf.add_paragraph(); first = False
+        r = p.add_run(); r.text = str(line); _style_run(r, size)
+        _para_dir(p, rtl); p.space_after = Pt(max(6, size // 3)); _bullet(p, rtl)
+    if explain:
+        p = tf.paragraphs[0] if first else tf.add_paragraph()
+        r = p.add_run(); r.text = explain; _style_run(r, max(14, size - 4), BLUE)
+        _para_dir(p, rtl); p.space_before = Pt(8)
+    return tb
+
+
 def _logo(slide, rtl: bool):
     f = paths.resources_dir() / "logo.png"
     if f.is_file():
@@ -133,17 +160,18 @@ def build_deck(out: Path, deck: dict) -> Path:
         tx = 0.4 if rtl else 0.4 + corner
         _text(s, tx, 0.35, title_w, 1.1, [sl.get("title", "")], 34, rtl, bold=True, anchor=MSO_ANCHOR.MIDDLE)
         bullets = [b for b in (sl.get("bullets") or []) if str(b).strip()]
+        explain = str(sl.get("explain") or "").strip()
         img = sl.get("image_path")
         has_img = bool(img) and Path(img).is_file()
-        top, height = 1.75, H - 1.75 - 0.8
+        top, height = 1.6, H - 1.6 - 0.75
+        tw = 7.0 if has_img else W - 1.8
+        size = _fit(bullet_pt, sum(len(str(x)) for x in bullets) + len(explain), tw, height)
+        tx2 = (W - 0.6 - tw if rtl else 0.6) if has_img else 0.9
+        _rich_text(s, tx2, top, tw, height, bullets, explain, size, rtl)
         if has_img:
-            tw = 6.5
-            tx2 = W - 0.6 - tw if rtl else 0.6
-            ix = 0.6 if rtl else W - 0.6 - 5.6
-            _text(s, tx2, top, tw, height, bullets, bullet_pt, rtl, bullets=True, anchor=MSO_ANCHOR.MIDDLE)
-            _place_picture(s, img, ix, top, 5.6, height)
-        else:
-            _text(s, 0.9, top, W - 1.8, height, bullets, bullet_pt, rtl, bullets=True, anchor=MSO_ANCHOR.MIDDLE)
+            iw_ = 5.2
+            ix = 0.5 if rtl else W - 0.5 - iw_
+            _place_picture(s, img, ix, top, iw_, height)
         if sl.get("notes"):
             s.notes_slide.notes_text_frame.text = str(sl["notes"])
     out.parent.mkdir(parents=True, exist_ok=True)

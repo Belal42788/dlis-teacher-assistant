@@ -99,3 +99,22 @@ export function stageTone(gradeId) {
   if (!n) return "#2f82a8";
   return n <= 3 ? "#4aa3cf" : n <= 6 ? "#2f82a8" : n <= 9 ? "#2d6b86" : "#2a2a72";
 }
+
+// Names on the school map (floors and rooms). Shown in Arabic in the Arabic UI; anything the teacher typed herself is left as typed.
+const MAP_AR = {
+  "ground floor": "الدور الأرضي", "first floor": "الدور الأول", "second floor": "الدور الثاني", "third floor": "الدور الثالث",
+  "photocopy office": "مكتب التصوير", "hr & student affairs": "شئون العاملين وشئون الطلاب", "store": "المخزن", "canteen": "الكانتين",
+  "admission room": "غرفة القبول", "administrative manager": "المدير الإداري", "financial expert": "الخبير المالي", "art room": "غرفة الفنون",
+  "reception": "الاستقبال", "it lab": "معمل الكمبيوتر (IT)", "art store": "مخزن الفن", "special needs class": "فصل ذوي الاحتياجات الخاصة",
+  "principal's office": "مكتب المدير", "french class": "فصل الفرنساوي", "isolation room": "غرفة العزل", "kg1": "كي جي 1", "kg2": "كي جي 2",
+};
+const ORD = ["", "الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس", "السابع", "الثامن", "التاسع", "العاشر", "الحادي عشر", "الثاني عشر"];
+export function mapName(name) {
+  const n = localName(name);
+  if (getLang() !== "ar" || /[؀-ۿ]/.test(n)) return n;
+  const k = String(n).trim().toLowerCase();
+  if (MAP_AR[k]) return MAP_AR[k];
+  const g = /^grade (\d+)$/.exec(k);
+  if (g && ORD[+g[1]]) return `الصف ${ORD[+g[1]]}`;
+  return n;
+}

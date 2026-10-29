@@ -1,3 +1,4 @@
+import { hubTabs } from "../components/hubtabs.js";
 import { h, icon, toast, modal, confirmBox, debounce, readFileB64 } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { t, getLang } from "../i18n.js";
@@ -193,7 +194,7 @@ export async function renderClasses(root) {
       } }] });
   }
 
-  root.replaceChildren(h("div", { class: "page" },
+  root.replaceChildren(h("div", { class: "page" }, hubTabs("classes", "classes"),
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_classes")), h("p", {}, t("classes_page_lead"))),
       h("button", { class: "btn primary", onClick: addClasses }, icon("plus"), t("add_classes"))),
     h("div", { class: "split" }, treeBox, detail)));

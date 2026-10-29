@@ -13,7 +13,6 @@ import { renderTasks } from "./pages/tasks.js";
 import { renderLog } from "./pages/log.js";
 import { renderSlides } from "./pages/slides.js";
 import { renderSources } from "./pages/sources.js";
-import { renderWeekly } from "./pages/weekly.js";
 import { renderMap } from "./pages/map.js";
 import { renderChat } from "./pages/chat.js";
 import { renderHelp } from "./pages/help.js";
@@ -48,9 +47,8 @@ const PAGES = [
   { id: "timetable", icon: "timetable", group: "day", render: renderTimetable },
   { id: "calendar", icon: "calendar", group: "day", render: renderCalendar },
   { id: "tasks", icon: "tasks", group: "day", render: renderTasks },
-  { id: "weekly", nav: "tasks", render: renderWeekly },
   { id: "reminders", nav: "tasks", render: renderReminders },
-  { id: "log", icon: "classes", group: "day", render: renderLog },
+  { id: "log", nav: "classes", render: renderLog },
   { id: "docs", icon: "file", group: "prepare", render: renderDocs },
   { id: "slides", icon: "slides", group: "prepare", render: renderSlides },
   { id: "sources", nav: "slides", render: renderSources },
