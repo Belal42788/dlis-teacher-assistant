@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+build/
+dist/
+installer/Output/
+*.spec
+.venv/
+.DS_Store
+# a teacher's own data and keys never belong in the repository
+My DLIS/
+ai.json
+error.log

@@ -1,0 +1,15 @@
+[
+ {
+  "id": "ict-bilal-2026-10-01",
+  "match": ["بلال عبدالناصر", "bilal abdelnasser"],
+  "note": "Teacher ICT timetable generated 10/1/2026",
+  "grid": {
+   "Sunday":    {"6": "g5-a", "8": "kg2-a"},
+   "Monday":    {"4": "g9-a", "5": "g1-a", "8": "g11-a"},
+   "Tuesday":   {"4": "kg1-a", "6": "g8-a"},
+   "Wednesday": {"3": "g3-a", "5": "g10-a", "8": "g4-a"},
+   "Thursday":  {"3": "g6-a", "5": "g2-a", "8": "g7-a"}
+  },
+  "duties": {"Monday": ["break"], "Wednesday": ["break", "late"], "Thursday": ["break"]}
+ }
+]

@@ -1,0 +1,33 @@
+# Builds the Windows installer and the Mac disk image in the cloud, so nobody needs Python on their own computer.
+# How to use: upload this project to a (private) GitHub repository, open the "Actions" tab,
+# choose "Build apps" and press "Run workflow". When it finishes, download the files from "Artifacts".
+name: Build apps
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt pyinstaller
+      - run: python -m unittest discover -s tests
+      - run: pyinstaller --noconfirm --clean --windowed --icon resources/icon.ico --name DLIS_Teacher_Assistant --add-data "app/web;app/web" --add-data "resources;resources" --collect-data docx --collect-data certifi --collect-all pypdfium2 --hidden-import webview --hidden-import pystray._win32 run.py
+      - run: choco install innosetup --no-progress -y
+      - run: '& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" installer\dlis.iss'
+      - uses: actions/upload-artifact@v4
+        with: { name: DLIS-Windows-Setup, path: installer/Output/DLIS_Teacher_Assistant_Setup.exe }
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt pyinstaller
+      - run: pyinstaller --noconfirm --clean --windowed --icon resources/icon.icns --name DLIS_Teacher_Assistant --add-data "app/web:app/web" --add-data "resources:resources" --collect-data docx --collect-data certifi --collect-all pypdfium2 --hidden-import webview run.py
+      - run: hdiutil create -volname "DLIS Teacher Assistant" -srcfolder dist/DLIS_Teacher_Assistant.app -ov -format UDZO dist/DLIS_Teacher_Assistant.dmg
+      - uses: actions/upload-artifact@v4
+        with: { name: DLIS-Mac, path: dist/DLIS_Teacher_Assistant.dmg }

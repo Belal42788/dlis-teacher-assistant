@@ -1,0 +1,333 @@
+{
+ "_note": "Add a provider here and it appears in the app. type is 'openai' (any OpenAI-compatible service) or 'anthropic'. Models are NOT listed here: the app asks the service for its current models.",
+ "providers": [
+  {
+   "id": "gemini",
+   "name": "Google Gemini",
+   "type": "openai",
+   "free": true,
+   "recommended": true,
+   "needs_key": true,
+   "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+   "key_url": "https://aistudio.google.com/app/apikey",
+   "limits": {
+    "en": "Free, no card. About 15 requests per minute.",
+    "ar": "مجاني بدون بطاقة. حوالي 15 طلب في الدقيقة."
+   },
+   "steps": {
+    "en": [
+     "Press \"Open the key page\" below and sign in with any Google account.",
+     "Press \"Create API key\" (choose \"Create API key in new project\" if asked).",
+     "Copy the key (it starts with AIza) and paste it here."
+    ],
+    "ar": [
+     "اضغط \"فتح صفحة المفتاح\" بالأسفل وسجّل الدخول بأي حساب Google.",
+     "اضغط \"Create API key\" (اختر \"Create API key in new project\" لو ظهر لك).",
+     "انسخ المفتاح (يبدأ بـ AIza) والصقه هنا."
+    ]
+   },
+   "vision_any": true
+  },
+  {
+   "id": "groq",
+   "name": "Groq",
+   "type": "openai",
+   "free": true,
+   "needs_key": true,
+   "base_url": "https://api.groq.com/openai/v1",
+   "key_url": "https://console.groq.com/keys",
+   "limits": {
+    "en": "Free, no card. Very fast. About 30 requests per minute.",
+    "ar": "مجاني بدون بطاقة. سريع جدًا. حوالي 30 طلب في الدقيقة."
+   },
+   "steps": {
+    "en": [
+     "Open the key page and sign up (Google or email).",
+     "Press \"Create API Key\", give it any name.",
+     "Copy the key (it starts with gsk_) and paste it here."
+    ],
+    "ar": [
+     "افتح صفحة المفتاح وسجّل حسابًا (Google أو بريد).",
+     "اضغط \"Create API Key\" واكتب أي اسم.",
+     "انسخ المفتاح (يبدأ بـ gsk_) والصقه هنا."
+    ]
+   },
+   "vision_models": [
+    "meta-llama/llama-4-scout-17b-16e-instruct"
+   ]
+  },
+  {
+   "id": "openrouter",
+   "name": "OpenRouter",
+   "type": "openai",
+   "free": true,
+   "needs_key": true,
+   "base_url": "https://openrouter.ai/api/v1",
+   "key_url": "https://openrouter.ai/keys",
+   "limits": {
+    "en": "Free models, no card. About 50 requests per day.",
+    "ar": "نماذج مجانية بدون بطاقة. حوالي 50 طلب في اليوم."
+   },
+   "steps": {
+    "en": [
+     "Open the key page and sign in.",
+     "Press \"Create Key\".",
+     "Copy the key (it starts with sk-or-) and paste it here. The model \"openrouter/free\" picks a free model for you."
+    ],
+    "ar": [
+     "افتح صفحة المفتاح وسجّل الدخول.",
+     "اضغط \"Create Key\".",
+     "انسخ المفتاح (يبدأ بـ sk-or-) والصقه هنا. النموذج \"openrouter/free\" يختار لك نموذجًا مجانيًا."
+    ]
+   },
+   "vision_models": [
+    "google/gemma-3-27b-it:free",
+    "meta-llama/llama-3.2-11b-vision-instruct:free"
+   ]
+  },
+  {
+   "id": "mistral",
+   "name": "Mistral",
+   "type": "openai",
+   "free": true,
+   "needs_key": true,
+   "base_url": "https://api.mistral.ai/v1",
+   "key_url": "https://console.mistral.ai/api-keys",
+   "limits": {
+    "en": "Free plan (\"Experiment\"). Your prompts may be used for training.",
+    "ar": "خطة مجانية (\"Experiment\"). قد تُستخدم طلباتك في تدريب النماذج."
+   },
+   "steps": {
+    "en": [
+     "Open the key page and create an account (a phone number may be asked).",
+     "Choose the free \"Experiment\" plan.",
+     "Press \"Create new key\", copy it and paste it here."
+    ],
+    "ar": [
+     "افتح صفحة المفتاح وأنشئ حسابًا (قد يطلب رقم هاتف).",
+     "اختر الخطة المجانية \"Experiment\".",
+     "اضغط \"Create new key\" وانسخ المفتاح والصقه هنا."
+    ]
+   },
+   "vision_models": [
+    "pixtral-large-latest",
+    "mistral-small-latest"
+   ]
+  },
+  {
+   "id": "cerebras",
+   "name": "Cerebras",
+   "type": "openai",
+   "free": true,
+   "needs_key": true,
+   "base_url": "https://api.cerebras.ai/v1",
+   "key_url": "https://cloud.cerebras.ai/platform",
+   "limits": {
+    "en": "Free tier, very fast.",
+    "ar": "طبقة مجانية، سريعة جدًا."
+   },
+   "steps": {
+    "en": [
+     "Open the page and sign up.",
+     "Go to \"API Keys\" and press \"Create\".",
+     "Copy the key and paste it here."
+    ],
+    "ar": [
+     "افتح الصفحة وسجّل حسابًا.",
+     "ادخل \"API Keys\" واضغط \"Create\".",
+     "انسخ المفتاح والصقه هنا."
+    ]
+   }
+  },
+  {
+   "id": "github",
+   "name": "GitHub Models",
+   "type": "openai",
+   "free": true,
+   "needs_key": true,
+   "base_url": "https://models.github.ai/inference",
+   "key_url": "https://github.com/settings/personal-access-tokens/new",
+   "limits": {
+    "en": "Free with a GitHub account, with daily limits.",
+    "ar": "مجاني بحساب GitHub مع حدود يومية."
+   },
+   "steps": {
+    "en": [
+     "Sign in to GitHub (create a free account if needed).",
+     "On the page: give the token any name, then under \"Permissions\" add \"Models\" -> \"Read-only\".",
+     "Press \"Generate token\", copy it and paste it here."
+    ],
+    "ar": [
+     "سجّل الدخول إلى GitHub (أنشئ حسابًا مجانيًا إن لزم).",
+     "في الصفحة: اكتب أي اسم للمفتاح، ومن \"Permissions\" أضف \"Models\" ثم \"Read-only\".",
+     "اضغط \"Generate token\" وانسخه والصقه هنا."
+    ]
+   },
+   "vision_models": [
+    "gpt-4o-mini",
+    "gpt-4o"
+   ]
+  },
+  {
+   "id": "nvidia",
+   "name": "NVIDIA NIM",
+   "type": "openai",
+   "free": true,
+   "needs_key": true,
+   "base_url": "https://integrate.api.nvidia.com/v1",
+   "key_url": "https://build.nvidia.com/settings/api-keys",
+   "limits": {
+    "en": "Free for trying (phone number check). About 40 requests per minute.",
+    "ar": "مجاني للتجربة (بيطلب تأكيد رقم موبايل). حوالي 40 طلب في الدقيقة."
+   },
+   "steps": {
+    "en": [
+     "Open the key page and sign in (a free NVIDIA account; they may ask to verify a phone number).",
+     "Press \"Generate API Key\".",
+     "Copy the key (it starts with nvapi-) and paste it here."
+    ],
+    "ar": [
+     "افتح صفحة المفتاح وسجّل بحساب NVIDIA مجاني (ممكن يطلب تأكيد رقم موبايل).",
+     "اضغط \"Generate API Key\".",
+     "انسخ المفتاح (يبدأ بـ nvapi-) والصقه هنا."
+    ]
+   },
+   "vision_models": [
+    "meta/llama-3.2-11b-vision-instruct"
+   ]
+  },
+  {
+   "id": "huggingface",
+   "name": "Hugging Face",
+   "type": "openai",
+   "free": true,
+   "needs_key": true,
+   "base_url": "https://router.huggingface.co/v1",
+   "key_url": "https://huggingface.co/settings/tokens/new?tokenType=fineGrained",
+   "limits": {
+    "en": "A small free credit every month. Good for light use only.",
+    "ar": "رصيد مجاني صغير كل شهر. مناسب للاستخدام الخفيف بس."
+   },
+   "steps": {
+    "en": [
+     "Open the key page and sign up (free).",
+     "Tick \"Make calls to Inference Providers\", give the token any name and press Create.",
+     "Copy the token (it starts with hf_) and paste it here."
+    ],
+    "ar": [
+     "افتح صفحة المفتاح وسجّل حساب (مجاني).",
+     "علّم على \"Make calls to Inference Providers\" واكتب أي اسم واضغط Create.",
+     "انسخ التوكن (يبدأ بـ hf_) والصقه هنا."
+    ]
+   }
+  },
+  {
+   "id": "ollama",
+   "name": "Ollama (on this computer)",
+   "type": "openai",
+   "free": true,
+   "needs_key": false,
+   "base_url": "http://localhost:11434/v1",
+   "key_url": "https://ollama.com/download",
+   "limits": {
+    "en": "Free and private (runs on your computer). Needs a fairly strong computer.",
+    "ar": "مجاني وخاص (يعمل على جهازك). يحتاج جهازًا قويًا نسبيًا."
+   },
+   "steps": {
+    "en": [
+     "Install Ollama from the page below and open it.",
+     "Open a terminal and run: ollama pull llama3.2",
+     "No key is needed. Press \"Test\" here."
+    ],
+    "ar": [
+     "ثبّت Ollama من الصفحة بالأسفل وافتحه.",
+     "افتح نافذة الأوامر واكتب: ollama pull llama3.2",
+     "لا تحتاج مفتاحًا. اضغط \"اختبار\" هنا."
+    ]
+   },
+   "vision_models": [
+    "llava",
+    "llama3.2-vision"
+   ]
+  },
+  {
+   "id": "openai",
+   "name": "OpenAI (ChatGPT)",
+   "type": "openai",
+   "free": false,
+   "needs_key": true,
+   "base_url": "https://api.openai.com/v1",
+   "key_url": "https://platform.openai.com/api-keys",
+   "limits": {
+    "en": "Paid (pay per use, needs a card).",
+    "ar": "مدفوع (الدفع حسب الاستخدام، يحتاج بطاقة)."
+   },
+   "steps": {
+    "en": [
+     "Open the key page and sign in. Add a small credit on the Billing page.",
+     "Press \"Create new secret key\".",
+     "Copy it (starts with sk-) and paste it here."
+    ],
+    "ar": [
+     "افتح صفحة المفتاح وسجّل الدخول. أضف رصيدًا صغيرًا من صفحة Billing.",
+     "اضغط \"Create new secret key\".",
+     "انسخه (يبدأ بـ sk-) والصقه هنا."
+    ]
+   },
+   "vision_models": [
+    "gpt-4o-mini",
+    "gpt-4o"
+   ]
+  },
+  {
+   "id": "anthropic",
+   "name": "Anthropic (Claude)",
+   "type": "anthropic",
+   "free": false,
+   "needs_key": true,
+   "base_url": "https://api.anthropic.com",
+   "key_url": "https://console.anthropic.com/settings/keys",
+   "limits": {
+    "en": "Paid (pay per use, needs a card).",
+    "ar": "مدفوع (الدفع حسب الاستخدام، يحتاج بطاقة)."
+   },
+   "steps": {
+    "en": [
+     "Open the key page and sign in. Add a small credit on the Billing page.",
+     "Press \"Create Key\".",
+     "Copy it (starts with sk-ant-) and paste it here."
+    ],
+    "ar": [
+     "افتح صفحة المفتاح وسجّل الدخول. أضف رصيدًا صغيرًا من صفحة Billing.",
+     "اضغط \"Create Key\".",
+     "انسخه (يبدأ بـ sk-ant-) والصقه هنا."
+    ]
+   },
+   "vision_any": true
+  },
+  {
+   "id": "custom",
+   "name": "Other (OpenAI-compatible)",
+   "type": "openai",
+   "free": false,
+   "needs_key": true,
+   "custom": true,
+   "base_url": "",
+   "key_url": "",
+   "limits": {
+    "en": "Any service that works like OpenAI: type its address, key and model name.",
+    "ar": "أي خدمة تعمل مثل OpenAI: اكتب عنوانها ومفتاحها واسم النموذج."
+   },
+   "steps": {
+    "en": [
+     "Ask the service for: the base URL (ends with /v1), an API key and a model name.",
+     "Type them here, then press \"Test\"."
+    ],
+    "ar": [
+     "اسأل الخدمة عن: العنوان الأساسي (ينتهي بـ /v1) ومفتاح API واسم النموذج.",
+     "اكتبها هنا ثم اضغط \"اختبار\"."
+    ]
+   }
+  }
+ ]
+}

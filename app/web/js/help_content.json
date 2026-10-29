@@ -1,0 +1,404 @@
+{
+ "ar": [
+  {
+   "id": "start",
+   "title": "أول مرة تفتح البرنامج",
+   "steps": [
+    "اختار اللغة (عربي أو English).",
+    "اختار فولدر لحفظ ملفاتك.",
+    "اكتب اسمك والمادة اللي بتدرّسها.",
+    "اختار الفصول اللي بتدرّس لها. الطلاب بتوع KG1 وKG2 جاهزين في البرنامج.",
+    "راجع جدولك: اختار الفصل في كل حصة، وعلّم أيام المناوبة. مواعيد الحصص ثابتة من المدرسة.",
+    "التقويم الدراسي كمان جاهز. اضغط التالي وبعدين ابدأ."
+   ],
+   "image": ""
+  },
+  {
+   "id": "today",
+   "title": "صفحة اليوم",
+   "steps": [
+    "بتشوف حصص النهارده ومواعيدها ومناوبات الفسحة والمتأخرة. الحصة اللي خلصت بتبقى باهتة شوية، والحصة اللي شغالة دلوقتي ليها إطار برتقالي.",
+    "تحت اسم كل حصة بتلاقي موضوع الأسبوع من خطة الدرس.",
+    "فوق على الشمال رقم الفصل الدراسي والأسبوع. وفي أيام الإجازة بيظهر اسم الإجازة واليوم.",
+    "زرار **ورقة للمدرس البديل** بيعمل ملف Word للحصص اللي هتتغطى.",
+    "تحت الحصص بتلاقي مهامك المهمة. علّم المهمة اللي خلصتها من المربع.",
+    "الأسهم اللي فوق بتنقلك لليوم اللي قبله أو بعده."
+   ],
+   "image": "08_today_ar"
+  },
+  {
+   "id": "changes",
+   "title": "تغيير حصص النهارده (غياب، تبديل، تغطية)",
+   "steps": [
+    "**إلغاء النهارده:** الحصة تتشطب ليوم واحد. زرار \"رجّعها\" بيرجعها.",
+    "**نقل / تبديل:** اختار حصة تانية. لو فاضية الحصة بتتنقل، ولو فيها حصة بيتبدلوا.",
+    "**حصة تغطية:** دوس \"حصة تغطية\" واختار الحصة والفصل، واكتب اسم المدرس اللي بتغطي مكانه لو عاوز.",
+    "**رجّع الجدول العادي** بيلغي كل تغييرات اليوم. جدولك الأساسي مش بيتغير أبدًا."
+   ],
+   "image": "17f_cover"
+  },
+  {
+   "id": "classes",
+   "title": "الفصول والطلاب",
+   "steps": [
+    "من تبويب الفصول بتضيف فصل أو تمسحه.",
+    "علشان تضيف طلاب: دوس \"لصق أو استيراد قائمة\" والصق الأسماء (من إكسل أو من نظام المدرسة) أو اختار ملف.",
+    "البرنامج بيرتّب الأسماء ويشيل المكرر.",
+    "أسماء الطلاب بتفضل على جهازك بس، ومش بتتبعت للذكاء الاصطناعي أبدًا."
+   ],
+   "image": "09_classes_ar"
+  },
+  {
+   "id": "docs",
+   "title": "الملفات (Word و Excel)",
+   "steps": [
+    "اختار الفصل والفصل الدراسي والأسبوع من فوق، وبعدين اختار التبويب.",
+    "**الأسبوع كله:** اكتب موضوع كل صف (أو سيبه ييجي من الخطة) واضغط \"جهّز كل حاجة\": خطة الدرس والكويز وملف المراجعة وكشف الدرجات لكل الصفوف مرة واحدة.",
+    "**خطة الدرس:** اكتب الموضوع واضغط \"اكتب بالذكاء الاصطناعي\" ليملا الباقي. الأيام اللي مفيهاش حصة للصف بيتكتب فيها No session.",
+    "**الاختبار:** الصق الأسئلة (رقم وسؤال، a) b) c)، وسطر Answer: b) أو اطلب من الذكاء الاصطناعي يكتبها.",
+    "**ملف المراجعة:** كلمات مهمة ونقط وأسئلة. زرار \"املا من سلايداتي\" بياخدها من سلايدات NotebookLM اللي رفعتها.",
+    "**كشف الدرجات:** ملف Word لكل فصل لكل أسبوع. ولو هترفع الدرجات على الـ LMS دوس **جدول Excel للـ LMS**: اكتب الدرجات في عمود Grade وانسخه في الـ LMS.",
+    "**خطة الفصل الدراسي:** درس لكل أسبوع، والإجازات بتتكتب لوحدها.",
+    "**طريقة كتابة الـ AI:** تعدّل أسلوب الذكاء الاصطناعي لكل نوع ملف، وترجّع الافتراضي لما تحب.",
+    "اضغط \"فتح الملف\" علشان تفتحه، أو \"فتح المجلد\" علشان تلاقيه."
+   ],
+   "image": "15_docs_lp"
+  },
+  {
+   "id": "tasks",
+   "title": "المهام والمتابعة",
+   "steps": [
+    "القايمة بتجمع تلات حاجات في شريط واحد فوق: **المهام** و**متابعة الأسبوع** و**التنبيهات**.",
+    "**المهام:** جدول فيه المهمة والأهمية والموعد. خطط الدرس الناقصة بتتضاف لوحدها، دوس \"اكتبها\" أو \"تخطي\". علشان تضيف مهمة بنفسك اكتبها واختار الأهمية والموعد واضغط إضافة.",
+    "**متابعة الأسبوع:** جدول صف لكل مرحلة وعمود لكل شغلانة: حضور الأسبوع، عرض الأسبوع الجاي، الرفع على الـ LMS، خطة الدرس واتبعتت لـ Mr Sherif، الكويز واتبعت له، والخطة الأسبوعية. اضغط على الخانة علشان تتغير: لسه ← تم ← لا. اختار الفصل الدراسي والأسبوع من فوق.",
+    "المتأخر عليه خط أحمر، وأهم المهام بتظهر في صفحة اليوم."
+   ],
+   "image": "17_tasks"
+  },
+  {
+   "id": "reminders",
+   "title": "التنبيهات",
+   "steps": [
+    "**إعدادات التنبيهات** (الوقت قبل الحصة، الصوت، مدة الرنين، التشغيل في الخلفية) في **الإعدادات ← التنبيهات**.",
+    "قبل كل حصة أو مناوبة بـ 10 دقايق بيظهر تنبيه وصوت. الصوت بيطلع حتى لو النافذة مصغّرة.",
+    "من التنبيه: \"فكّرني بعد 5 دقايق\" أو \"تمام\" أو \"اقفلها النهارده\" أو \"اقفل التنبيهات\".",
+    "لو جاي من حصة على طول مفيش تنبيه (تقدر تقفل الخيار ده).",
+    "علشان تعمل **تنبيه جديد** افتح المهام ← التنبيهات: اكتب أي حاجة عاوز تتفكر بيها، في تاريخ معين أو كل أسبوع.",
+    "لو شغّلت \"سيب البرنامج شغال جنب الساعة\"، التنبيهات بتفضل شغالة بعد قفل النافذة. لقفله خالص: كليك يمين على الأيقونة جنب الساعة ← إغلاق تمامًا."
+   ],
+   "image": ""
+  },
+  {
+   "id": "log",
+   "title": "سجل الحصص (وصلت لأنهي شريحة)",
+   "steps": [
+    "تحت كل حصة في صفحة اليوم دوس \"سجّل الحصة\".",
+    "اكتب الموضوع والشريحة اللي وصلت لها وملاحظاتك، ولو في حاجة عاوز تفتكرها الحصة الجاية اكتبها في \"تذكير للحصة الجاية\".",
+    "الحصة الجاية لنفس الفصل هتلاقي: \"المرة اللي فاتت: ... شريحة 12 / 30\" والتذكير بتاعك.",
+    "كل التسجيلات القديمة في تبويب \"سجل الحصص\"."
+   ],
+   "image": "17g_log_today"
+  },
+  {
+   "id": "ai",
+   "title": "الذكاء الاصطناعي",
+   "steps": [
+    "افتح **الإعدادات ← المساعد الذكي** واختار خدمة مجانية (Gemini هي الأسهل).",
+    "دوس \"إزاي تجيب المفتاح\" واتبع الخطوات، وبعدين الصق المفتاح.",
+    "اضغط \"اختبار الاتصال\" وبعدين \"حفظ\".",
+    "سيب النموذج على \"تلقائي\" والبرنامج هيختار نموذج شغال.",
+    "المفتاح بيتحفظ على جهازك بس. أسماء الطلاب بتتشال من أي طلب قبل ما يتبعت. راجع دايمًا اللي كتبه الذكاء الاصطناعي قبل ما تستخدمه."
+   ],
+   "image": ""
+  },
+  {
+   "id": "backup",
+   "title": "النسخ الاحتياطي ونقل البرنامج لجهاز جديد",
+   "steps": [
+    "**الإعدادات ← نسخة احتياطية الآن** بتعمل ملف zip في فولدر Exports.",
+    "كل بياناتك في فولدر واحد (اللي اخترته أول مرة).",
+    "جهاز جديد: ثبّت البرنامج، وفي أول مرة اختار نفس الفولدر. هتلاقي كل حاجة.",
+    "تنبيه: متفتحش البرنامج على جهازين في نفس الوقت على نفس الفولدر."
+   ],
+   "image": ""
+  },
+  {
+   "id": "sources",
+   "title": "سلايداتي (سلايدات NotebookLM)",
+   "steps": [
+    "لو عملت سلايدات في NotebookLM ارفعها هنا (ملف PDF أو PowerPoint). ده حتى لو السلايدات صور.",
+    "البرنامج بيقرا الصور بالذكاء الاصطناعي، واسم الموديل اللي قرا بيظهر على كارت الملف. لازم تستخدم خدمة بتقرا الصور (Gemini أسهلها).",
+    "بعد القراءة تقدر تختار السلايدات دي في السلايدز وفي ملف المراجعة والكويز علشان تتملا منها."
+   ],
+   "image": ""
+  },
+  {
+   "id": "map",
+   "title": "خريطة المدرسة",
+   "steps": [
+    "رسمة واحدة للمبنى بالأدوار التلاتة، وكل دور فيه الجنب الأيسر والأوسط والأيمن.",
+    "دوس على أي غرفة تشوف بياناتها: الاسم والشخص المسؤول ورقم التليفون والملاحظات. ابحث بالاسم من الخانة اللي فوق.",
+    "**تعديل الخريطة:** تضيف دور أو غرفة، وتسحب الغرفة أو تغيّر حجمها، وتكتب اسمها وتليفونها وتربطها بفصل."
+   ],
+   "image": ""
+  },
+  {
+   "id": "window",
+   "title": "نافذة البرنامج (ويندوز)",
+   "steps": [
+    "اسحب شريط العنوان الأزرق الغامق لتحريك النافذة. دوس مرتين عليه لتكبيرها أو تصغيرها.",
+    "أزرار الشريط: تصغير وتكبير وإغلاق."
+   ],
+   "image": ""
+  },
+  {
+   "id": "data",
+   "title": "فولدر البيانات",
+   "steps": [
+    "كل اللي البرنامج بيعمله في فولدر واحد، وبتفتحه من **الإعدادات ← مجلد البيانات**.",
+    "Documents: ملفات Word (وجداول Excel) في فولدر لكل صف. Slides: سلايدات PowerPoint. rooms: أسماء الطلبة (csv). والباقي ملفات json صغيرة للبرنامج، ماتعدلهاش بإيدك.",
+    "حط الفولدر جوه Google Drive أو OneDrive علشان يبقى عندك نسخة احتياطية، وعلى أي جهاز تاني اختار نفس الفولدر."
+   ],
+   "image": ""
+  },
+  {
+   "id": "chat",
+   "title": "شات الذكاء الاصطناعي",
+   "steps": [
+    "لازم تكون ظبطت الـ AI من الإعدادات الأول.",
+    "على الجنب قايمة محادثاتك. **محادثة جديدة** تبدأ واحدة، واضغط على أي محادثة قديمة تفتحها. كل المحادثات بتتحفظ، وتقدر تمسح اللي مش عاوزه.",
+    "اكتب في المربع اللي تحت. Enter للإرسال وShift+Enter لسطر جديد.",
+    "فوق المربع زرارين: **طلبات جاهزة** (اشرح فكرة، ورقة عمل، نشاط...) و**رسالة لولي أمر**.",
+    "رسالة ولي الأمر: اختار الفصل والطالب والسبب. الذكاء الاصطناعي مش بيشوف الاسم، بيكتب [student] والبرنامج هو اللي بيحط الاسم لما تدوس \"حط الاسم وانسخ\".",
+    "تحت كل رد زرار «نسخ» علشان تنقله لأي ملف.",
+    "أسماء الطلبة بتتشال قبل الإرسال."
+   ],
+   "image": ""
+  },
+  {
+   "id": "slides",
+   "title": "السلايدز",
+   "steps": [
+    "افتح «السلايدز» واختار الصف والترم والأسبوع. الموضوع بيتكتب من خطة الدرس أو خطة الترم، أو اكتبه بنفسك. لو غيّرت الموضوع اكتبه الأول وبعدين اعمل الخطة.",
+    "**جوه البرنامج:** اضغط «خطة السلايدز بالـ AI»، عدّل العناوين والنقط، وزوّد صور لو حبيت، وبعدين اضغط اعمل ملف PowerPoint. فيه شعار المدرسة.",
+    "**NotebookLM:** اضغط «اكتب البرومبت» واكتب نص المصدر بالـ AI، افتح NotebookLM وضيف المصدر وافتح Studio ← Slide Deck والصق البرومبت.",
+    "ممكن تستخدم سلايداتك أنت كمصدر: اختارها من «سلايداتي».",
+    "راجع النتيجة قبل الحصة."
+   ],
+   "image": ""
+  },
+  {
+   "id": "problems",
+   "title": "لو حصلت مشكلة",
+   "steps": [
+    "**ظهرت رسالة \"Windows protected your PC\" وقت التثبيت:** دوس \"More info\" وبعدين \"Run anyway\". ده بيظهر لأن البرنامج جديد وغير موقّع.",
+    "**البرنامج مش بيفتح أو النافذة بيضا:** لازم يكون Microsoft Edge WebView2 متثبت (موجود في Windows 10 و11 الحديثين). نزّله من موقع مايكروسوفت.",
+    "**البرنامج وقع:** هتلاقي ملف اسمه error.log في فولدر DLIS Teacher Assistant جوه AppData\\Roaming. ابعته للمطوّر.",
+    "**التنبيهات مش بتظهر:** اتأكد إنها مفعّلة في تبويب التنبيهات، وإن البرنامج مفتوح أو شغال جنب الساعة، وإن الجهاز مش نايم.",
+    "**الذكاء الاصطناعي مش شغال:** دوس \"اختبار الاتصال\"، والرسالة هتقولك السبب (مفتاح غلط، النت، الحد المجاني خلص)."
+   ],
+   "image": ""
+  }
+ ],
+ "en": [
+  {
+   "id": "start",
+   "title": "The first time you open the app",
+   "steps": [
+    "Choose the language (Arabic or English).",
+    "Choose a folder for your files.",
+    "Type your name and the subject you teach.",
+    "Choose the classes you teach. KG1 and KG2 students are already built in.",
+    "Check your timetable: choose the class in each period and tick your duty days. Period times are fixed by the school.",
+    "The school calendar is ready too. Press Next, then Start."
+   ],
+   "image": ""
+  },
+  {
+   "id": "today",
+   "title": "The Today page",
+   "steps": [
+    "You see today's lessons with their times and the break and late duties. A finished lesson looks a little faded, and the lesson happening now has an orange frame.",
+    "Under each lesson name you see the week's topic from the lesson plan.",
+    "At the top is the term and week. On holidays you see the holiday name and the day.",
+    "The **Sheet for a substitute teacher** button makes a Word file for the lessons that will be covered.",
+    "Under the lessons are your important tasks. Tick a task when it is done.",
+    "The arrows at the top move to the day before or after."
+   ],
+   "image": "08_today_ar"
+  },
+  {
+   "id": "changes",
+   "title": "Changing today's lessons (absence, swap, cover)",
+   "steps": [
+    "**Cancel today:** the lesson is crossed out for one day. \"Bring it back\" restores it.",
+    "**Move / swap:** choose another period. If it is free the lesson moves, if it has a lesson they swap.",
+    "**Cover lesson:** press \"Cover lesson\", choose the period and class, and write who you are covering for if you like.",
+    "**Back to the normal timetable** undoes all of today's changes. Your main timetable never changes."
+   ],
+   "image": "17f_cover"
+  },
+  {
+   "id": "classes",
+   "title": "Classes and students",
+   "steps": [
+    "In Classes you add or remove a class.",
+    "To add students: press \"Paste or import a list\" and paste the names (from Excel or the school system) or choose a file.",
+    "The app sorts the names and removes duplicates.",
+    "Student names stay on your computer and are never sent to the AI."
+   ],
+   "image": "09_classes_ar"
+  },
+  {
+   "id": "docs",
+   "title": "Files (Word and Excel)",
+   "steps": [
+    "Choose the class, term and week at the top, then choose a tab.",
+    "**Whole week:** write each grade's topic (or let it come from the plan) and press \"Prepare everything\": lesson plan, quiz, revision sheet and grading sheet for all grades at once.",
+    "**Lesson plan:** write the topic and press \"Write with AI\" to fill the rest. Days without a lesson for the grade say No session.",
+    "**Quiz:** paste the questions (number and question, a) b) c), and a line Answer: b) or ask the AI to write them.",
+    "**Revision sheet:** key words, points and questions. \"Fill from my slides\" takes them from the NotebookLM slides you uploaded.",
+    "**Grading sheet:** a Word file per class per week. If you upload grades to the LMS press **Excel table for the LMS**: type the grades in the Grade column and copy it into the LMS.",
+    "**Trimester plan:** one lesson per week; holidays are written by themselves.",
+    "**How the AI writes:** change the AI's style for each kind of file and go back to the default any time.",
+    "Press \"Open file\" to open it, or \"Open folder\" to find it."
+   ],
+   "image": "15_docs_lp"
+  },
+  {
+   "id": "tasks",
+   "title": "Tasks and follow-up",
+   "steps": [
+    "One tab row at the top joins three things: **Tasks**, **Week follow-up** and **Reminders**.",
+    "**Tasks:** a table with the task, importance and deadline. Missing lesson plans are added by themselves: press \"Write it\" or \"Skip\". To add your own, type it, choose importance and deadline, and press Add.",
+    "**Week follow-up:** a row for every grade and a column for every job: week attendance, next week's presentation, upload to the LMS, lesson plan sent to Mr Sherif, quiz sent to him, and the weekly plan. Click a box to change it: not yet → done → not done. Choose the term and week at the top.",
+    "Late tasks have a red line, and the most important ones show on the Today page."
+   ],
+   "image": "17_tasks"
+  },
+  {
+   "id": "reminders",
+   "title": "Reminders",
+   "steps": [
+    "**Reminder settings** (time before the lesson, sound, ring time, running in the background) are in **Settings → Reminders**.",
+    "10 minutes before every lesson or duty a reminder appears with a sound. The sound plays even when the window is minimised.",
+    "From the reminder: \"Remind me in 5 minutes\", \"OK\", \"Off for today\" or \"Turn reminders off\".",
+    "If you come straight from another lesson there is no reminder (you can turn this off).",
+    "To make a **new reminder** open Tasks → Reminders: write what you want to be reminded of, on a date or every week.",
+    "If you turn on \"Keep the app running\", reminders keep working after you close the window. To quit completely: right-click the icon near the clock → Quit."
+   ],
+   "image": ""
+  },
+  {
+   "id": "log",
+   "title": "Lesson log (where you stopped)",
+   "steps": [
+    "Under each lesson on the Today page press \"Log lesson\".",
+    "Write the topic, the slide you reached and your notes. Anything to remember for next time goes in \"Reminder for next lesson\".",
+    "Next lesson with the same class you will see: \"Last time: ... slide 12 / 30\" and your reminder.",
+    "All old entries are in the \"Lesson log\" tab."
+   ],
+   "image": "17g_log_today"
+  },
+  {
+   "id": "ai",
+   "title": "The AI assistant",
+   "steps": [
+    "Open **Settings → AI assistant** and choose a free service (Gemini is the easiest).",
+    "Press \"How to get a key\", follow the steps, then paste the key.",
+    "Press \"Test the connection\" and then \"Save\".",
+    "Leave the model on \"Automatic\" and the app picks one that works.",
+    "The key is saved on your computer only. Student names are removed from every request. Always check what the AI wrote before you use it."
+   ],
+   "image": ""
+  },
+  {
+   "id": "backup",
+   "title": "Backup and moving to a new computer",
+   "steps": [
+    "**Settings → Back up now** makes a zip file in the Exports folder.",
+    "All your data is in one folder (the one you chose the first time).",
+    "New computer: install the app and choose the same folder the first time. Everything is there.",
+    "Note: do not open the app on two computers at the same time on the same folder."
+   ],
+   "image": ""
+  },
+  {
+   "id": "sources",
+   "title": "My slides (NotebookLM slides)",
+   "steps": [
+    "If you made slides in NotebookLM, upload them here (PDF or PowerPoint), even if the slides are pictures.",
+    "The app reads the pictures with the AI, and the name of the model that read them shows on the file's card. You need a service that reads pictures (Gemini is the easiest).",
+    "After reading you can choose these slides in Slides and in the revision sheet and quiz to fill them."
+   ],
+   "image": ""
+  },
+  {
+   "id": "map",
+   "title": "School map",
+   "steps": [
+    "One picture of the building with its three floors; every floor has a left wing, a middle and a right wing.",
+    "Click a room to see its details: name, person in charge, phone number and notes. Search by name in the box at the top.",
+    "**Edit the map:** add a floor or a room, drag a room or change its size, write its name and phone and link it to a class."
+   ],
+   "image": ""
+  },
+  {
+   "id": "window",
+   "title": "The app window (Windows)",
+   "steps": [
+    "Drag the dark blue title bar to move the window. Double-click it to maximise or restore.",
+    "Buttons on the bar: minimise, maximise and close."
+   ],
+   "image": ""
+  },
+  {
+   "id": "data",
+   "title": "The data folder",
+   "steps": [
+    "Everything the app makes is in one folder, which you open from **Settings → Data folder**.",
+    "Documents: Word files (and Excel tables) in one folder per grade. Slides: PowerPoint slides. rooms: student names (csv). The rest are small json files for the app; do not edit them by hand.",
+    "Put the folder inside Google Drive or OneDrive for a backup, and on another computer choose the same folder."
+   ],
+   "image": ""
+  },
+  {
+   "id": "chat",
+   "title": "AI chat",
+   "steps": [
+    "Set up the AI in Settings first.",
+    "Your chats are in the list on the side. **New chat** starts one, and a click on an old chat opens it. Every chat is saved, and you can delete the ones you do not need.",
+    "Type in the box at the bottom. Enter sends, Shift+Enter makes a new line.",
+    "Above the box are two buttons: **Ready-made requests** (explain an idea, worksheet, activity...) and **Parent message**.",
+    "Parent message: choose the class, the student and the reason. The AI never sees the name; it writes [student] and the app puts the name in when you press \"Put the name in and copy\".",
+    "Under each answer there is a Copy button to move it into any file.",
+    "Student names are removed before sending."
+   ],
+   "image": ""
+  },
+  {
+   "id": "slides",
+   "title": "Slides",
+   "steps": [
+    "Open Slides and choose the grade, term and week. The topic comes from the lesson plan or trimester plan, or write it yourself. If you change the topic, write it first and then make the plan.",
+    "**Inside the app:** press \"Slide plan with AI\", edit the titles and points, add pictures if you like, then make the PowerPoint file. It has the school logo.",
+    "**NotebookLM:** press \"Write the prompt\" and have the AI write the source text, open NotebookLM, add the source, open Studio → Slide Deck and paste the prompt.",
+    "You can use your own slides as the source: choose them from \"My slides\".",
+    "Check the result before the lesson."
+   ],
+   "image": ""
+  },
+  {
+   "id": "problems",
+   "title": "If something goes wrong",
+   "steps": [
+    "**\"Windows protected your PC\" appears during setup:** press \"More info\" then \"Run anyway\". It shows because the app is new and unsigned.",
+    "**The app does not open or the window is white:** Microsoft Edge WebView2 must be installed (it is on recent Windows 10 and 11). Download it from Microsoft.",
+    "**The app crashed:** you will find a file called error.log in the DLIS Teacher Assistant folder inside AppData\\Roaming. Send it to the developer.",
+    "**Reminders do not show:** check they are on in the Reminders tab, that the app is open or running near the clock, and that the computer is not asleep.",
+    "**The AI does not work:** press \"Test the connection\"; the message tells you why (wrong key, internet, free limit used up)."
+   ],
+   "image": ""
+  }
+ ]
+}
