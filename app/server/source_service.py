@@ -208,6 +208,86 @@ class SourceMixin:
         self._src_save(src)
         return self._src_brief(src)
 
+    def import_url(self, b: dict) -> dict:
+        """A web page (or a PDF on the web) becomes a source: its readable text is cut into pages of about 2500 characters."""
+        import ipaddress
+        import socket
+        from html.parser import HTMLParser
+        from urllib.parse import urlparse
+        from ..core.ai_client import http_bytes
+        url = str(b.get("url") or "").strip()
+        if "://" not in url:
+            url = "https://" + url
+        u = urlparse(url)
+        if u.scheme not in ("http", "https") or not u.hostname:
+            raise AppError("bad_value", "Write a web address that starts with http:// or https://", status=400)
+        try:  # only public web sites: never this computer or the school network
+            for fam, _t, _p, _c, addr in socket.getaddrinfo(u.hostname, None):
+                ip = ipaddress.ip_address(addr[0])
+                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                    raise AppError("bad_value", "This address is not a public web site.", status=400)
+        except socket.gaierror as e:
+            raise AppError("ai_offline", "Could not reach this web site. Check the address and the internet connection.", status=502) from e
+        raw = http_bytes("GET", url, headers={"Accept": "text/html,application/pdf,*/*"}, timeout=45)[:12_000_000]
+        if raw[:4] == b"%PDF":
+            pages, name = extract_pdf(raw), (u.path.rsplit("/", 1)[-1] or u.hostname)
+        else:
+            class _Text(HTMLParser):
+                SKIP = {"script", "style", "nav", "footer", "header", "noscript", "svg", "form", "aside"}
+
+                def __init__(self):
+                    super().__init__(convert_charrefs=True)
+                    self.depth, self.parts, self.title, self._in_title = 0, [], "", False
+
+                def handle_starttag(self, tag, attrs):
+                    if tag in self.SKIP:
+                        self.depth += 1
+                    elif tag == "title":
+                        self._in_title = True
+                    elif tag in ("p", "br", "li", "h1", "h2", "h3", "h4", "tr", "div"):
+                        self.parts.append("\n")
+
+                def handle_endtag(self, tag):
+                    if tag in self.SKIP and self.depth:
+                        self.depth -= 1
+                    elif tag == "title":
+                        self._in_title = False
+
+                def handle_data(self, data):
+                    if self._in_title:
+                        self.title += data
+                    elif not self.depth and data.strip():
+                        self.parts.append(data)
+            text = raw.decode("utf-8", "replace")
+            m = re.search(r"charset=[\"']?([\w-]+)", text[:2000], re.I)
+            if m and m.group(1).lower() not in ("utf-8", "utf8"):
+                try:
+                    text = raw.decode(m.group(1), "replace")
+                except LookupError:
+                    pass
+            parser = _Text()
+            parser.feed(text)
+            body = re.sub(r"[ \t]+", " ", "".join(parser.parts))
+            body = "\n".join(x.strip() for x in body.split("\n") if x.strip())
+            if len(body) < 80:
+                raise AppError("source_empty", "Nothing readable was found on this page.", status=400)
+            pages, cur = [], ""
+            for line in body.split("\n"):
+                if len(cur) + len(line) > 2500 and cur:
+                    pages.append({"text": cur.strip(), "image": None}); cur = ""
+                cur += line + "\n"
+            if cur.strip():
+                pages.append({"text": cur.strip(), "image": None})
+            name = " ".join(parser.title.split())[:100] or u.hostname
+        pages = pages[:MAX_PAGES]
+        if not any(p["text"] for p in pages):
+            raise AppError("source_empty", "Nothing readable was found on this page.", status=400)
+        sid = uuid.uuid4().hex[:10]
+        out = [{"n": i, "text": p["text"], "notes": "", "vision": False, "done": True} for i, p in enumerate(pages, 1)]
+        src = {"id": sid, "name": name, "added": date.today().isoformat(), "pages": out, "url": url}
+        self._src_save(src)
+        return self._src_brief(src)
+
     def delete_source(self, sid: str) -> dict:
         self._src(sid)
         self._need_store().write_json(self._src_path(), [s for s in self._srcs() if s["id"] != sid])
@@ -344,4 +424,5 @@ class SourceMixin:
             text = self._src_text(self._src(sid), pages=pages)
         except AppError:
             return ""
-        return ("\nSource material from the teacher's own slides (base your answer on it, do not contradict it):\n" + text) if text.strip() else ""
+        return ("\nSOURCE MATERIAL (the teacher's own sources). Use ONLY this material: do not add facts, examples or terms that are not in it, "
+                "and leave out anything it does not cover. Stay within it.\n" + text) if text.strip() else ""

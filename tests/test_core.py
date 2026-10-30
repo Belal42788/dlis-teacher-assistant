@@ -1020,3 +1020,19 @@ class TestMadeDecks(TestAi):
         srcs = self.svc.list_sources()["sources"]
         self.assertTrue(any(x["name"] == "Old deck" and x["made"] for x in srcs))
         self.assertEqual(len([x for x in srcs if "Input devices" in x["name"]]), 1)
+
+
+class TestUrlSource(TestAi):
+    def test_web_page_becomes_a_source_and_blocks_private_addresses(self):
+        from unittest import mock
+        page = b"<html><head><title>The CPU</title></head><body><nav>menu</nav><h1>The CPU</h1><p>" + b"The CPU is the brain of the computer. " * 8 + b"</p></body></html>"
+        with mock.patch("app.core.ai_client.http_bytes", return_value=page), mock.patch("socket.getaddrinfo", return_value=[(2, 1, 6, "", ("93.184.216.34", 0))]):
+            out = self.svc.import_url({"url": "example.com/cpu"})
+        self.assertEqual(out["name"], "The CPU"); self.assertGreater(out["chars"], 100)
+        text = self.svc.source_block(out["id"])
+        self.assertIn("ONLY", text); self.assertNotIn("menu", text)
+        with mock.patch("socket.getaddrinfo", return_value=[(2, 1, 6, "", ("192.168.1.1", 0))]):
+            with self.assertRaises(AppError):
+                self.svc.import_url({"url": "http://router.local/"})
+        with self.assertRaises(AppError):
+            self.svc.import_url({"url": "file:///etc/passwd"})

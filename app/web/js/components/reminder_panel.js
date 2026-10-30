@@ -1,3 +1,4 @@
+import { dateField } from "./date3.js";
 import { h, icon, toast } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { t } from "../i18n.js";
@@ -48,7 +49,7 @@ export function alarmsPanel() {
   let data = null;
   const text = h("input", { type: "text", maxlength: 160, placeholder: t("alarm_text_ph"), "aria-label": t("alarm_text_ph") });
   const time = timeInput12("08:00");
-  const date = h("input", { type: "date", "aria-label": t("alarm_date"), value: todayIso() });
+  const date = dateField({ label: t("alarm_date"), value: todayIso() });
   const days = new Set();
   const dayBtns = WEEK.slice(0, 5).concat([]).map((d) => h("button", { type: "button", class: "chip", "aria-pressed": "false", onClick: (e) => {
     days.has(d) ? days.delete(d) : days.add(d); e.currentTarget.classList.toggle("on", days.has(d)); e.currentTarget.setAttribute("aria-pressed", String(days.has(d)));

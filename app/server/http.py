@@ -23,7 +23,7 @@ _TYPES = {".js": "application/javascript", ".mjs": "application/javascript", ".c
           ".ico": "image/x-icon", ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf", ".otf": "font/otf"}
 
 
-_SLOW = re.compile(r"/api/ai/(chat|test|models|lesson|quiz|trimester|revision)|/api/slides/(source|plan|image|image-test)|/api/sources/(import|[0-9a-f]+/(read|digest))")
+_SLOW = re.compile(r"/api/ai/(chat|test|models|lesson|quiz|trimester|revision)|/api/slides/(source|plan|image|image-test)|/api/sources/(import|url|[0-9a-f]+/(read|digest))")
 
 
 class AppServer(ThreadingHTTPServer):
@@ -168,6 +168,7 @@ class Handler(BaseHTTPRequestHandler):
             ("GET", r"/api/reminders", lambda m, b: svc.get_reminders()),
             ("GET", r"/api/sources", lambda m, b: svc.list_sources()),
             ("POST", r"/api/sources/import", lambda m, b: svc.import_source(b)),
+            ("POST", r"/api/sources/url", lambda m, b: svc.import_url(b)),
             ("GET", r"/api/sources/([0-9a-f]{10})", lambda m, b: svc.get_source(m.group(1))),
             ("POST", r"/api/sources/([0-9a-f]{10})/read", lambda m, b: svc.read_source(m.group(1))),
             ("POST", r"/api/sources/([0-9a-f]{10})/digest", lambda m, b: svc.digest_source(m.group(1))),

@@ -126,8 +126,9 @@
   },
   {
    "id": "sources",
-   "title": "سلايداتي (سلايدات NotebookLM)",
+   "title": "مصادري (كتب، PDF، سلايدات، مواقع)",
    "steps": [
+    "**ضيف أي مصدر:** ملف PDF أو كتاب أو PowerPoint أو Word أو نص، أو الصق عنوان موقع واضغط \"ضيف من الموقع\". البرنامج بيقرا المحتوى، والذكاء الاصطناعي بيكتب الملفات والسلايدز منه وميخرجش عنه.",
     "لو عملت سلايدات في NotebookLM ارفعها هنا (ملف PDF أو PowerPoint). ده حتى لو السلايدات صور.",
     "البرنامج بيقرا الصور بالذكاء الاصطناعي، واسم الموديل اللي قرا بيظهر على كارت الملف. لازم تستخدم خدمة بتقرا الصور (Gemini أسهلها).",
     "بعد القراءة تقدر تختار السلايدات دي في السلايدز وفي ملف المراجعة والكويز علشان تتملا منها.",
@@ -331,8 +332,9 @@
   },
   {
    "id": "sources",
-   "title": "My slides (NotebookLM slides)",
+   "title": "My sources (books, PDFs, slides, web pages)",
    "steps": [
+    "**Add any source:** a PDF or book, PowerPoint, Word or text file, or paste a web address and press \"Add from the web\". The app reads it, and the AI writes files and slides from it and stays inside it.",
     "If you made slides in NotebookLM, upload them here (PDF or PowerPoint), even if the slides are pictures.",
     "The app reads the pictures with the AI, and the name of the model that read them shows on the file's card. You need a service that reads pictures (Gemini is the easiest).",
     "After reading you can choose these slides in Slides and in the revision sheet and quiz to fill them.",

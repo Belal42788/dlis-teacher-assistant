@@ -16,6 +16,11 @@ proc = subprocess.Popen([sys.executable, "-m", "app", "--no-window"], cwd=ROOT, 
 url = proc.stdout.readline().strip()
 print("server", url)
 errors = []
+
+def setdate(loc, iso):
+    """Fill one day/month/year field (loc = the .date3 element)."""
+    y, m, d = (int(x) for x in iso.split("-"))
+    sel = loc.locator("select"); sel.nth(0).select_option(str(d)); sel.nth(1).select_option(str(m)); sel.nth(2).select_option(str(y))
 # ---- a tiny fake AI service so the AI screens can be tested without internet
 import json as _json, threading as _th
 from http.server import BaseHTTPRequestHandler as _H, HTTPServer as _S
@@ -83,8 +88,8 @@ try:
         shot("05_timetable"); page.click(".wiz-foot .btn.primary")
         page.wait_for_selector(".tri-row")
         for i, (a, z) in enumerate((("2026-09-01", "2026-11-30"), ("2026-12-01", "2027-02-28"))):
-            ds = page.locator(".tri-row").nth(i).locator("input[type=date]"); ds.nth(0).fill(a); ds.nth(1).fill(z)
-        page.click("text=إضافة إجازة"); page.locator(".list-row").nth(0).locator("input[type=date]").nth(0).fill("2026-10-06")
+            ds = page.locator(".tri-row").nth(i).locator(".date3"); setdate(ds.nth(0), a); setdate(ds.nth(1), z)
+        page.click("text=إضافة إجازة"); setdate(page.locator(".list-row").nth(0).locator(".date3").nth(0), "2026-10-06")
         page.locator(".list-row").nth(0).locator("input[type=text]").fill("عيد القوات المسلحة")
         shot("06_calendar"); page.click(".wiz-foot .btn.primary")
         page.wait_for_selector("text=كل شيء جاهز"); shot("07_done")
@@ -128,7 +133,7 @@ try:
         tab("tp"); page.click("text=إنشاء خطة الفصل الدراسي"); page.wait_for_selector("text=الملف جاهز")
         page.click(".nav a[data-page=today]"); page.wait_for_selector(".plan-line"); page.click("text=ورقة للمدرس البديل"); page.wait_for_selector("text=Cover_Sheet"); shot("08c_today_plan")
         page.click(".nav a[data-page=tasks]"); page.wait_for_selector(".task-add")
-        page.fill(".task-add input[type=text]", "طباعة الاختبارات"); page.select_option(".task-add select", "high"); page.fill(".task-add input[type=date]", "2026-10-20")
+        page.fill(".task-add input[type=text]", "طباعة الاختبارات"); page.select_option(".task-add select", "high"); setdate(page.locator(".task-add .date3"), "2026-10-20")
         page.click(".task-add .btn.primary"); page.wait_for_selector(".tasks-table tr:not(.auto) td b >> text=طباعة الاختبارات"); shot("17_tasks")
         page.click(".nav a[data-page=today]"); page.wait_for_selector(".today-tasks .tasks-table"); shot("17b_today_tasks")
         # lesson log: log the first lesson, see "last time" + the reminder on Today, then the log page
@@ -192,7 +197,7 @@ try:
         # my slides: import an image-only PDF, the app reads it with the (fake) vision AI, then the revision page can use it
         from PIL import Image as _I
         _I.new("RGB", (800, 450), (240, 240, 250)).save("/tmp/nlm.pdf", "PDF")
-        page.click(".nav a[data-page=slides]"); page.click("a.seg-btn[href='#/sources']"); page.wait_for_selector("text=أضف سلايدات")
+        page.click(".nav a[data-page=slides]"); page.click("a.seg-btn[href='#/sources']"); page.wait_for_selector("text=أضف مصدر")
         page.set_input_files("input[type=file]", "/tmp/nlm.pdf"); page.wait_for_selector(".src-card >> text=Input devices", timeout=20000); shot("17m_sources")
         page.click(".nav a[data-page=docs]"); page.click(".seg-btn[data-tab=rv]"); page.wait_for_selector(".src-pick select >> visible=true")
         page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", label=re.compile(r'nlm')) if False else page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", value=page.eval_on_selector(".panel:has(h3:text('ملف المراجعة')) .src-pick select", "s => [...s.options].find(o => o.textContent.includes('nlm')).value")); page.click("text=املا من سلايداتي")
@@ -270,6 +275,18 @@ try:
         page.click("text=Save"); page.wait_for_selector(".toast.ok")
         for name, sel in (("today", ".week-badge"), ("classes", ".split"), ("calendar", "table.weeks")):
             page.click(f".nav a[data-page={name}]"); page.wait_for_selector(sel); page.wait_for_timeout(250); shot(f"13_{name}_en")
+        if os.environ.get("SWEEP"):  # English layout check: report anything that sticks out of its box
+            JS = """() => { const out = []; for (const el of document.querySelectorAll('#main *, .nav *')) {
+              const r = el.getBoundingClientRect(); if (!r.width || !r.height) continue; const cs = getComputedStyle(el);
+              const p = el.parentElement; if (!p) continue; const pr = p.getBoundingClientRect(); const pcs = getComputedStyle(p);
+              const clipped = el.scrollWidth > el.clientWidth + 2 && cs.overflowX === 'visible' && el.children.length === 0 && el.textContent.trim().length > 0;
+              const outside = (r.right > pr.right + 2 || r.left < pr.left - 2) && pcs.overflowX === 'visible' && cs.position !== 'absolute' && cs.position !== 'fixed' && pr.width > 0;
+              if (clipped || outside) out.push((el.tagName + '.' + el.className).slice(0, 50) + ' | ' + el.textContent.trim().slice(0, 40) + ' | ' + Math.round(r.width) + ' vs ' + Math.round(pr.width)); }
+              return out.slice(0, 12); }"""
+            for route in ("today", "timetable", "calendar", "tasks", "docs", "slides", "sources", "chat", "classes", "log", "map", "settings", "help"):
+                page.evaluate(f"location.hash = '#/{route}'"); page.wait_for_timeout(700)
+                for r in page.evaluate(JS): print("SWEEP", route, "->", r)
+                shot(f"14_{route}_en")
         # reminder timing (fake clock, Monday): lesson at 13:40 -> reminder at 13:31; lesson at 11:35 right after the break duty -> none
         import datetime as _dt
         mon = _dt.date(2026, 10, 28); mon -= _dt.timedelta(days=(mon.weekday() - 0) % 7)

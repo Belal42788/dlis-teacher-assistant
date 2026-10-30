@@ -195,7 +195,7 @@ table.grid th, table.grid td { padding: .3rem .35rem; border-bottom: 1px solid v
 table.grid tr:last-child > * { border-bottom: 0; }
 table.grid th:last-child, table.grid td:last-child { border-inline-end: 0; }
 table.grid thead th { background: linear-gradient(180deg, #f4f9fc, #e9f2f8); font-weight: 700; text-align: center; font-size: .9rem; }
-table.grid th.d { width: 76px; background: #f4f9fc; text-align: start; padding-inline: .7rem; font-size: .92rem; color: var(--indigo); }
+table.grid th.d { width: 92px; overflow-wrap: anywhere; hyphens: auto; background: #f4f9fc; text-align: start; padding-inline: .7rem; font-size: .92rem; color: var(--indigo); }
 table.grid thead th.d { background: linear-gradient(180deg, #f4f9fc, #e9f2f8); }
 table.grid th.p { min-width: 0; padding-inline: .1rem; font-size: .82rem; }
 table.grid .pn { color: var(--indigo); }
@@ -630,3 +630,11 @@ table.wc .dot { display: inline-block; width: .6rem; height: .6rem; border-radiu
 
 .qsec-list { display: grid; gap: .5rem; margin: .5rem 0; }
 .qsec { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: .5rem; border: 1px solid var(--line, #d9dce8); border-radius: 10px; background: #fafbff; }
+
+.date3 { display: inline-flex; gap: .3rem; flex-wrap: nowrap; }
+.date3 select { min-width: 0; width: auto; padding-inline: .4rem; }
+
+/* long English words must never leave their box */
+.btn, .tag, .label, .seg-btn, .nav a span, th, summary, .banner, .toast, h1, h2, h3, label { overflow-wrap: anywhere; }
+.row > *, .field, .panel { min-width: 0; }
+html[dir="ltr"] .btn { white-space: normal; }

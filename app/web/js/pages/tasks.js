@@ -1,3 +1,4 @@
+import { dateField } from "../components/date3.js";
 import { hubTabs } from "../components/hubtabs.js";
 import { h, icon, toast } from "../dom.js";
 import { api, guarded } from "../api.js";
@@ -11,7 +12,7 @@ export async function renderTasks(root) {
   const title = h("input", { type: "text", placeholder: t("t_what"), "aria-label": t("t_what"), onKeydown: (e) => e.key === "Enter" && add() });
   const imp = h("select", { "aria-label": t("t_importance") }, ["high", "medium", "low"].map((k) => h("option", { value: k }, t(`imp_${k}`))));
   imp.value = "medium";
-  const deadline = h("input", { type: "date", "aria-label": t("t_deadline") });
+  const deadline = dateField({ label: t("t_deadline") });
   async function add() {
     if (!title.value.trim()) { title.focus(); return; }
     const r = await guarded(() => api.post("/api/tasks", { title: title.value, importance: imp.value, deadline: deadline.value }));

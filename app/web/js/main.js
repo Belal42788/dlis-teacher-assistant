@@ -160,6 +160,7 @@ async function route() {
     const mark = (e) => { if (e.isTrusted) typed = true; };
     main.addEventListener("input", mark, true); main.addEventListener("change", mark, true);
     try { await page.render(main, { reloadApp }); } finally { main.removeEventListener("input", mark, true); main.removeEventListener("change", mark, true); }
+    if (shownPage !== page.id) main.scrollTop = 0; // a new tab starts at the top, not where the last one was scrolled to
     shownPage = page.id;
     if (!typed) restoreDraft(page.id);
   } catch (e) {

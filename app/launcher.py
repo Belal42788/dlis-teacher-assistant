@@ -350,16 +350,28 @@ def _main(argv: list[str] | None = None) -> int:
                         user32.GetAsyncKeyState.argtypes = [ctypes.c_int]
                         user32.SetWindowPos.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_uint]
                         hwnd = ctypes.c_void_p(int(holder["window"].native.Handle.ToInt64()))
-                        if user32.IsZoomed(hwnd):
-                            return
                         pt, rc = wintypes.POINT(), wintypes.RECT()
                         user32.GetCursorPos(ctypes.byref(pt)); user32.GetWindowRect(hwnd, ctypes.byref(rc))
+                        if user32.IsZoomed(hwnd):  # dragging a maximised window brings it back to its normal size under the mouse
+                            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+                            user32.GetWindowRect(hwnd, ctypes.byref(rc))
+                            w1 = rc.right - rc.left
+                            user32.SetWindowPos(hwnd, None, pt.x - w1 // 2, pt.y - 15, 0, 0, 0x0001 | 0x0004 | 0x0010)
+                            user32.GetWindowRect(hwnd, ctypes.byref(rc))
                         ox, oy, wx, wy = pt.x, pt.y, rc.left, rc.top
                         end = time.time() + 120
                         while user32.GetAsyncKeyState(0x01) & 0x8000 and time.time() < end:  # VK_LBUTTON
                             user32.GetCursorPos(ctypes.byref(pt))
                             user32.SetWindowPos(hwnd, None, wx + pt.x - ox, wy + pt.y - oy, 0, 0, 0x0001 | 0x0004 | 0x0010)  # no size, no z-order, no activate
                             time.sleep(0.008)
+                        # let go at the very top of the screen = maximise (like every Windows program)
+                        user32.GetCursorPos(ctypes.byref(pt))
+                        mon = user32.MonitorFromPoint(wintypes.POINT(pt.x, pt.y), 2)
+                        class MI(ctypes.Structure):
+                            _fields_ = [("cbSize", wintypes.DWORD), ("rcMonitor", wintypes.RECT), ("rcWork", wintypes.RECT), ("dwFlags", wintypes.DWORD)]
+                        mi = MI(); mi.cbSize = ctypes.sizeof(MI)
+                        if user32.GetMonitorInfoW(mon, ctypes.byref(mi)) and pt.y <= mi.rcMonitor.top + 2:
+                            user32.ShowWindow(hwnd, 3)  # SW_MAXIMIZE
                     except Exception:
                         paths.log_error("could not move the window")
 
@@ -436,7 +448,6 @@ def _main(argv: list[str] | None = None) -> int:
                         except Exception:
                             pass
 
-            import threading
 
             threading.Thread(target=keep_ticking, daemon=True).start()
             webview.start()
@@ -444,7 +455,12 @@ def _main(argv: list[str] | None = None) -> int:
             server.shutdown()
             return 0
         except Exception as e:  # not installed, or no web view on this computer
-            print(f"(No app window available: {e}. Opening your browser instead.)")
+            import traceback
+            paths.log_error("App window could not start, so the browser was used instead:\n" + traceback.format_exc())
+            try:
+                print(f"(No app window available: {e}. Opening your browser instead.)")
+            except Exception:
+                pass
 
     webbrowser.open(server.url)
     _wait_for_browser_close(server)

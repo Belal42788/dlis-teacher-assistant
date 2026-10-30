@@ -1,3 +1,4 @@
+import { dateField } from "./date3.js";
 import { h, icon } from "../dom.js";
 import { t } from "../i18n.js";
 import { api } from "../api.js";
@@ -57,7 +58,7 @@ export function calendarEditor({ calendar, withEvents = false, onChange }) {
   cal.holidays.sort(byDate("start")); cal.events.sort(byDate("date"));
 
   function dateInput(obj, key, after) {
-    return h("input", { type: "date", value: obj[key] || "", onChange: (e) => { obj[key] = e.target.value; changed(); if (after) after(); } });
+    return dateField({ value: obj[key] || "", label: key, onChange: (v) => { obj[key] = v; changed(); if (after) after(); } });
   }
 
   render();

@@ -64,12 +64,19 @@ export async function renderSources(root) {
     if (!r) { status.textContent = ""; return; }
     await guarded(() => process(r.id));
   } });
+  const urlBox = h("input", { type: "url", dir: "ltr", placeholder: t("src_url_ph"), "aria-label": t("src_url"), style: { flex: "1", minWidth: "12em" } });
+  const urlBtn = h("button", { class: "btn", onClick: async () => {
+    if (!urlBox.value.trim() || working) return;
+    const r = await guarded(async () => { status.textContent = t("src_importing"); const out = await api.post("/api/sources/url", { url: urlBox.value.trim() }); urlBox.value = ""; await loadList(); return out; });
+    status.textContent = r ? "" : "";
+    if (r) await guarded(() => process(r.id));
+  } }, icon("link"), t("src_add_url"));
   const pick = h("button", { class: "btn primary", onClick: () => file.click() }, icon("upload"), t("src_choose"));
 
   root.replaceChildren(h("div", { class: "page" }, hubTabs("slides", "sources"),
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_sources")), h("p", {}, t("src_lead")))),
     ai.ready ? null : h("div", { class: "banner" }, icon("info"), h("div", { class: "small" }, t("src_need_ai"), " ", h("a", { href: "#/settings" }, t("ai_setup_link")))),
-    h("div", { class: "panel" }, h("h3", {}, t("src_add_title")), h("p", { class: "muted small" }, t("src_add_lead")), h("div", { class: "row" }, pick, file), status),
+    h("div", { class: "panel" }, h("h3", {}, t("src_add_title")), h("p", { class: "muted small" }, t("src_add_lead")), h("div", { class: "row" }, pick, file), h("div", { class: "row", style: { marginTop: ".5rem" } }, urlBox, urlBtn), status),
     listBox));
   await loadList();
 }
