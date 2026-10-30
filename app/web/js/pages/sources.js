@@ -46,7 +46,7 @@ export async function renderSources(root) {
         h("details", { class: "more" }, h("summary", {}, t("src_text")), h("pre", { class: "pre small", style: { maxHeight: "16rem", overflow: "auto" } }, r.text || "—")));
     } }, h("summary", {}, t("src_details")), detail);
     return h("div", { class: "panel src-card" },
-      h("div", { class: "row" }, h("h3", { class: "grow", style: { margin: 0 } }, s.name), s.read_model ? h("span", { class: "tag-model dir-ltr", title: t("src_model") }, s.read_model) : null,
+      h("div", { class: "row" }, h("h3", { class: "grow", style: { margin: 0 } }, s.name), s.made ? h("span", { class: "tag" }, t("src_made")) : null, s.read_model ? h("span", { class: "tag-model dir-ltr", title: t("src_model") }, s.read_model) : null,
         s.pending ? h("button", { class: "btn small primary", onClick: () => run(() => process(s.id)) }, icon("spark"), t("src_read_pics", { n: s.pending })) : null,
         s.chars && !s.has_digest && !s.pending ? h("button", { class: "btn small", disabled: !ai.ready, onClick: () => run(() => process(s.id)) }, icon("spark"), t("src_analyze")) : null,
         h("button", { class: "btn small ghost", "aria-label": t("remove"), onClick: async () => { if (await confirmBox(t("src_delete_confirm"))) await guarded(async () => { await api.post(`/api/sources/${s.id}/delete`, {}); await loadList(); }); } }, icon("trash"))),

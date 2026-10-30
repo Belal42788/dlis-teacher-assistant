@@ -144,9 +144,40 @@ class SourceMixin:
         pending = sum(1 for p in pages if p.get("vision") and not p.get("done"))
         d = s.get("digest") or {}
         return {"id": s["id"], "name": s["name"], "added": s["added"], "pages": len(pages), "pending": pending,
-                "chars": sum(len(p["text"]) for p in pages), "topic": d.get("topic", ""), "has_digest": bool(d), "read_model": s.get("read_model", "")}
+                "chars": sum(len(p["text"]) for p in pages), "topic": d.get("topic", ""), "has_digest": bool(d), "read_model": s.get("read_model", ""), "made": bool(s.get("made"))}
+
+    def _made_id(self, path) -> str:
+        import hashlib
+        return hashlib.sha1(str(path.relative_to(self._need_store().root)).replace("\\", "/").encode("utf-8")).hexdigest()[:10]
+
+    def _made_source(self, out, pages: list) -> None:
+        """A deck the app built is one of 'my slides' too (so quizzes and revision can use it)."""
+        sid = self._made_id(out)
+        old = next((x for x in self._srcs() if x["id"] == sid), None)
+        src = {"id": sid, "name": out.stem, "added": date.today().isoformat(), "made": True, "file": out.name,
+               "pages": [{"n": i, "text": p.get("text", ""), "notes": p.get("notes", ""), "vision": False, "done": True} for i, p in enumerate(pages, 1)]}
+        if old and old.get("digest") and old.get("pages") == src["pages"]:
+            src["digest"] = old["digest"]
+        self._src_save(src)
+
+    def _sync_made_decks(self) -> None:
+        """Decks already in the Slides folder (made earlier, or copied there) join the list once."""
+        root = self._need_store().root / "Slides"
+        if not root.is_dir():
+            return
+        have = {x["id"] for x in self._srcs()}
+        for f in sorted(root.rglob("*.pptx")):
+            if f.name.startswith("~$") or self._made_id(f) in have:
+                continue
+            try:
+                pages = extract_pptx(f.read_bytes())
+            except Exception:
+                continue
+            if any(p.get("text") for p in pages):
+                self._made_source(f, pages)
 
     def list_sources(self) -> dict:
+        self._sync_made_decks()
         return {"sources": sorted((self._src_brief(s) for s in self._srcs()), key=lambda x: x["added"], reverse=True)}
 
     def get_source(self, sid: str) -> dict:
@@ -257,9 +288,23 @@ class SourceMixin:
         return self._src_brief(src)
 
     # ------------------------------------------------------------ digest + use
-    def _src_text(self, src: dict, limit: int = MAX_CLIP) -> str:
+    @staticmethod
+    def _page_set(spec) -> set:
+        """'3-7' or '2,5,8' -> {3,4,5,6,7} / {2,5,8}; empty or unreadable -> everything."""
+        out = set()
+        for part in re.split(r"[,\s;،]+", str(spec or "")):
+            m = re.fullmatch(r"(\d{1,3})(?:\s*[-–:]\s*(\d{1,3}))?", part)
+            if m:
+                a, b = int(m.group(1)), int(m.group(2) or m.group(1))
+                out.update(range(min(a, b), max(a, b) + 1))
+        return out
+
+    def _src_text(self, src: dict, limit: int = MAX_CLIP, pages=None) -> str:
         parts = []
+        only = self._page_set(pages)
         for p in src["pages"]:
+            if only and p["n"] not in only:
+                continue
             body = "\n".join(x for x in (p["text"], ("Teacher notes: " + p["notes"]) if p.get("notes") else "") if x)
             if body:
                 parts.append(f"[Slide {p['n']}]\n{body}" if len(src["pages"]) > 1 else body)
@@ -290,13 +335,13 @@ class SourceMixin:
         self._src_save(src)
         return {**self._src_brief(src), "digest": digest}
 
-    def source_block(self, sid: str) -> str:
+    def source_block(self, sid: str, pages=None) -> str:
         """Text added to the prompt of the writing helpers."""
         sid = str(sid or "")
         if not sid:
             return ""
         try:
-            text = self._src_text(self._src(sid))
+            text = self._src_text(self._src(sid), pages=pages)
         except AppError:
             return ""
         return ("\nSource material from the teacher's own slides (base your answer on it, do not contradict it):\n" + text) if text.strip() else ""

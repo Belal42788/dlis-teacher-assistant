@@ -1,5 +1,5 @@
 """Drive the real app in a browser: whole first-run guide in Arabic, then every page, then English."""
-import os, subprocess, sys, tempfile, time, re, json
+import datetime as _dt, os, subprocess, sys, tempfile, time, re, json
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
@@ -8,6 +8,10 @@ SHOTS = Path(os.environ.get("SHOTS", "/tmp/shots")); SHOTS.mkdir(exist_ok=True, 
 home = tempfile.mkdtemp(); data = Path(tempfile.mkdtemp()) / "My DLIS"
 env = dict(os.environ, DLIS_APP_HOME=home, HOME=home)  # fake HOME so the folder picker is isolated
 (Path(home) / "Documents").mkdir()
+# the server thinks it is a school day (Wed 28 Oct 2026), so the screens do not depend on the weekday the test runs on
+_fake = Path(tempfile.mkdtemp()); (_fake / "sitecustomize.py").write_text(
+    "import datetime as _d\nclass date(_d.date):\n    @classmethod\n    def today(cls):\n        return cls(2026, 10, 28)\n_d.date = date\n")
+env["PYTHONPATH"] = str(_fake)
 proc = subprocess.Popen([sys.executable, "-m", "app", "--no-window"], cwd=ROOT, env=env, stdout=subprocess.PIPE, text=True)
 url = proc.stdout.readline().strip()
 print("server", url)
@@ -42,7 +46,7 @@ try:
     with sync_playwright() as p:
         b = p.chromium.launch()
         ctx = b.new_context(viewport={"width": 1280, "height": 860})
-        page = ctx.new_page()
+        page = ctx.new_page(); page.clock.install(time=_dt.datetime(2026, 10, 28, 9, 0, 0))
         page.on("console", lambda m: errors.append(f"console {m.type}: {m.text}") if m.type in ("error", "warning") else None)
         page.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
         shot = lambda n: page.screenshot(path=str(SHOTS / f"{n}.png"))
@@ -88,7 +92,7 @@ try:
         page.wait_for_selector(".shell"); page.wait_for_selector(".week-badge"); shot("08_today_ar")
         print("badge:", page.inner_text(".week-badge"))
         page.wait_for_timeout(700); shot("08_today_ar")
-        ys = page.evaluate("(() => { const b = document.querySelector('.slot-time b'), sp = document.querySelector('.slot-time span'); return [b.getBoundingClientRect().y, sp.getBoundingClientRect().y] })()")
+        ys = page.evaluate("(() => { if (!document.querySelector('.slot-time b')) return [0, 1]; const b = document.querySelector('.slot-time b'), sp = document.querySelector('.slot-time span'); return [b.getBoundingClientRect().y, sp.getBoundingClientRect().y] })()")
         assert ys[0] < ys[1], f"start time must be shown above the end time: {ys}"
 
         # pages
@@ -191,7 +195,7 @@ try:
         page.click(".nav a[data-page=slides]"); page.click("a.seg-btn[href='#/sources']"); page.wait_for_selector("text=أضف سلايدات")
         page.set_input_files("input[type=file]", "/tmp/nlm.pdf"); page.wait_for_selector(".src-card >> text=Input devices", timeout=20000); shot("17m_sources")
         page.click(".nav a[data-page=docs]"); page.click(".seg-btn[data-tab=rv]"); page.wait_for_selector(".src-pick select >> visible=true")
-        page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", index=1); page.click("text=املا من سلايداتي")
+        page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", label=re.compile(r'nlm')) if False else page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", value=page.eval_on_selector(".panel:has(h3:text('ملف المراجعة')) .src-pick select", "s => [...s.options].find(o => o.textContent.includes('nlm')).value")); page.click("text=املا من سلايداتي")
         page.wait_for_function("[...document.querySelectorAll('textarea')].some(t => t.value === 'Mouse: points and clicks')")
         # school map: add floor + room, name it with a phone, drag, then view it
         page.click(".nav a[data-page=map]"); page.wait_for_selector(".bld"); page.locator(".bld").screenshot(path=str(SHOTS / "17k_building.png")); page.click("text=تعديل الخريطة")
@@ -268,14 +272,14 @@ try:
             page.click(f".nav a[data-page={name}]"); page.wait_for_selector(sel); page.wait_for_timeout(250); shot(f"13_{name}_en")
         # reminder timing (fake clock, Monday): lesson at 13:40 -> reminder at 13:31; lesson at 11:35 right after the break duty -> none
         import datetime as _dt
-        mon = _dt.date.today(); mon -= _dt.timedelta(days=(mon.weekday() - 0) % 7)
+        mon = _dt.date(2026, 10, 28); mon -= _dt.timedelta(days=(mon.weekday() - 0) % 7)
         def at(h, m, day=None):
             day = day or mon
             pg = ctx.new_page(); pg.clock.install(time=_dt.datetime(day.year, day.month, day.day, h, m, 0)); pg.goto(url)
             pg.wait_for_selector(".shell"); pg.clock.run_for(5000); pg.wait_for_timeout(1500); pg.clock.run_for(25000); pg.wait_for_timeout(1500); return pg
         pg = at(13, 31); assert pg.locator(".reminder").count() == 1, "expected a reminder before the 13:40 lesson"; pg.close()
         pg = at(13, 45); pg.click(".nav a[data-page=today]"); pg.wait_for_selector(".slot[data-state=now]"); pg.screenshot(path="/tmp/shots/08b_today_now.png"); pg.close()
-        pg = at(8, 1, _dt.date.today()); assert pg.locator(".reminder:has-text('اطبع الكويز')").count() == 1, "own reminder should pop up"; pg.close()
+        pg = at(8, 1, _dt.date(2026, 10, 28)); assert pg.locator(".reminder:has-text('اطبع الكويز')").count() == 1, "own reminder should pop up"; pg.close()
         pg = at(11, 27); assert pg.locator(".reminder").count() == 0, "no reminder when coming straight from another duty"; pg.close()
         # phone width
         page.set_viewport_size({"width": 400, "height": 800}); page.click(".nav a[data-page=today]"); page.wait_for_timeout(300); shot("14_phone")

@@ -336,6 +336,11 @@ class SlidesMixin:
             build_deck(out, deck)
         except PermissionError:
             raise AppError("file_in_use", f"Close this file in PowerPoint first: {out.name}", status=409)
+        try:
+            self._made_source(out, [{"text": deck["title"] + ("\n" + deck["subtitle"] if deck["subtitle"] else "")}] + [
+                {"text": "\n".join([x["title"]] + x["bullets"] + ([x["explain"]] if x["explain"] else [])), "notes": x["notes"]} for x in slides])
+        except Exception:
+            pass  # the deck itself is made; listing it under "my slides" is a bonus
         if tri >= 0 and week > 0:  # remember how many slides this lesson has (the lesson log can show "slide 12 of 18")
             data = self._plans()
             data.setdefault("slides", {})[_key(grade.id, tri, week)] = {"count": len(slides) + 1, "file": out.name}

@@ -265,7 +265,7 @@ class AiMixin:
         grade = self._grade(str(b.get("grade_id", "")))
         s = self._need_store().load_settings()
         return {"grade": grade, "label": self._grade_label(grade), "subject": s.subject or "the subject",
-                "notes": str(b.get("notes", "")).strip()[:600] + self.source_block(b.get("source_id"))}
+                "notes": str(b.get("notes", "")).strip()[:600] + self.source_block(b.get("source_id"), b.get("source_pages"))}
 
     # ------------------------------------------------------------ writing helpers
     def ai_generate_lesson(self, b: dict) -> dict:

@@ -28,7 +28,8 @@ class RevisionMixin:
                 + f"\nWrite a one-page revision sheet in simple English. {stage['words']}.\n"
                   f"- words: 4 to 8 key words, each with a short child-friendly meaning.\n- points: 3 to 6 short facts to remember.\n"
                   f"- questions: exactly {n} short questions with a short answer each (not multiple choice).\n"
-                  'Return: {"words": [{"term": "...", "meaning": "..."}], "points": ["..."], "questions": [{"q": "...", "a": "..."}]}')
+                  + ("Use the teacher's material word for word: take key words, points, questions and answers from its exact wording, and add no facts that are not in it.\n" if b.get("verbatim") else "")
+                  + 'Return: {"words": [{"term": "...", "meaning": "..."}], "points": ["..."], "questions": [{"q": "...", "a": "..."}]}')
         data = _json_from(self._ask(system, user, max_tokens=3000))
         if not isinstance(data, dict):
             raise AppError("ai_bad_output", "The AI answer was not in the expected shape. Try again.", status=502)

@@ -44,7 +44,8 @@
     "من تبويب الفصول بتضيف فصل أو تمسحه.",
     "علشان تضيف طلاب: دوس \"لصق أو استيراد قائمة\" والصق الأسماء (من إكسل أو من نظام المدرسة) أو اختار ملف.",
     "البرنامج بيرتّب الأسماء ويشيل المكرر.",
-    "أسماء الطلاب بتفضل على جهازك بس، ومش بتتبعت للذكاء الاصطناعي أبدًا."
+    "أسماء الطلاب بتفضل على جهازك بس، ومش بتتبعت للذكاء الاصطناعي أبدًا.",
+    "لو كتبت اسم طالب بالإنجليزي بس، البرنامج بيكتب له اسم عربي تلقائي (تقدر تعدله)، والإنجليزي بيفضل محفوظ."
    ],
    "image": "09_classes_ar"
   },
@@ -55,8 +56,8 @@
     "اختار الفصل والفصل الدراسي والأسبوع من فوق، وبعدين اختار التبويب.",
     "**الأسبوع كله:** اكتب موضوع كل صف (أو سيبه ييجي من الخطة) واضغط \"جهّز كل حاجة\": خطة الدرس والكويز وملف المراجعة وكشف الدرجات لكل الصفوف مرة واحدة.",
     "**خطة الدرس:** اكتب الموضوع واضغط \"اكتب بالذكاء الاصطناعي\" ليملا الباقي. الأيام اللي مفيهاش حصة للصف بيتكتب فيها No session.",
-    "**الاختبار:** الصق الأسئلة (رقم وسؤال، a) b) c)، وسطر Answer: b) أو اطلب من الذكاء الاصطناعي يكتبها.",
-    "**ملف المراجعة:** كلمات مهمة ونقط وأسئلة. زرار \"املا من سلايداتي\" بياخدها من سلايدات NotebookLM اللي رفعتها.",
+    "**الاختبار:** اختار أجزاء الاختبار: نوع كل جزء (اختيار من متعدد بعدد اختيارات تحدده، صح/خطأ، وصّل، مقالي، أكمل) وعدد الأسئلة وموضوع كل جزء، مثلاً سؤالين مقالي عن موضوع ومعاهم 5 اختيار من متعدد عن موضوع تاني. بعدين اضغط الكتابة بالذكاء الاصطناعي أو الصق أسئلتك. لو اخترت سلايدات من \"سلايداتي\" تقدر تحدد أرقام السلايدات (مثلاً 3-7) وتطلب إن الأسئلة تاخد كلام المادة بنفس ألفاظه.",
+    "**ملف المراجعة:** كلمات مهمة ونقط وأسئلة. زرار \"املا من سلايداتي\" بياخدها من سلايداتك، وتقدر تحدد أرقام السلايدات وتطلب كلام المادة بنفس ألفاظه.",
     "**كشف الدرجات:** ملف Word لكل فصل لكل أسبوع. ولو هترفع الدرجات على الـ LMS دوس **جدول Excel للـ LMS**: اكتب الدرجات في عمود Grade وانسخه في الـ LMS.",
     "**خطة الفصل الدراسي:** درس لكل أسبوع، والإجازات بتتكتب لوحدها.",
     "**طريقة كتابة الـ AI:** تعدّل أسلوب الذكاء الاصطناعي لكل نوع ملف، وترجّع الافتراضي لما تحب.",
@@ -107,7 +108,8 @@
     "دوس \"إزاي تجيب المفتاح\" واتبع الخطوات، وبعدين الصق المفتاح.",
     "اضغط \"اختبار الاتصال\" وبعدين \"حفظ\".",
     "سيب النموذج على \"تلقائي\" والبرنامج هيختار نموذج شغال.",
-    "المفتاح بيتحفظ على جهازك بس. أسماء الطلاب بتتشال من أي طلب قبل ما يتبعت. راجع دايمًا اللي كتبه الذكاء الاصطناعي قبل ما تستخدمه."
+    "المفتاح بيتحفظ على جهازك بس. أسماء الطلاب بتتشال من أي طلب قبل ما يتبعت. راجع دايمًا اللي كتبه الذكاء الاصطناعي قبل ما تستخدمه.",
+    "في \"طريقة كتابة الـ AI\" هتلاقي كمان قايمة \"اللي البرنامج بيضيفه دايماً\": الأجزاء الثابتة (شكل الإجابة، قواعد الأسماء) اللي مش بتتغير عشان الملفات تفضل شغالة."
    ],
    "image": ""
   },
@@ -128,7 +130,8 @@
    "steps": [
     "لو عملت سلايدات في NotebookLM ارفعها هنا (ملف PDF أو PowerPoint). ده حتى لو السلايدات صور.",
     "البرنامج بيقرا الصور بالذكاء الاصطناعي، واسم الموديل اللي قرا بيظهر على كارت الملف. لازم تستخدم خدمة بتقرا الصور (Gemini أسهلها).",
-    "بعد القراءة تقدر تختار السلايدات دي في السلايدز وفي ملف المراجعة والكويز علشان تتملا منها."
+    "بعد القراءة تقدر تختار السلايدات دي في السلايدز وفي ملف المراجعة والكويز علشان تتملا منها.",
+    "**سلايدات البرنامج كمان هنا:** أي سلايدات عملتها من صفحة السلايدز بتظهر لوحدها في \"سلايداتي\" بعلامة \"اتعمل في البرنامج\"، وكمان أي ملف pptx في فولدر Slides. يعني كل سلايداتك في مكان واحد."
    ],
    "image": ""
   },
@@ -138,7 +141,8 @@
    "steps": [
     "رسمة واحدة للمبنى بالأدوار التلاتة، وكل دور فيه الجنب الأيسر والأوسط والأيمن.",
     "دوس على أي غرفة تشوف بياناتها: الاسم والشخص المسؤول ورقم التليفون والملاحظات. ابحث بالاسم من الخانة اللي فوق.",
-    "**تعديل الخريطة:** تضيف دور أو غرفة، وتسحب الغرفة أو تغيّر حجمها، وتكتب اسمها وتليفونها وتربطها بفصل."
+    "**تعديل الخريطة:** تضيف دور أو غرفة، وتسحب الغرفة أو تغيّر حجمها، وتكتب اسمها وتليفونها وتربطها بفصل.",
+    "الخريطة بتتعرض كمبنى: كل فصل جنب التاني بعرض متساوي، وأسماء الأدوار والغرف بالعربي لما البرنامج يكون عربي."
    ],
    "image": ""
   },
@@ -245,7 +249,8 @@
     "In Classes you add or remove a class.",
     "To add students: press \"Paste or import a list\" and paste the names (from Excel or the school system) or choose a file.",
     "The app sorts the names and removes duplicates.",
-    "Student names stay on your computer and are never sent to the AI."
+    "Student names stay on your computer and are never sent to the AI.",
+    "If you type a student name in English only, the app writes an Arabic spelling for it automatically (you can edit it) and keeps the English one."
    ],
    "image": "09_classes_ar"
   },
@@ -256,8 +261,8 @@
     "Choose the class, term and week at the top, then choose a tab.",
     "**Whole week:** write each grade's topic (or let it come from the plan) and press \"Prepare everything\": lesson plan, quiz, revision sheet and grading sheet for all grades at once.",
     "**Lesson plan:** write the topic and press \"Write with AI\" to fill the rest. Days without a lesson for the grade say No session.",
-    "**Quiz:** paste the questions (number and question, a) b) c), and a line Answer: b) or ask the AI to write them.",
-    "**Revision sheet:** key words, points and questions. \"Fill from my slides\" takes them from the NotebookLM slides you uploaded.",
+    "**Quiz:** choose the parts of the quiz: the type of each part (multiple choice with the number of choices you want, true/false, matching, essay, fill in the blank), how many questions and the topic of each part, for example 2 essay questions about one topic and 5 multiple-choice about another. Then press the AI button or paste your own questions. If you pick a file from My slides you can choose which slides to use (for example 3-7) and ask for the exact wording of the material.",
+    "**Revision file:** key words, points and questions. \"Fill from my slides\" takes them from your slides; you can choose slide numbers and ask for the material's exact wording.",
     "**Grading sheet:** a Word file per class per week. If you upload grades to the LMS press **Excel table for the LMS**: type the grades in the Grade column and copy it into the LMS.",
     "**Trimester plan:** one lesson per week; holidays are written by themselves.",
     "**How the AI writes:** change the AI's style for each kind of file and go back to the default any time.",
@@ -308,7 +313,8 @@
     "Press \"How to get a key\", follow the steps, then paste the key.",
     "Press \"Test the connection\" and then \"Save\".",
     "Leave the model on \"Automatic\" and the app picks one that works.",
-    "The key is saved on your computer only. Student names are removed from every request. Always check what the AI wrote before you use it."
+    "The key is saved on your computer only. Student names are removed from every request. Always check what the AI wrote before you use it.",
+    "\"How the AI writes\" also shows \"What the app always adds\": the fixed parts (answer format, student-name rule) that cannot change so the files keep working."
    ],
    "image": ""
   },
@@ -329,7 +335,8 @@
    "steps": [
     "If you made slides in NotebookLM, upload them here (PDF or PowerPoint), even if the slides are pictures.",
     "The app reads the pictures with the AI, and the name of the model that read them shows on the file's card. You need a service that reads pictures (Gemini is the easiest).",
-    "After reading you can choose these slides in Slides and in the revision sheet and quiz to fill them."
+    "After reading you can choose these slides in Slides and in the revision sheet and quiz to fill them.",
+    "**Slides made in the app are here too:** every deck built on the Slides page appears in My slides automatically (tagged \"Made in the app\"), and so does any .pptx in the Slides folder. All your slides in one place."
    ],
    "image": ""
   },
@@ -339,7 +346,8 @@
    "steps": [
     "One picture of the building with its three floors; every floor has a left wing, a middle and a right wing.",
     "Click a room to see its details: name, person in charge, phone number and notes. Search by name in the box at the top.",
-    "**Edit the map:** add a floor or a room, drag a room or change its size, write its name and phone and link it to a class."
+    "**Edit the map:** add a floor or a room, drag a room or change its size, write its name and phone and link it to a class.",
+    "The map is shown as a building: rooms sit side by side with equal widths, and floor and room names are in Arabic when the app is in Arabic."
    ],
    "image": ""
   },

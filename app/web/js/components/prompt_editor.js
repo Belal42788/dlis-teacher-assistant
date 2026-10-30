@@ -10,12 +10,14 @@ export async function promptEditor() {
   const pSel = h("select", { onChange: () => drawPrompt() }, PROMPT_KEYS.map((k) => h("option", { value: k }, t(`chat_p_${k}`))));
   const pSystem = h("textarea", { rows: 5 }), pGuide = h("textarea", { rows: 3 });
   const pGuideLabel = h("label", { class: "field" }, h("span", { class: "label" }, t("chat_p_guidance")), pGuide);
+  const pFixed = h("div", { class: "fixed-parts" });
   const pNote = h("span", { class: "muted small" });
   function drawPrompt() {
     const k = pSel.value, def = prompts.defaults[k], mine = prompts.custom[k];
     pSystem.value = (mine?.system ?? def.system) || "";
     pGuide.value = (mine && "guidance" in mine ? mine.guidance : def.guidance) || "";
     pGuideLabel.style.display = k === "chat" ? "none" : "";
+    pFixed.replaceChildren(h("b", {}, t("chat_p_fixed")), h("ul", {}, (prompts.fixed?.[k] || []).map((x) => h("li", {}, x))));
     pNote.textContent = mine ? t("chat_p_custom") : t("chat_p_default");
   }
   const savePrompt = h("button", { class: "btn primary", onClick: async () => {
@@ -30,6 +32,7 @@ export async function promptEditor() {
     h("p", { class: "muted small" }, t("chat_p_lead")),
     h("label", { class: "field" }, h("span", { class: "label" }, t("chat_p_which")), pSel),
     h("label", { class: "field" }, h("span", { class: "label" }, t("chat_p_role")), pSystem), pGuideLabel,
+    h("details", { class: "more" }, h("summary", {}, t("chat_p_fixed_h")), pFixed),
     h("div", { class: "row" }, savePrompt, resetPrompt, pNote));
   drawPrompt();
 

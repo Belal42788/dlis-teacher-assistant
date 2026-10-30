@@ -1007,3 +1007,16 @@ class TestQuizTypes(unittest.TestCase):
             from docx import Document
             body = "\n".join(p.text for p in Document(str(out)).paragraphs)
             self.assertIn("1) sun", body); self.assertIn("Answer key", body); self.assertIn("2- long", body)
+
+
+class TestMadeDecks(TestAi):
+    def test_built_and_existing_decks_join_my_slides(self):
+        from app.core.pptx_builder import build_deck
+        self.svc.slide_build({"grade_id": "g4", "title": "Input devices", "slides": [{"title": "Mouse", "bullets": ["points", "clicks"], "explain": "A mouse moves the pointer.", "notes": "n"}]})
+        names = [x["name"] for x in self.svc.list_sources()["sources"]]
+        self.assertTrue(any("Input devices" in n for n in names))
+        extra = self.svc._need_store().root / "Slides" / "x" / "Old deck.pptx"
+        build_deck(extra, {"title": "Old deck", "subtitle": "", "language": "en", "stage": "primary", "slides": [{"title": "Keyboard", "bullets": ["keys"], "explain": "", "notes": "", "image_path": ""}]})
+        srcs = self.svc.list_sources()["sources"]
+        self.assertTrue(any(x["name"] == "Old deck" and x["made"] for x in srcs))
+        self.assertEqual(len([x for x in srcs if "Input devices" in x["name"]]), 1)

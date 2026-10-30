@@ -69,8 +69,8 @@ export async function renderDocs(root) {
 
   // ---------- "use my slides" (sources the teacher imported): the AI helpers then write from them
   const srcLp = await sourcePicker(async (id, s) => { if (id && s && s.topic && !topic.value.trim()) topic.value = s.topic; });
-  const srcQz = await sourcePicker();
-  const srcRv = await sourcePicker((id, s) => { if (id && s && s.topic && !rvTopic.value.trim()) rvTopic.value = s.topic; });
+  const srcQz = await sourcePicker(null, { exact: true });
+  const srcRv = await sourcePicker((id, s) => { if (id && s && s.topic && !rvTopic.value.trim()) rvTopic.value = s.topic; }, { exact: true });
   const sid = (p) => (p ? p.value() : "");
 
   // ---------- results area
@@ -132,16 +132,15 @@ export async function renderDocs(root) {
   }));
   drawSecs();
   const addSec = h("button", { class: "btn small", onClick: () => { secs.push({ type: "mcq", count: 3, options: 4, topic: "" }); drawSecs(); } }, icon("plus"), t("qt_add"));
-  const verbatim = h("input", { type: "checkbox" });
   const qLevel = h("select", {}, ["easy", "medium", "hard"].map((l) => h("option", { value: l, selected: l === "medium" }, t(`ai_${l}`))));
   const quizAi = aiButton(t("ai_write"), async () => {
     if (!sid(srcQz) && !qTopic.value.trim() && secs.some((x) => !x.topic.trim())) { toast(t("ai_need_topic"), "error"); return null; }
-    const r = await api.post("/api/ai/quiz", { grade_id: gradeOf().id, topic: qTopic.value.trim(), sections: secs, difficulty: qLevel.value, source_id: sid(srcQz), verbatim: verbatim.checked });
+    const r = await api.post("/api/ai/quiz", { grade_id: gradeOf().id, topic: qTopic.value.trim(), sections: secs, difficulty: qLevel.value, source_id: sid(srcQz), ...(srcQz ? srcQz.extra() : {}) });
     quizText.value = r.text; countQ(); return true;
   });
   const quizPanel = h("div", { class: "panel" }, h("h3", {}, t("d_quiz_title")), h("p", { class: "muted small" }, t("d_quiz_lead")), aiNeeded(), srcQz ? srcQz.el : null,
     h("div", { class: "ai-bar" }, qTopic, qLevel),
-    secBox, h("div", { class: "row", style: { margin: ".4rem 0" } }, addSec, srcQz ? h("label", { class: "row small" }, verbatim, t("qt_verbatim")) : null, h("span", { class: "grow" }), quizAi),
+    secBox, h("div", { class: "row", style: { margin: ".4rem 0" } }, addSec, h("span", { class: "grow" }), quizAi),
     h("label", { class: "row", style: { marginBottom: ".6rem" } }, h("b", {}, t("d_quiz_n")), quizNo),
     quizText, found,
     h("div", { class: "row", style: { marginTop: ".6rem" } },
@@ -182,7 +181,7 @@ export async function renderDocs(root) {
   const rvAns = h("input", { type: "checkbox", checked: true });
   const rvAi = aiButton(t("ai_write"), async () => {
     if (!rvTopic.value.trim()) { toast(t("ai_need_topic"), "error"); return null; }
-    const r = await api.post("/api/ai/revision", { grade_id: gradeOf().id, topic: rvTopic.value.trim(), count: +rvCount.value || 6, source_id: sid(srcRv) });
+    const r = await api.post("/api/ai/revision", { grade_id: gradeOf().id, topic: rvTopic.value.trim(), count: +rvCount.value || 6, source_id: sid(srcRv), ...(srcRv ? srcRv.extra() : {}) });
     rvWords.value = r.words; rvPoints.value = r.points; rvQs.value = r.questions; return true;
   });
   const rvFromSrc = h("button", { class: "btn", onClick: () => run(rvFromSrc, async () => {

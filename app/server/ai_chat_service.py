@@ -16,6 +16,19 @@ EDITABLE = ("lesson", "quiz", "trimester", "slides", "revision", "chat")
 MAX_MSGS, MAX_CHARS = 20, 6000
 
 
+# What the app always adds itself (the teacher sees it, but it stays fixed so the files keep working).
+FIXED_PARTS = {
+    "lesson": ["Answer with ONE JSON object only, no other text.", "The JSON keys are fixed (topic, objectives, one key per teaching day, activities, resources, differentiation, assessment...) because they fill the Word template.",
+               "Only the days this class really has a lesson are asked for.", "Student names are never sent; they are replaced before the request leaves the computer."],
+    "quiz": ["Follow the requested format exactly: numbered questions, a), b), c) choices, 'term = match' lines, an 'Answer:' line.", "For every part you choose in the quiz page the app adds: the type, the number of questions, the number of choices and the topic.",
+             "If you choose 'use the exact wording of the material', the app adds: use the material word for word and add no facts that are not in it.", "Student names are never sent."],
+    "trimester": ["Answer with ONE JSON object only, no other text.", "The week list (with holidays marked as no classes) is added by the app.", "Student names are never sent."],
+    "slides": ["Answer with ONE JSON object only, no other text.", "Each slide must have: title, bullets, an explanation paragraph, speaker notes and a picture idea.", "The number of slides and the words per slide for each stage come from the stage you pick.", "Student names are never sent."],
+    "revision": ["Answer with ONE JSON object only, no other text: words (term + meaning), points, questions (q + a).", "When you use a slide file, the app adds: use ONLY what the source says.", "Student names are never sent."],
+    "chat": ["Student names are removed from everything you write before it is sent.", "Only your last messages in the conversation are sent."],
+}
+
+
 def default_prompts() -> dict:
     return json.loads((paths.resources_dir() / "ai_prompts.json").read_text(encoding="utf-8"))
 
@@ -39,7 +52,7 @@ class AiChatMixin:
     def ai_prompts_get(self) -> dict:
         d = default_prompts()
         custom = self._prompts_custom()
-        return {"defaults": {k: d[k] for k in EDITABLE}, "custom": custom, "templates": d["templates"]}
+        return {"defaults": {k: d[k] for k in EDITABLE}, "custom": custom, "templates": d["templates"], "fixed": FIXED_PARTS}
 
     def ai_prompts_put(self, b: dict) -> dict:
         key = str(b.get("key", ""))
