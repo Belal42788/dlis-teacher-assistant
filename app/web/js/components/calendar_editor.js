@@ -18,8 +18,22 @@ export function calendarEditor({ calendar, withEvents = false, onChange }) {
   const changed = () => onChange && onChange();
   // Holidays without a name get the school's official name for that day.
   let official = [];
-  api.get("/api/school-calendar").then((c) => { official = c.holidays || []; }).catch(() => {});
+  let officialEvents = [];
   const officialName = (iso) => (official.find((x) => x.start <= iso && iso <= (x.end || x.start)) || {}).name || "";
+  api.get("/api/school-calendar").then((c) => {
+    official = c.holidays || []; officialEvents = c.events || [];
+    let filled = false;  // rows saved earlier without a name: an official holiday gets its name, a school event (revision, exams...) is not a holiday
+    const keep = [];
+    for (const hd of cal.holidays) {
+      if (hd.start && !hd.name.trim()) {
+        const hol = official.find((x) => x.start <= hd.start && hd.start <= (x.end || x.start));
+        if (hol) { hd.name = hol.name; filled = true; }
+        else if (officialEvents.some((x) => hd.start <= x.date && x.date <= (hd.end || hd.start))) { filled = true; continue; }
+      }
+      keep.push(hd);
+    }
+    if (filled) { cal.holidays = keep; changed(); render(); }
+  }).catch(() => {});
 
   const byDate = (k) => (x, y) => (x[k] || "~").localeCompare(y[k] || "~");
 

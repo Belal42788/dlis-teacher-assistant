@@ -1,6 +1,7 @@
 """What the screens can ask for. No HTTP in here, so it is easy to test."""
 from __future__ import annotations
 
+import re
 import base64
 import os
 import sys
@@ -90,7 +91,7 @@ class Service(DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesM
         paths.write_prefs(language=lang)
         return {"language": lang}
 
-    REMINDER_DEFAULTS = {"enabled": True, "minutes": 10, "skip_back_to_back": True, "sound": True, "ring_seconds": 60, "muted_date": ""}
+    REMINDER_DEFAULTS = {"enabled": True, "minutes": 10, "skip_back_to_back": True, "sound": True, "ring_seconds": 60, "muted_date": "", "events_eve": True, "events_time": "13:00"}
 
     def get_reminders(self) -> dict:
         saved = paths.read_prefs().get("reminders")
@@ -114,6 +115,13 @@ class Service(DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesM
             if r not in (15, 30, 60, 120, 300, 0):  # 0 = keep ringing until answered
                 raise AppError("invalid_data", "Choose how long the alarm rings.")
             cur["ring_seconds"] = r
+        if "events_eve" in b:
+            cur["events_eve"] = bool(b["events_eve"])
+        if "events_time" in b:
+            tm = str(b["events_time"] or "")
+            if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", tm):
+                raise AppError("invalid_data", "Choose a time.")
+            cur["events_time"] = tm
         if "muted_date" in b:
             cur["muted_date"] = str(b["muted_date"] or "")[:10]
         paths.write_prefs(reminders=cur)
@@ -392,6 +400,8 @@ class Service(DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesM
         official = [(date.fromisoformat(h["start"]), date.fromisoformat(h["end"] or h["start"]), h["name"])
                     for h in self.school_calendar()["holidays"]]
 
+        official_events = [(date.fromisoformat(e["date"]), e["name"]) for e in self.school_calendar().get("events", []) if e.get("date")]
+
         def span(h):
             a = date.fromisoformat(h.start)
             b = date.fromisoformat(h.end) if h.end else a
@@ -406,6 +416,8 @@ class Service(DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesM
                 continue
             if not h.name.strip():
                 h.name = next((n for x, y, n in official if x <= a <= y), "")
+                if not h.name and any(a <= d0 <= b for d0, _n in official_events):
+                    continue  # a school event (revision, exams, parents' meeting...), not a holiday: a normal day with lessons
             if any(((a + timedelta(days=i)).weekday() in working) for i in range(min((b - a).days, 400) + 1)):
                 rows.append(h)
         rows.sort(key=lambda h: h.start)

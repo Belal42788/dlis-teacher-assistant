@@ -319,6 +319,8 @@ class TestUnnamedHolidays(unittest.TestCase):
             self.assertEqual(len(out), 1)
             self.assertEqual((out[0]["start"], out[0]["end"]), ("2026-12-27", "2026-12-31"))
             self.assertIn("Winter Break", out[0]["name"])
+            rows = svc.put_calendar({"holidays": [{"start": "2026-11-15", "end": "2026-11-18", "name": ""}, {"start": "2026-12-03", "end": "", "name": ""}]})["holidays"]
+            self.assertEqual(rows, [])  # school events are not holidays: those days stay normal school days
 
 
 class TestDocsAndTasks(unittest.TestCase):
@@ -1036,3 +1038,4 @@ class TestUrlSource(TestAi):
                 self.svc.import_url({"url": "http://router.local/"})
         with self.assertRaises(AppError):
             self.svc.import_url({"url": "file:///etc/passwd"})
+

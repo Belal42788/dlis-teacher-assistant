@@ -147,6 +147,22 @@ def _keep_taskbar_visible(window) -> None:
         pass  # not critical; --native-titlebar always respects the taskbar
 
 
+def _set_window_icon(window) -> None:
+    """Windows: the taskbar and the window corner show the school logo, not the Python icon."""
+    if sys.platform != "win32":
+        return
+    try:
+        from System import Action
+        from System.Drawing import Icon
+
+        ico = paths.resources_dir() / "icon.ico"
+        form = window.native
+        form.Invoke(Action(lambda: setattr(form, "Icon", Icon(str(ico)))))
+    except Exception:
+        import traceback
+        paths.log_error("could not set the window icon:\n" + traceback.format_exc())
+
+
 def _enable_taskbar_minimize(window) -> None:
     """Windows: a window with no system title bar lacks the 'minimize' style, so clicking its taskbar button while it is
     showing does nothing. Give it the style (invisible: there is no title bar to draw it on)."""
@@ -196,6 +212,12 @@ def _report_crash() -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    if sys.platform == "win32":  # its own taskbar identity, so the taskbar shows our icon and not python's
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("DLIS.TeacherAssistant")
+        except Exception:
+            pass
     try:
         return _main(argv)
     except SystemExit:
@@ -366,14 +388,22 @@ def _main(argv: list[str] | None = None) -> int:
                             time.sleep(0.008)
                         # let go at the very top of the screen = maximise (like every Windows program)
                         user32.GetCursorPos(ctypes.byref(pt))
-                        mon = user32.MonitorFromPoint(wintypes.POINT(pt.x, pt.y), 2)
-                        class MI(ctypes.Structure):
-                            _fields_ = [("cbSize", wintypes.DWORD), ("rcMonitor", wintypes.RECT), ("rcWork", wintypes.RECT), ("dwFlags", wintypes.DWORD)]
-                        mi = MI(); mi.cbSize = ctypes.sizeof(MI)
-                        if user32.GetMonitorInfoW(mon, ctypes.byref(mi)) and pt.y <= mi.rcMonitor.top + 2:
-                            user32.ShowWindow(hwnd, 3)  # SW_MAXIMIZE
+                        top = 0
+                        try:
+                            class MI(ctypes.Structure):
+                                _fields_ = [("cbSize", wintypes.DWORD), ("rcMonitor", wintypes.RECT), ("rcWork", wintypes.RECT), ("dwFlags", wintypes.DWORD)]
+                            user32.MonitorFromPoint.restype = ctypes.c_void_p
+                            user32.MonitorFromPoint.argtypes = [wintypes.POINT, wintypes.DWORD]
+                            mi = MI(); mi.cbSize = ctypes.sizeof(MI)
+                            if user32.GetMonitorInfoW(ctypes.c_void_p(user32.MonitorFromPoint(pt, 2)), ctypes.byref(mi)):
+                                top = mi.rcMonitor.top
+                        except Exception:
+                            top = 0
+                        if pt.y <= top + 4:
+                            holder["window"].maximize()
                     except Exception:
-                        paths.log_error("could not move the window")
+                        import traceback
+                        paths.log_error("could not move the window:\n" + traceback.format_exc())
 
                 def close(self):
                     close_clicked()
@@ -429,7 +459,7 @@ def _main(argv: list[str] | None = None) -> int:
                 return None
 
             window.events.closing += on_closing
-            window.events.shown += lambda: (_keep_taskbar_visible(window), _enable_taskbar_minimize(window))
+            window.events.shown += lambda: (_keep_taskbar_visible(window), _enable_taskbar_minimize(window), _set_window_icon(window))
 
             def native_folder_dialog(start: str = ""):
                 kind = getattr(getattr(webview, "FileDialog", None), "FOLDER", None) or webview.FOLDER_DIALOG

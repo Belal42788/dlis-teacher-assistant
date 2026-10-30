@@ -1,7 +1,7 @@
 import { h, icon, toast } from "./dom.js";
 import { api } from "./api.js";
 import { t } from "./i18n.js";
-import { roomLabel, todayIso, fmt12 } from "./labels.js";
+import { roomLabel, todayIso, fmt12, addDays, fmtShort, localName } from "./labels.js";
 
 // A small pop-up shortly before each lesson or duty, while the app is open.
 let cfg = null, day = null, dayAt = 0, timer = null;
@@ -92,13 +92,31 @@ async function alarmsTick() {
   for (const [key, v] of [...alarmSnooze]) if (Date.now() >= v.wake) { alarmSnooze.delete(key); show(v.item, key, 0); }
 }
 
+// The day before a school event (trip, exams, parents' meeting...) a reminder pops up at the chosen time.
+// On the last working day before a weekend it also covers the events of the days that follow.
+let eventsShown = "";
+async function eventsEveTick() {
+  if (!cfg?.events_eve || eventsShown === todayIso() || nowMin() < toMin(cfg.events_time || "13:00")) return;
+  eventsShown = todayIso();
+  const [cal, st] = await Promise.all([api.get("/api/calendar"), api.get("/api/settings")]);
+  const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const working = (iso) => (st.working_days || []).includes(DAYS[new Date(`${iso}T00:00:00Z`).getUTCDay()]);
+  const today = todayIso();
+  let last = addDays(today, 1);
+  for (let i = 0; i < 7 && !working(last); i++) last = addDays(last, 1);   // through the next working day
+  const list = (cal.events || []).filter((e) => e.date > today && e.date <= last && e.name);
+  if (!list.length) return;
+  const text = list.map((e) => (e.date === addDays(today, 1) ? "" : `${fmtShort(e.date)}: `) + localName(e.name)).join(" · ");
+  show({ alarm: true, label: t("rem_events_tomorrow", { names: text }), start: cfg.events_time }, `events|${today}`, 0);
+}
+
 let seenDate = todayIso();
 async function tick() {
   if (seenDate !== todayIso()) {      // the app was left open overnight: show the new day
     seenDate = todayIso();
     if (["", "#/today", "#/"].includes(location.hash)) window.dispatchEvent(new HashChangeEvent("hashchange"));
   }
-  try { cfg = await api.get("/api/reminders"); await alarmsTick(); } catch { /* try again in a moment */ }
+  try { cfg = await api.get("/api/reminders"); await alarmsTick(); await eventsEveTick(); } catch { /* try again in a moment */ }
   try {
     if (!cfg.enabled || cfg.muted_date === todayIso()) return;
     const { items, date } = await loadDay();

@@ -638,3 +638,29 @@ table.wc .dot { display: inline-block; width: .6rem; height: .6rem; border-radiu
 .btn, .tag, .label, .seg-btn, .nav a span, th, summary, .banner, .toast, h1, h2, h3, label { overflow-wrap: anywhere; }
 .row > *, .field, .panel { min-width: 0; }
 html[dir="ltr"] .btn { white-space: normal; }
+
+/* 3D school building */
+.bld { min-height: 560px; }
+.scene3d { position: relative; height: 680px; perspective: 2400px; perspective-origin: 50% 40%; overflow: hidden; border-radius: 14px; cursor: grab; touch-action: none; user-select: none;
+  background: linear-gradient(180deg, #eaf4fb, #f7fbff 60%, #e5f1dd); direction: ltr; }
+.scene3d:active { cursor: grabbing; }
+.world3d { position: absolute; left: 50%; top: 50%; transform-style: preserve-3d; margin: 0;
+  transform: translate(-50%, -50%) scale(var(--zoom, .82)) rotateX(var(--tilt, 58deg)) rotateZ(var(--az, 28deg)) translateZ(calc(var(--half, 200px) * -1)); }
+.ground3d { position: absolute; inset: -40px; background: rgba(120, 170, 90, .18); border: 2px dashed rgba(60, 110, 50, .3); transform: translateZ(-14px); }
+.floor3d { position: absolute; left: 0; top: 0; transform-style: preserve-3d; }
+.zone3d { position: absolute; transform-style: preserve-3d; background: rgba(120, 150, 210, .10); border: 2px solid rgba(42, 42, 114, .55); box-shadow: 0 0 0 4px rgba(42, 42, 114, .07); }
+.zone3d.center { background: rgba(240, 162, 178, .12); }
+.floor3d-name { position: absolute; left: 0; top: 0; transform: translate(0, -100%) rotateZ(calc(var(--az, 28deg) * -1)) rotateX(calc(var(--tilt, 58deg) * -1)); white-space: nowrap;
+  background: #2a2a72; color: #fff; padding: .25rem .7rem; border-radius: 8px; font-size: 1rem; }
+.room3d { position: absolute; transform-style: preserve-3d; cursor: pointer; outline: none; }
+.f3 { position: absolute; left: 0; top: 0; pointer-events: none; transform-origin: 0 0; box-sizing: border-box; }
+.f3-floor { width: 100%; height: 100%; border: 2px solid rgba(31, 42, 92, .55); background: var(--rc, #dcecf5); opacity: .75; pointer-events: auto; }
+.f3-w { background: var(--rc, #dcecf5); opacity: .22; border: 1px solid rgba(31, 42, 92, .45); transform: rotateX(90deg); }
+.f3-label { position: absolute; left: 50%; top: 50%; transform-style: flat; pointer-events: none; text-align: center; width: max-content; max-width: 150px; line-height: 1.15; font-size: .8rem; color: #1f2a5c;
+  transform: translate(-50%, -50%) translateZ(8px) rotateZ(calc(var(--az, 28deg) * -1)) rotateX(calc(var(--tilt, 58deg) * -1)); text-shadow: 0 0 4px #fff, 0 0 4px #fff, 0 0 6px #fff; }
+.room3d:hover .f3-floor { opacity: 1; } .room3d:hover .f3-w { opacity: .4; }
+.room3d.sel .f3-floor { opacity: 1; border-color: #1f2a5c; border-width: 3px; } .room3d.sel .f3-w { opacity: .5; border-color: #1f2a5c; }
+.room3d.hit .f3-floor { border-color: #e8a317; border-width: 3px; } .room3d.hit .f3-w { opacity: .5; border-color: #e8a317; }
+.room3d.k-class { --rc: #9fd0ea; } .room3d.k-lab { --rc: #bfe38a; } .room3d.k-office { --rc: #fbc97a; } .room3d.k-admin { --rc: #f0a2b2; } .room3d.k-facility { --rc: #c7b5ea; } .room3d.k-other { --rc: #cfcfcf; }
+.map-actions { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin-top: .6rem; }
+.map-actions p { width: 100%; margin: 0; }

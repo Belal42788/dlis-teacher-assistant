@@ -198,17 +198,17 @@ try:
         from PIL import Image as _I
         _I.new("RGB", (800, 450), (240, 240, 250)).save("/tmp/nlm.pdf", "PDF")
         page.click(".nav a[data-page=slides]"); page.click("a.seg-btn[href='#/sources']"); page.wait_for_selector("text=أضف مصدر")
-        page.set_input_files("input[type=file]", "/tmp/nlm.pdf"); page.wait_for_selector(".src-card >> text=Input devices", timeout=20000); shot("17m_sources")
+        page.set_input_files("input[type=file]", "/tmp/nlm.pdf"); page.wait_for_selector(".src-card:has-text('nlm'):has-text('Input devices')", timeout=20000); shot("17m_sources")
         page.click(".nav a[data-page=docs]"); page.click(".seg-btn[data-tab=rv]"); page.wait_for_selector(".src-pick select >> visible=true")
         page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", label=re.compile(r'nlm')) if False else page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", value=page.eval_on_selector(".panel:has(h3:text('ملف المراجعة')) .src-pick select", "s => [...s.options].find(o => o.textContent.includes('nlm')).value")); page.click("text=املا من سلايداتي")
         page.wait_for_function("[...document.querySelectorAll('textarea')].some(t => t.value === 'Mouse: points and clicks')")
         # school map: add floor + room, name it with a phone, drag, then view it
-        page.click(".nav a[data-page=map]"); page.wait_for_selector(".bld"); page.locator(".bld").screenshot(path=str(SHOTS / "17k_building.png")); page.click("text=تعديل الخريطة")
+        page.click(".nav a[data-page=map]"); page.wait_for_selector(".scene3d"); page.locator(".scene3d").screenshot(path=str(SHOTS / "17k_building.png")); page.click("text=تعديل الخريطة")
         page.click("text=أضف دور"); page.click(".map-side >> text=أضف غرفة"); page.wait_for_selector(".map-room.sel")
         page.fill(".map-side input[type=text] >> nth=1", "Principal office"); page.select_option(".map-side select >> nth=0", "admin"); page.fill(".map-side input[dir=ltr]", "0100 555 1234")
         box = page.locator(".map-room.sel").bounding_box(); page.mouse.move(box["x"] + 20, box["y"] + 20); page.mouse.down(); page.mouse.move(box["x"] + 220, box["y"] + 90, steps=5); page.mouse.up()
-        page.wait_for_timeout(700); page.click("text=تعديل الخريطة"); page.click(".bld-room >> text=Principal office"); page.wait_for_selector("a[href='tel:01005551234']"); shot("17l_map")
-        page.reload(); page.wait_for_selector(".nav"); page.click(".nav a[data-page=map]"); page.wait_for_selector(".bld-room >> text=Principal office")
+        page.wait_for_timeout(700); page.click("text=تعديل الخريطة"); page.click(".room3d >> text=Principal office"); page.wait_for_selector("a[href='tel:01005551234']"); shot("17l_map")
+        page.reload(); page.wait_for_selector(".nav"); page.click(".nav a[data-page=map]"); page.wait_for_selector(".room3d >> text=Principal office")
         # layout: sidebar fills the window height, and every page scrolls inside itself
         page.set_viewport_size({"width": 1280, "height": 500})
         for name in ("today", "classes", "docs", "chat", "slides", "map", "tasks", "settings"):
@@ -297,6 +297,8 @@ try:
         pg = at(13, 31); assert pg.locator(".reminder").count() == 1, "expected a reminder before the 13:40 lesson"; pg.close()
         pg = at(13, 45); pg.click(".nav a[data-page=today]"); pg.wait_for_selector(".slot[data-state=now]"); pg.screenshot(path="/tmp/shots/08b_today_now.png"); pg.close()
         pg = at(8, 1, _dt.date(2026, 10, 28)); assert pg.locator(".reminder:has-text('اطبع الكويز')").count() == 1, "own reminder should pop up"; pg.close()
+        pg = at(13, 5, _dt.date(2026, 11, 1)); assert pg.locator(".reminder:has-text('Cultural Diversity')").count() == 1, "the day before an event a reminder should pop up"; pg.close()
+        pg = at(11, 0, _dt.date(2026, 11, 1)); assert pg.locator(".reminder:has-text('Cultural Diversity')").count() == 0, "not before the chosen time"; pg.close()
         pg = at(11, 27); assert pg.locator(".reminder").count() == 0, "no reminder when coming straight from another duty"; pg.close()
         # phone width
         page.set_viewport_size({"width": 400, "height": 800}); page.click(".nav a[data-page=today]"); page.wait_for_timeout(300); shot("14_phone")

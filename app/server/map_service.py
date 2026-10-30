@@ -11,6 +11,19 @@ from ..core.errors import AppError
 
 KINDS = ("class", "lab", "office", "admin", "facility", "other")
 GRID_W, GRID_H = 24, 14
+WINGS = ("left", "center", "right")
+# The building is a wide "V" turned upside down: two class wings and an administrative block in the middle.
+_CENTER = {"photocopy office", "hr & student affairs", "store", "reception", "administrative manager", "financial expert", "principal's office", "isolation room"}
+_FORCE = {"kg2": "right"}
+
+
+def default_wing(name: str, x: int, w: int) -> str:
+    n = " ".join(str(name or "").lower().split()).split(" / ")[0]
+    if n in _FORCE:
+        return _FORCE[n]
+    if n in _CENTER:
+        return "center"
+    return "left" if x + w / 2 < 12 else "right"
 
 
 def _s(x, n: int) -> str:
@@ -43,7 +56,8 @@ def clean_map(data) -> dict:
             rooms.append({"id": rid, "name": _s(r.get("name"), 60) or "?", "kind": r.get("kind") if r.get("kind") in KINDS else "other",
                           "x": _int(r.get("x"), 0, GRID_W - w, 0), "y": _int(r.get("y"), 0, GRID_H - h, 0), "w": w, "h": h,
                           "room_id": _s(r.get("room_id"), 40), "notes": str(r.get("notes") or "").strip()[:600],
-                          "person": _s(r.get("person"), 80), "phone": _s(r.get("phone"), 40)})
+                          "person": _s(r.get("person"), 80), "phone": _s(r.get("phone"), 40),
+                          "wing": r.get("wing") if r.get("wing") in WINGS else default_wing(_s(r.get("name"), 60), _int(r.get("x"), 0, GRID_W - w, 0), w)})
         fid = str(f.get("id") or "")
         if not re.fullmatch(r"[a-z0-9]{4,32}", fid) or fid in seen:
             fid = uuid.uuid4().hex[:8]
@@ -62,7 +76,7 @@ class MapMixin:
         if data is None:
             seed = paths.resources_dir() / "school_map.json"
             data = json.loads(seed.read_text(encoding="utf-8")) if seed.is_file() else {"floors": []}
-        return {**clean_map(data), "grid": [GRID_W, GRID_H], "kinds": list(KINDS)}
+        return {**clean_map(data), "grid": [GRID_W, GRID_H], "kinds": list(KINDS), "wings": list(WINGS)}
 
     def put_map(self, b: dict) -> dict:
         try:

@@ -16,6 +16,8 @@ export function reminderPanel() {
 
   function draw() {
     const mutedToday = cfg.muted_date === todayIso();
+    const evTime = timeInput12(cfg.events_time || "13:00");
+    evTime.addEventListener("change", () => save({ events_time: evTime.value }));
     box.replaceChildren(
       h("h3", {}, t("rem_title")), h("p", { class: "muted" }, t("rem_lead")),
       check(t("rem_on"), "enabled"),
@@ -24,6 +26,8 @@ export function reminderPanel() {
           [5, 10, 15, 20, 30].map((m) => h("option", { value: m, selected: m === cfg.minutes }, t("rem_min", { n: m }))))),
       check(t("rem_skip_b2b"), "skip_back_to_back"),
       check(t("rem_sound"), "sound"),
+      check(t("rem_events"), "events_eve"),
+      h("label", { class: "row", style: { marginBottom: ".5rem" } }, t("rem_events_at"), evTime),
       h("label", { class: "row", style: { marginBottom: ".5rem" } }, t("rem_ring"),
         h("select", { style: { width: "auto" }, onChange: (e) => save({ ring_seconds: +e.target.value }) },
           [15, 30, 60, 120, 300, 0].map((n) => h("option", { value: n, selected: n === (cfg.ring_seconds ?? 60) }, n === 0 ? t("rem_ring_until") : n < 60 ? t("rem_ring_s", { n }) : t("rem_min", { n: n / 60 }))))),

@@ -143,7 +143,8 @@
     "رسمة واحدة للمبنى بالأدوار التلاتة، وكل دور فيه الجنب الأيسر والأوسط والأيمن.",
     "دوس على أي غرفة تشوف بياناتها: الاسم والشخص المسؤول ورقم التليفون والملاحظات. ابحث بالاسم من الخانة اللي فوق.",
     "**تعديل الخريطة:** تضيف دور أو غرفة، وتسحب الغرفة أو تغيّر حجمها، وتكتب اسمها وتليفونها وتربطها بفصل.",
-    "الخريطة بتتعرض كمبنى: كل فصل جنب التاني بعرض متساوي، وأسماء الأدوار والغرف بالعربي لما البرنامج يكون عربي."
+    "الخريطة مبنى 3D بحوائط شفافة وكل الأدوار مفتوحة. اسحب بالماوس عشان تلف المبنى، وزراير + و − (أو Ctrl مع السكرول) للتقريب، وأزرار \"من قدام\" و\"من فوق\" و\"لف 90\".",
+    "اضغط على أي فصل أو غرفة تظهر بياناتها (الاسم والمسؤول والتليفون والملاحظات). والفصل المربوط بفصل دراسي فيه أزرار تفتح الطلاب وسجل الحصص والملفات بتاعته."
    ],
    "image": ""
   },
@@ -349,7 +350,8 @@
     "One picture of the building with its three floors; every floor has a left wing, a middle and a right wing.",
     "Click a room to see its details: name, person in charge, phone number and notes. Search by name in the box at the top.",
     "**Edit the map:** add a floor or a room, drag a room or change its size, write its name and phone and link it to a class.",
-    "The map is shown as a building: rooms sit side by side with equal widths, and floor and room names are in Arabic when the app is in Arabic."
+    "The map is a 3D building with see-through walls and every floor open. Drag to turn it, use + and − (or Ctrl + scroll) to zoom, and the Front, From above and Turn 90° buttons.",
+    "Click any class or room to see its details (name, person, phone, notes). A room linked to a class has buttons that open its students, lesson log and files."
    ],
    "image": ""
   },

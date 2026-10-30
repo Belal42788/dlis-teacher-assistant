@@ -12,6 +12,8 @@ export async function renderClasses(root) {
   let structure = await api.get("/api/structure");
   state.structure = structure;
   const settings = await api.get("/api/settings");
+  const asked = new URLSearchParams((location.hash.split("?")[1]) || "").get("room");
+  if (asked && structure.rooms.some((r) => r.id === asked)) selectedId = asked;
   if (!structure.rooms.some((r) => r.id === selectedId)) selectedId = structure.rooms[0]?.id || "";
 
   const treeBox = h("div", { class: "tree panel" });
