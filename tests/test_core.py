@@ -285,6 +285,74 @@ class TestWeekendHolidays(unittest.TestCase):
                                                  {"start": "2026-10-06", "end": "", "name": "Oct 6"}, {"start": "2026-12-27", "end": "2026-12-31", "name": "Winter"}]})
             self.assertEqual([h["name"] for h in out["holidays"]], ["Oct 6", "Winter"])
 
+    def test_official_year_gets_all_holidays_and_loses_event_rows(self):
+        import tempfile, json
+        from app.server.service import Service
+        from app.core.store import DataStore
+        with tempfile.TemporaryDirectory() as d:
+            svc = Service(); svc.store = DataStore(d)
+            off = svc.school_calendar()
+            ev = off["events"][0]
+            out = svc.put_calendar({"academic_year": off["academic_year"], "holidays": [{"start": ev["date"], "end": "", "name": ev["name"]},
+                                                                                       {"start": "2026-11-25", "end": "", "name": "My own day"}]})
+            names = [h["name"] for h in out["holidays"]]
+            self.assertNotIn(ev["name"], names)           # an event is not a holiday
+            self.assertIn("My own day", names)            # what the teacher added stays
+            for h in off["holidays"]:                      # every orange cell of the school calendar is there
+                self.assertTrue(any(x["start"] <= h["start"] and (x["end"] or x["start"]) >= (h["end"] or h["start"]) for x in out["holidays"]), h)
+
+
+class TestCloud(unittest.TestCase):
+    def test_sign_in_role_and_test_against_a_fake_server(self):
+        import json, tempfile, threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+        from app.server.service import Service
+        from app.core.store import DataStore
+        seen = []
+
+        class H(BaseHTTPRequestHandler):
+            def log_message(self, *a): pass
+            def _go(self, body=None):
+                seen.append((self.command, self.path, self.headers.get("apikey"), self.headers.get("Authorization")))
+                if self.path.startswith("/auth/v1/token?grant_type=password"):
+                    if body.get("password") != "good":
+                        out, code = {"error_description": "Invalid login"}, 400
+                    else:
+                        out, code = {"access_token": "AT", "refresh_token": "RT", "expires_in": 3600, "user": {"id": "u1"}}, 200
+                elif self.path.startswith("/auth/v1/token?grant_type=refresh_token"):
+                    out, code = {"access_token": "AT2", "refresh_token": "RT2", "expires_in": 3600}, 200
+                elif self.path.startswith("/rest/v1/profiles"):
+                    out, code = [{"role": "teacher", "full_name": "T"}], 200
+                else:
+                    out, code = [], 200
+                raw = json.dumps(out).encode()
+                self.send_response(code); self.send_header("Content-Length", str(len(raw))); self.end_headers(); self.wfile.write(raw)
+            def do_GET(self): self._go()
+            def do_POST(self): self._go(json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}"))
+
+        srv = HTTPServer(("127.0.0.1", 0), H); threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                svc = Service(); svc.store = DataStore(d)
+                self.assertEqual(svc.get_cloud(), {"url": "", "key_set": False, "email": "", "signed_in": False, "role": ""})
+                with self.assertRaises(AppError):
+                    svc.put_cloud({"url": "not a url"})
+                svc.put_cloud({"url": f"http://127.0.0.1:{srv.server_port}", "key": "ANON"})
+                with self.assertRaises(AppError) as cm:
+                    svc.cloud_login({"email": "a@b.c", "password": "bad"})
+                self.assertEqual(cm.exception.code, "cloud_bad_login")
+                out = svc.cloud_login({"email": "a@b.c", "password": "good"})
+                self.assertEqual((out["signed_in"], out["role"]), (True, "teacher"))
+                self.assertNotIn("good", (svc._cloud_path()).read_text())            # the password is never saved
+                self.assertTrue(svc.cloud_test()["ok"])
+                self.assertIn(("GET", "/rest/v1/profiles?select=role,full_name&limit=1", "ANON", "Bearer AT"), seen)
+                svc2 = Service(); svc2.store = DataStore(d)                           # a new start stays signed in through the refresh token
+                self.assertTrue(svc2.cloud_test()["ok"])
+                self.assertTrue(any("refresh_token" in p for _m, p, _k, _a in seen))
+                svc.cloud_logout(); self.assertFalse(svc.get_cloud()["signed_in"])
+        finally:
+            srv.shutdown()
+
 
 class TestReadyTimetable(unittest.TestCase):
     def test_known_teacher_gets_timetable_once(self):
@@ -624,6 +692,22 @@ class TestAi(unittest.TestCase):
         self.assertEqual(self.svc.get_map()["floors"][0]["name"], "Ground")
         with self.assertRaises(AppError):
             self.svc.put_map({"floors": "x"})
+
+    def test_school_map_layout_and_migration(self):
+        m = self.svc.get_map()
+        wings = {f["name"]: {w: [r["name"] for r in f["rooms"] if r["wing"] == w] for w in ("left", "center", "right")} for f in m["floors"]}
+        self.assertEqual(wings["Ground floor"], {"left": ["KG1", "KG2"], "center": [], "right": ["Photocopy office", "HR & Student affairs", "Store", "Canteen"]})
+        self.assertEqual(wings["First floor"]["center"], ["Reception"])
+        self.assertEqual(wings["First floor"]["right"], ["IT", "Art store", "Special needs class", "Grade 1"])
+        self.assertEqual(wings["Second floor"]["left"], ["Grade 11", "Grade 9", "Grade 10", "Grade 6"])
+        self.assertEqual(wings["Second floor"]["center"], ["Principal's office"])
+        # a map saved by an older version (no "version") is replaced by the new building, keeping what was typed about each room
+        old = {"floors": [{"id": "floor2", "name": "Second floor", "rooms": [{"name": "Principal's office", "kind": "admin", "person": "Mr X", "phone": "0100", "wing": "left"}]}]}
+        self.svc._need_store().write_json(self.svc._map_path(), old)
+        new = self.svc.get_map()
+        r = [r for f in new["floors"] for r in f["rooms"] if r["name"] == "Principal's office"][0]
+        self.assertEqual((r["person"], r["phone"], r["wing"]), ("Mr X", "0100", "center"))
+        self.assertEqual(new["version"], 2)
 
     def test_sources_read_pictures_and_feed_helpers(self):
         import base64, io

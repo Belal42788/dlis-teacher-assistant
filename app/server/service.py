@@ -15,7 +15,7 @@ from ..core import paths
 from ..core.academic import AcademicCalendar
 from ..core.errors import AppError
 from ..core.legacy import import_legacy
-from ..core.models import WEEKDAYS, Calendar, Period, Settings, Structure, Timetable, is_safe_id
+from ..core.models import WEEKDAYS, Calendar, Holiday, Period, Settings, Structure, Timetable, is_safe_id
 from ..core.presets import COMMON_SUBJECTS
 from ..core.store import DataStore
 from ..core.structure_service import build_from_selection, normalize, preset_payload, sort_structure
@@ -25,6 +25,7 @@ from .ai_chat_service import AiChatMixin
 from .ai_service import AiMixin
 from .alarms_service import AlarmsMixin
 from .chats_service import ChatsMixin
+from .cloud_service import CloudMixin
 from .changes_service import ChangesMixin
 from .docs_service import DocsMixin
 from .log_service import LogMixin
@@ -47,7 +48,7 @@ def _validate(model, data):
         raise AppError("invalid_data", f"{where}: {first.get('msg', 'invalid')}", field=where) from e
 
 
-class Service(DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesMixin, LogMixin, SlidesMixin, RevisionMixin, MapMixin, SourceMixin, WeekMixin, WeeklyMixin):
+class Service(CloudMixin, DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesMixin, LogMixin, SlidesMixin, RevisionMixin, MapMixin, SourceMixin, WeekMixin, WeeklyMixin):
     def __init__(self):
         self.store: Optional[DataStore] = None
         folder = paths.read_prefs().get("data_folder")
@@ -407,6 +408,13 @@ class Service(DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesM
             b = date.fromisoformat(h.end) if h.end else a
             return a, max(a, b)  # an end date before the start (typo) counts as a single day
 
+        ev_names = {n.split(" / ")[0].strip().lower() for _d, n in official_events} | {n.strip().lower() for _d, n in official_events}
+        if cal.academic_year == self.school_calendar().get("academic_year"):
+            # the school's own year: every official holiday must be there (orange cells of the school calendar)
+            for x, y, n in official:
+                if not any(date.fromisoformat(h.start) <= x and (date.fromisoformat(h.end or h.start) >= y) for h in cal.holidays if h.start):
+                    cal.holidays.append(Holiday(start=x.isoformat(), end=y.isoformat() if y != x else "", name=n))
+
         rows, keep = [], []
         for h in cal.holidays:
             try:
@@ -414,6 +422,9 @@ class Service(DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesM
             except ValueError:
                 keep.append(h)  # incomplete row: leave it for the teacher to fix
                 continue
+            if cal.academic_year == self.school_calendar().get("academic_year") and h.name.strip().lower() in ev_names \
+                    and not any(x <= b and a <= y for x, y, _n in official):
+                continue  # a school event saved as a holiday by mistake: it is a normal school day
             if not h.name.strip():
                 h.name = next((n for x, y, n in official if x <= a <= y), "")
                 if not h.name and any(a <= d0 <= b for d0, _n in official_events):

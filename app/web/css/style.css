@@ -447,40 +447,12 @@ details.help ol { margin: .7rem 0 .2rem; padding-inline-start: 1.4rem; display: 
 /* ---------- school map ---------- */
 .map-tabs { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .8rem; }
 .map-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1rem; align-items: start; }
-.map-canvas { position: relative; width: 100%; background: #f4f9fc; background-image: linear-gradient(#e1eef6 1px, transparent 1px), linear-gradient(90deg, #e1eef6 1px, transparent 1px); background-size: calc(100% / 24) calc(100% / 14); border: 2px solid #c9dfeb; border-radius: 12px; overflow: hidden; touch-action: none; }
-.map-room { position: absolute; box-sizing: border-box; border: 2px solid rgba(31, 42, 92, .35); border-radius: 8px; display: grid; place-items: center; padding: 2px; cursor: pointer; text-align: center; font-size: clamp(.6rem, 1.1vw, .85rem); font-weight: 600; color: #1f2a5c; overflow: hidden; background: #dcecf5; }
-.map-room span { overflow: hidden; text-overflow: ellipsis; max-width: 100%; line-height: 1.15; pointer-events: none; }
-.map-room:hover { filter: brightness(.96); }
-.map-room.sel { outline: 3px solid #1f2a5c; z-index: 2; }
-.map-room.hit { outline: 3px solid #e8a317; z-index: 3; }
-.editing .map-room { cursor: grab; user-select: none; }
-.map-handle { position: absolute; right: 0; bottom: 0; width: 14px; height: 14px; background: #1f2a5c; border-radius: 6px 0 6px 0; cursor: nwse-resize; }
 .k-class { background: #dcecf5; } .k-lab { background: #e3f1c8; } .k-office { background: #fde8c4; } .k-admin { background: #f6d3d9; } .k-facility { background: #e4dcf3; } .k-other { background: #ececec; }
 .map-empty { position: absolute; inset: 0; display: grid; place-items: center; color: #7a98a9; padding: 1rem; text-align: center; }
 .map-legend { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: .6rem; font-size: .85rem; color: #4a6a7c; }
 .map-legend i { display: inline-block; width: .9em; height: .9em; border-radius: 3px; border: 1px solid rgba(31, 42, 92, .35); margin-inline-end: .3em; vertical-align: -1px; }
 .map-kind { display: inline-block; padding: .1rem .6rem; border-radius: 99px; font-size: .8rem; border: 1px solid rgba(31, 42, 92, .25); margin-bottom: .3rem; }
 .pre { white-space: pre-wrap; }
-/* the building seen from the front */
-.bld { width: 100%; filter: drop-shadow(0 10px 18px rgba(28,31,77,.14)); }
-.bld-roof { height: 34px; margin-inline: -1.5%; background: linear-gradient(180deg, #5b6bb0, #2a2a72); clip-path: polygon(6% 100%, 14% 0, 86% 0, 94% 100%); }
-.bld-body { background: #fdfaf3; border: 3px solid #2a2a72; border-top: 0; border-bottom: 0; display: grid; }
-.bld-floor { display: grid; grid-template-columns: 2.1rem 1fr; border-top: 3px solid #2a2a72; }
-.bld-floor:first-child { border-top: 0; }
-.bld-label { background: #2a2a72; color: #fff; display: grid; place-items: center; }
-.bld-label span { writing-mode: vertical-rl; transform: rotate(180deg); font-weight: 700; font-size: .85rem; letter-spacing: .02em; white-space: nowrap; }
-.bld-rooms { display: flex; gap: 10px; padding: 10px 12px; background: #f4f9fc; direction: ltr; perspective: 1100px; align-items: stretch; }
-.bld-wing { display: grid; gap: 6px; grid-auto-rows: minmax(64px, auto); transform-style: preserve-3d; min-width: 0; }
-.bld-wing.left { transform: rotateY(9deg); transform-origin: right center; }
-.bld-wing.right { transform: rotateY(-9deg); transform-origin: left center; }
-.bld-wing.mid { transform: translateZ(26px); }
-.bld-room { position: relative; box-sizing: border-box; display: grid; place-items: center; padding: 4px 6px; text-align: center; cursor: pointer; border: 2px solid rgba(31,42,92,.4); border-radius: 6px; font-weight: 700; font-size: clamp(.62rem, 1.05vw, .88rem); color: #1f2a5c; box-shadow: 4px 5px 0 rgba(31,42,92,.28), 6px 8px 10px rgba(31,42,92,.18); transition: transform .12s; }
-.bld-room::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 22%; background: linear-gradient(180deg, rgba(255,255,255,.7), rgba(255,255,255,0)); border-radius: 4px 4px 0 0; pointer-events: none; }
-.bld-room span { position: relative; line-height: 1.2; overflow-wrap: anywhere; }
-.bld-room:hover { transform: translateZ(10px) translateY(-2px); }
-.bld-room.sel { outline: 3px solid #1f2a5c; z-index: 2; }
-.bld-room.hit { outline: 3px solid #e8a317; z-index: 3; }
-.bld-ground { height: 16px; background: linear-gradient(180deg, #7aa75a, #5d8a3f); border-radius: 0 0 8px 8px; margin-inline: -2%; }
 @media (max-width: 900px) { .map-wrap { grid-template-columns: 1fr; } }
 
 
@@ -639,28 +611,12 @@ table.wc .dot { display: inline-block; width: .6rem; height: .6rem; border-radiu
 .row > *, .field, .panel { min-width: 0; }
 html[dir="ltr"] .btn { white-space: normal; }
 
-/* 3D school building */
-.bld { min-height: 560px; }
-.scene3d { position: relative; height: 680px; perspective: 2400px; perspective-origin: 50% 40%; overflow: hidden; border-radius: 14px; cursor: grab; touch-action: none; user-select: none;
-  background: linear-gradient(180deg, #eaf4fb, #f7fbff 60%, #e5f1dd); direction: ltr; }
-.scene3d:active { cursor: grabbing; }
-.world3d { position: absolute; left: 50%; top: 50%; transform-style: preserve-3d; margin: 0;
-  transform: translate(-50%, -50%) scale(var(--zoom, .82)) rotateX(var(--tilt, 58deg)) rotateZ(var(--az, 28deg)) translateZ(calc(var(--half, 200px) * -1)); }
-.ground3d { position: absolute; inset: -40px; background: rgba(120, 170, 90, .18); border: 2px dashed rgba(60, 110, 50, .3); transform: translateZ(-14px); }
-.floor3d { position: absolute; left: 0; top: 0; transform-style: preserve-3d; }
-.zone3d { position: absolute; transform-style: preserve-3d; background: rgba(120, 150, 210, .10); border: 2px solid rgba(42, 42, 114, .55); box-shadow: 0 0 0 4px rgba(42, 42, 114, .07); }
-.zone3d.center { background: rgba(240, 162, 178, .12); }
-.floor3d-name { position: absolute; left: 0; top: 0; transform: translate(0, -100%) rotateZ(calc(var(--az, 28deg) * -1)) rotateX(calc(var(--tilt, 58deg) * -1)); white-space: nowrap;
-  background: #2a2a72; color: #fff; padding: .25rem .7rem; border-radius: 8px; font-size: 1rem; }
-.room3d { position: absolute; transform-style: preserve-3d; cursor: pointer; outline: none; }
-.f3 { position: absolute; left: 0; top: 0; pointer-events: none; transform-origin: 0 0; box-sizing: border-box; }
-.f3-floor { width: 100%; height: 100%; border: 2px solid rgba(31, 42, 92, .55); background: var(--rc, #dcecf5); opacity: .75; pointer-events: auto; }
-.f3-w { background: var(--rc, #dcecf5); opacity: .22; border: 1px solid rgba(31, 42, 92, .45); transform: rotateX(90deg); }
-.f3-label { position: absolute; left: 50%; top: 50%; transform-style: flat; pointer-events: none; text-align: center; width: max-content; max-width: 150px; line-height: 1.15; font-size: .8rem; color: #1f2a5c;
-  transform: translate(-50%, -50%) translateZ(8px) rotateZ(calc(var(--az, 28deg) * -1)) rotateX(calc(var(--tilt, 58deg) * -1)); text-shadow: 0 0 4px #fff, 0 0 4px #fff, 0 0 6px #fff; }
-.room3d:hover .f3-floor { opacity: 1; } .room3d:hover .f3-w { opacity: .4; }
-.room3d.sel .f3-floor { opacity: 1; border-color: #1f2a5c; border-width: 3px; } .room3d.sel .f3-w { opacity: .5; border-color: #1f2a5c; }
-.room3d.hit .f3-floor { border-color: #e8a317; border-width: 3px; } .room3d.hit .f3-w { opacity: .5; border-color: #e8a317; }
-.room3d.k-class { --rc: #9fd0ea; } .room3d.k-lab { --rc: #bfe38a; } .room3d.k-office { --rc: #fbc97a; } .room3d.k-admin { --rc: #f0a2b2; } .room3d.k-facility { --rc: #c7b5ea; } .room3d.k-other { --rc: #cfcfcf; }
+/* school building: solid inverted-V, drawn as SVG */
+.bld3-wrap { background: linear-gradient(180deg, #e6f3fd, #f4faff); border-radius: 14px; overflow-x: auto; cursor: grab; touch-action: pan-x pan-y; user-select: none; direction: ltr; }
+.bld3-wrap:active { cursor: grabbing; }
+.bld3 { display: block; margin: 0 auto; max-width: none; }
+.bld3 text { font-family: inherit; }
+.bld3-room { cursor: pointer; outline: none; }
+.bld3-room:hover, .bld3-room:focus-visible { filter: brightness(1.06) drop-shadow(0 0 5px rgba(29, 111, 196, .6)); }
 .map-actions { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin-top: .6rem; }
 .map-actions p { width: 100%; margin: 0; }

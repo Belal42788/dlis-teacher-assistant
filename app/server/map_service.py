@@ -13,16 +13,11 @@ KINDS = ("class", "lab", "office", "admin", "facility", "other")
 GRID_W, GRID_H = 24, 14
 WINGS = ("left", "center", "right")
 # The building is a wide "V" turned upside down: two class wings and an administrative block in the middle.
-_CENTER = {"photocopy office", "hr & student affairs", "store", "reception", "administrative manager", "financial expert", "principal's office", "isolation room"}
-_FORCE = {"kg2": "right"}
+# Rooms are drawn in list order inside their wing, so the order of the list is the order on the map.
+VERSION = 2
 
 
 def default_wing(name: str, x: int, w: int) -> str:
-    n = " ".join(str(name or "").lower().split()).split(" / ")[0]
-    if n in _FORCE:
-        return _FORCE[n]
-    if n in _CENTER:
-        return "center"
     return "left" if x + w / 2 < 12 else "right"
 
 
@@ -63,19 +58,34 @@ def clean_map(data) -> dict:
             fid = uuid.uuid4().hex[:8]
         seen.add(fid)
         floors.append({"id": fid, "name": _s(f.get("name"), 40) or "Floor", "rooms": rooms})
-    return {"floors": floors}
+    return {"floors": floors, "version": VERSION}
 
 
 class MapMixin:
     def _map_path(self):
         return self._need_store().root / "map.json"
 
+    def _seed_map(self) -> dict:
+        seed = paths.resources_dir() / "school_map.json"
+        return json.loads(seed.read_text(encoding="utf-8")) if seed.is_file() else {"floors": []}
+
     def get_map(self) -> dict:
         store = self._need_store()
         data = store.read_json(self._map_path(), None, check=clean_map)
         if data is None:
-            seed = paths.resources_dir() / "school_map.json"
-            data = json.loads(seed.read_text(encoding="utf-8")) if seed.is_file() else {"floors": []}
+            data = self._seed_map()
+        elif int(data.get("version") or 1) < VERSION:
+            # old drawing (before the inverted-V building): take the new building and keep what was typed about each room
+            old = {(r["name"] or "").lower(): r for f in data.get("floors", []) for r in f.get("rooms", [])}
+            data = self._seed_map()
+            for f in data["floors"]:
+                for r in f["rooms"]:
+                    o = old.get(r["name"].lower())
+                    if o:
+                        for k in ("room_id", "notes", "person", "phone"):
+                            if o.get(k):
+                                r[k] = o[k]
+            store.write_json(self._map_path(), clean_map(data))
         return {**clean_map(data), "grid": [GRID_W, GRID_H], "kinds": list(KINDS), "wings": list(WINGS)}
 
     def put_map(self, b: dict) -> dict:

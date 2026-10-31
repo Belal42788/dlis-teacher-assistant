@@ -203,12 +203,12 @@ try:
         page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", label=re.compile(r'nlm')) if False else page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", value=page.eval_on_selector(".panel:has(h3:text('ملف المراجعة')) .src-pick select", "s => [...s.options].find(o => o.textContent.includes('nlm')).value")); page.click("text=املا من سلايداتي")
         page.wait_for_function("[...document.querySelectorAll('textarea')].some(t => t.value === 'Mouse: points and clicks')")
         # school map: add floor + room, name it with a phone, drag, then view it
-        page.click(".nav a[data-page=map]"); page.wait_for_selector(".scene3d"); page.locator(".scene3d").screenshot(path=str(SHOTS / "17k_building.png")); page.click("text=تعديل الخريطة")
-        page.click("text=أضف دور"); page.click(".map-side >> text=أضف غرفة"); page.wait_for_selector(".map-room.sel")
-        page.fill(".map-side input[type=text] >> nth=1", "Principal office"); page.select_option(".map-side select >> nth=0", "admin"); page.fill(".map-side input[dir=ltr]", "0100 555 1234")
-        box = page.locator(".map-room.sel").bounding_box(); page.mouse.move(box["x"] + 20, box["y"] + 20); page.mouse.down(); page.mouse.move(box["x"] + 220, box["y"] + 90, steps=5); page.mouse.up()
-        page.wait_for_timeout(700); page.click("text=تعديل الخريطة"); page.click(".room3d >> text=Principal office"); page.wait_for_selector("a[href='tel:01005551234']"); shot("17l_map")
-        page.reload(); page.wait_for_selector(".nav"); page.click(".nav a[data-page=map]"); page.wait_for_selector(".room3d >> text=Principal office")
+        page.click(".nav a[data-page=map]"); page.wait_for_selector(".bld3 .bld3-room"); page.locator(".bld3-wrap").screenshot(path=str(SHOTS / "17k_building.png"))
+        page.click(".bld3-room:has-text(\"مكتب المدير\")"); page.click("text=تعديل الخريطة")
+        page.click(".map-side .btn:has-text('الجناح الشمال')"); page.wait_for_selector(".bld3-room.sel")
+        page.fill(".map-side input[type=text] >> nth=1", "Test office"); page.select_option(".map-side select >> nth=0", "admin"); page.fill(".map-side input[dir=ltr]", "0100 555 1234")
+        page.click(".map-side >> text=قبل"); page.wait_for_timeout(700); page.click("text=تعديل الخريطة"); page.click(".bld3-room:has-text('Test office')"); page.wait_for_selector("a[href='tel:01005551234']"); shot("17l_map")
+        page.reload(); page.wait_for_selector(".nav"); page.click(".nav a[data-page=map]"); page.wait_for_selector(".bld3-room:has-text('Test office')")
         # layout: sidebar fills the window height, and every page scrolls inside itself
         page.set_viewport_size({"width": 1280, "height": 500})
         for name in ("today", "classes", "docs", "chat", "slides", "map", "tasks", "settings"):

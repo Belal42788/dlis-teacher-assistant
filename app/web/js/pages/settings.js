@@ -6,6 +6,7 @@ import { DAYS, dayName, subjectLabel } from "../labels.js";
 import { pickFolder } from "../components/folder_picker.js";
 import { segTabs } from "../components/seg.js";
 import { aiPanel } from "../components/ai_panel.js";
+import { cloudPanel } from "../components/cloud_panel.js";
 import { reminderPanel } from "../components/reminder_panel.js";
 
 // Shared with the first-run guide.
@@ -95,7 +96,8 @@ export async function renderSettings(root, { reloadApp }) {
 
     ["rem", t("rem_title"), reminderPanel()],
 
-    ["ai", t("ai_title"), aiPanel()]]),
+    ["ai", t("ai_title"), aiPanel()],
+    ["cloud", t("cl_title"), cloudPanel()]]),
 
     h("div", { class: "about" }, h("img", { src: "/resources/logo.png", alt: "DLIS" }), h("p", { class: "muted small" }, `${t("app_name")} · v${boot.version}`))));
 }

@@ -15,7 +15,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "left"
     },
     {
      "id": "room0kg2",
@@ -28,7 +29,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "left"
     },
     {
      "id": "room0photocopyoffic",
@@ -41,7 +43,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "right"
     },
     {
      "id": "room0hrstudentaffai",
@@ -54,7 +57,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "right"
     },
     {
      "id": "room0store",
@@ -67,7 +71,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "right"
     },
     {
      "id": "room0canteen",
@@ -80,7 +85,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "right"
     }
    ]
   },
@@ -99,7 +105,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "left"
     },
     {
      "id": "room1administrative",
@@ -112,7 +119,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "left"
     },
     {
      "id": "room1financialexper",
@@ -125,7 +133,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "left"
     },
     {
      "id": "room1artroom",
@@ -138,7 +147,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "left"
     },
     {
      "id": "room1grade3",
@@ -151,7 +161,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "left"
     },
     {
      "id": "room1grade4",
@@ -164,7 +175,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "left"
     },
     {
      "id": "room1grade5",
@@ -177,7 +189,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "left"
     },
     {
      "id": "room1reception",
@@ -190,7 +203,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "center"
     },
     {
      "id": "room1it",
@@ -203,7 +217,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "right"
     },
     {
      "id": "room1artstore",
@@ -216,7 +231,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "right"
     },
     {
      "id": "room1specialneedscl",
@@ -229,7 +245,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "right"
     },
     {
      "id": "room1grade1",
@@ -242,7 +259,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "right"
     }
    ]
   },
@@ -261,7 +279,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "left"
     },
     {
      "id": "room2grade9",
@@ -274,7 +293,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "left"
     },
     {
      "id": "room2grade10",
@@ -287,7 +307,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "left"
     },
     {
      "id": "room2grade6",
@@ -300,7 +321,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "left"
     },
     {
      "id": "room2principalsoffi",
@@ -313,7 +335,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "center"
     },
     {
      "id": "room2frenchclass",
@@ -326,7 +349,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "right"
     },
     {
      "id": "room2isolationroom",
@@ -339,7 +363,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "right"
     },
     {
      "id": "room2grade7",
@@ -352,7 +377,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "right"
     },
     {
      "id": "room2grade8",
@@ -365,7 +391,8 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "right"
     },
     {
      "id": "room2grade2",
@@ -378,9 +405,11 @@
      "room_id": "",
      "notes": "",
      "person": "",
-     "phone": ""
+     "phone": "",
+     "wing": "right"
     }
    ]
   }
- ]
+ ],
+ "version": 2
 }

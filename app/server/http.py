@@ -23,7 +23,7 @@ _TYPES = {".js": "application/javascript", ".mjs": "application/javascript", ".c
           ".ico": "image/x-icon", ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf", ".otf": "font/otf"}
 
 
-_SLOW = re.compile(r"/api/ai/(chat|test|models|lesson|quiz|trimester|revision)|/api/slides/(source|plan|image|image-test)|/api/sources/(import|url|[0-9a-f]+/(read|digest))")
+_SLOW = re.compile(r"/api/ai/(chat|test|models|lesson|quiz|trimester|revision)|/api/slides/(source|plan|image|image-test)|/api/cloud/(login|test)|/api/sources/(import|url|[0-9a-f]+/(read|digest))")
 
 
 class AppServer(ThreadingHTTPServer):
@@ -175,6 +175,11 @@ class Handler(BaseHTTPRequestHandler):
             ("POST", r"/api/sources/([0-9a-f]{10})/delete", lambda m, b: svc.delete_source(m.group(1))),
             ("GET", r"/api/weekly", lambda m, b: svc.get_weekly(int(q.get("tri", 0)), int(q.get("week", 1)))),
             ("PUT", r"/api/weekly", lambda m, b: svc.set_weekly(b)),
+            ("GET", r"/api/cloud", lambda m, b: svc.get_cloud()),
+            ("PUT", r"/api/cloud", lambda m, b: svc.put_cloud(b)),
+            ("POST", r"/api/cloud/login", lambda m, b: svc.cloud_login(b)),
+            ("POST", r"/api/cloud/logout", lambda m, b: svc.cloud_logout()),
+            ("POST", r"/api/cloud/test", lambda m, b: svc.cloud_test()),
             ("GET", r"/api/map", lambda m, b: svc.get_map()),
             ("PUT", r"/api/map", lambda m, b: svc.put_map(b)),
             ("PUT", r"/api/reminders", lambda m, b: svc.put_reminders(b)),
