@@ -30,7 +30,8 @@ class Cloud:
         data = json.dumps(body).encode() if body is not None else None
         req = urllib.request.Request(self.url + path, data=data, method=method)
         req.add_header("apikey", self.key)
-        req.add_header("Authorization", f"Bearer {token or self.key}")
+        if token or self.key.startswith("eyJ"):   # the new "publishable" keys are not JWTs: they go in apikey only
+            req.add_header("Authorization", f"Bearer {token or self.key}")
         req.add_header("Content-Type", "application/json")
         for k, v in (extra or {}).items():
             req.add_header(k, v)
