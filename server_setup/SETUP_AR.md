@@ -35,3 +35,14 @@
 2. افتح `resources/school_server.json` واكتب `url` و`key` واسم المدرسة في `school` (مثال: `{"url": "https://xxxx.supabase.co", "key": "…", "school": "اسم المدرسة"}`).
 3. ابني البرنامج (`build_windows.bat`) وسلّمه للمدرسة: المدرسين مش هيكتبوا أي حاجة غير إيميلهم وكلمة سرهم.
 4. لو مش عايز تبني نسخة لكل مدرسة: استخدم "كود المدرسة" من الإعدادات بعد ما تسجل دخول كإدارة.
+
+## عشان المشروع المجاني ميقفش (مرحلة 17أ)
+فيه ملف `.github/workflows/keepalive.yml` بيبعت طلب صغير للسيرفر كل 3 أيام.
+1. على GitHub: Settings ← Secrets and variables ← Actions ← New repository secret.
+2. اعمل سر اسمه `SUPABASE_URL` وقيمته عنوان السيرفر (https://xxxx.supabase.co).
+3. واعمل سر تاني اسمه `SUPABASE_ANON_KEY` وقيمته المفتاح العام (anon / publishable).
+4. من Actions شغّل «Keep school server awake» مرة للتجربة. لازم يطلع أخضر.
+
+## نسخة احتياطية
+من برنامج المدير: الإعدادات ← سيرفر المدرسة ← «اعمل نسخة احتياطية دلوقتي». اعملها مرة في الشهر. بتتحفظ في فولدر `_backup`.
+(الملفات والصور في التخزين مش داخلة فيها.)
