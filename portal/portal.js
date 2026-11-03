@@ -118,10 +118,12 @@ const VIEWS = {
           window.open(CFG.url + "/storage/v1" + j.signedURL, "_blank", "noopener"); } catch { b.textContent = t("net"); } } }, t("open")))));
   },
   async week(k, box) {
-    const rows = await api("GET", `/rest/v1/week_plans?select=trimester,week,homework,material,quiz_alerts&class_id=eq.${encodeURIComponent(k.class_id)}&order=trimester.desc,week.desc&limit=1`);
+    const rows = await api("GET", `/rest/v1/week_plans?select=trimester,week,subject,homework,material,quiz_alerts&class_id=eq.${encodeURIComponent(k.class_id)}&order=trimester.desc,week.desc&limit=30`);
     if (!rows.length) return box.replaceChildren(h("p", { class: "muted" }, t("noWeek")));
-    const w = rows[0], list = (title, items) => (items && items.length ? h("div", { class: "card" }, h("h2", {}, title), h("ul", {}, items.map((x) => h("li", {}, typeof x === "string" ? x : x.url ? h("a", { href: safeUrl(x.url), target: "_blank", rel: "noopener noreferrer" }, x.title || x.url) : x.title || x.text || JSON.stringify(x))))) : null);
-    box.replaceChildren(h("p", { class: "muted" }, `${t("trimester")} ${w.trimester + 1} · ${t("week")} ${w.week}`), list(t("homework"), w.homework), list(t("material"), w.material), list(t("quizzes"), w.quiz_alerts));
+    const latest = rows.filter((r) => r.trimester === rows[0].trimester && r.week === rows[0].week);
+    const list = (title, items) => (items && items.length ? h("div", { class: "card" }, h("h2", {}, title), h("ul", {}, items.map((x) => h("li", {}, typeof x === "string" ? x : x.url ? h("a", { href: safeUrl(x.url), target: "_blank", rel: "noopener noreferrer" }, x.title || x.url) : x.title || x.text || JSON.stringify(x))))) : null);
+    box.replaceChildren(h("p", { class: "muted" }, `${t("trimester")} ${rows[0].trimester + 1} · ${t("week")} ${rows[0].week}`),
+      ...latest.flatMap((w) => [w.subject ? h("h2", {}, w.subject) : null, list(t("homework"), w.homework), list(t("material"), w.material), list(t("quizzes"), w.quiz_alerts)]));
   },
   async news(k, box) {
     const rows = await api("GET", "/rest/v1/announcements?select=title,body,starts_on,image_path&order=starts_on.desc,created_at.desc&limit=30");

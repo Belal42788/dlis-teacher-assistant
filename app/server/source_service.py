@@ -228,6 +228,9 @@ class SourceMixin:
                     raise AppError("bad_value", "This address is not a public web site.", status=400)
         except socket.gaierror as e:
             raise AppError("ai_offline", "Could not reach this web site. Check the address and the internet connection.", status=502) from e
+        host = (u.hostname or "").lower()
+        if host in ("youtu.be", "youtube.com") or host.endswith(".youtube.com"):
+            return self._import_youtube(url, str(b.get("transcript") or ""))
         raw = http_bytes("GET", url, headers={"Accept": "text/html,application/pdf,*/*"}, timeout=45)[:12_000_000]
         if raw[:4] == b"%PDF":
             pages, name = extract_pdf(raw), (u.path.rsplit("/", 1)[-1] or u.hostname)
@@ -285,6 +288,52 @@ class SourceMixin:
         sid = uuid.uuid4().hex[:10]
         out = [{"n": i, "text": p["text"], "notes": "", "vision": False, "done": True} for i, p in enumerate(pages, 1)]
         src = {"id": sid, "name": name, "added": date.today().isoformat(), "pages": out, "url": url}
+        self._src_save(src)
+        return self._src_brief(src)
+
+    def _import_youtube(self, url: str, pasted: str) -> dict:
+        """A YouTube video becomes a source through its captions (the subtitles the video already has). With no captions the teacher
+        can paste the transcript (YouTube: ... -> Show transcript) and it is used instead."""
+        import json as _json
+        from html import unescape
+        from urllib.parse import parse_qs, urlparse
+        from ..core.ai_client import http_bytes
+        u = urlparse(url)
+        vid = (u.path.strip("/").split("/")[-1] if u.hostname == "youtu.be" else (parse_qs(u.query).get("v") or [u.path.strip("/").split("/")[-1]])[0])[:20]
+        if not re.fullmatch(r"[\w-]{6,20}", vid or ""):
+            raise AppError("bad_value", "This does not look like a YouTube video address.", status=400)
+        title, text = "", pasted.strip()
+        if not text:
+            page = http_bytes("GET", f"https://www.youtube.com/watch?v={vid}", headers={"Accept-Language": "en", "Cookie": "CONSENT=YES+1"}, timeout=45).decode("utf-8", "replace")
+            m = re.search(r"ytInitialPlayerResponse\s*=\s*(\{.+?\})\s*;\s*(?:var|</script>)", page, re.S)
+            try:
+                pr = _json.loads(m.group(1)) if m else {}
+            except ValueError:
+                pr = {}
+            title = ((pr.get("videoDetails") or {}).get("title") or "").strip()
+            tracks = ((pr.get("captions") or {}).get("playerCaptionsTracklistRenderer") or {}).get("captionTracks") or []
+            if not tracks:
+                raise AppError("no_captions", "This video has no captions. Open it on YouTube, choose ... then Show transcript, copy the text and paste it in the box.", status=400)
+            pick = next((t for t in tracks if t.get("languageCode", "").startswith("ar") and t.get("kind") != "asr"), None) or next((t for t in tracks if t.get("languageCode", "").startswith("en") and t.get("kind") != "asr"), None) or tracks[0]
+            base = str(pick.get("baseUrl") or "")
+            if not base.startswith("https://www.youtube.com/"):
+                raise AppError("no_captions", "This video has no readable captions. Paste its transcript in the box instead.", status=400)
+            xml = http_bytes("GET", base, timeout=45).decode("utf-8", "replace")
+            lines = [" ".join(unescape(unescape(x)).split()) for x in re.findall(r"<text[^>]*>(.*?)</text>", xml, re.S)]
+            text = " ".join(x for x in lines if x)
+        if len(text) < 80:
+            raise AppError("source_empty", "The transcript is empty or too short.", status=400)
+        text = re.sub(r"\s*\n\s*", "\n", text)
+        pages, cur = [], ""
+        for w in text.split():
+            if len(cur) + len(w) > 2500 and cur:
+                pages.append(cur.strip()); cur = ""
+            cur += w + " "
+        if cur.strip():
+            pages.append(cur.strip())
+        sid = uuid.uuid4().hex[:10]
+        out = [{"n": i, "text": p, "notes": "", "vision": False, "done": True} for i, p in enumerate(pages[:MAX_PAGES], 1)]
+        src = {"id": sid, "name": title or f"YouTube {vid}", "added": date.today().isoformat(), "pages": out, "url": url}
         self._src_save(src)
         return self._src_brief(src)
 

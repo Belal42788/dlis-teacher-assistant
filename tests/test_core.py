@@ -1626,3 +1626,31 @@ class TestSchemeUnits(TestAi):
         self.svc.ai_generate_lesson({"grade_id": "g4", "trimester": 0, "week": w, "topic": "hardware"})
         sent = json.dumps(self.sent[-1][3])
         self.assertIn("CURRICULUM OBJECTIVES", sent); self.assertIn("Explain what a CPU does", sent)
+
+
+class TestTranslitMore(unittest.TestCase):
+    def test_names(self):
+        from app.core.translit import to_english
+        self.assertEqual(to_english("تسنيم حامد"), "Tasneem Hamed")
+        self.assertEqual(to_english("رزان خالد"), "Razan Khaled")
+        self.assertEqual(to_english("زين الدين"), "Zein El Din")
+
+
+class TestYoutubeSource(TestAi):
+    def test_captions_and_pasted_transcript(self):
+        import json
+        from unittest import mock
+        pr = {"videoDetails": {"title": "How a CPU works"}, "captions": {"playerCaptionsTracklistRenderer": {"captionTracks": [{"languageCode": "en", "baseUrl": "https://www.youtube.com/api/timedtext?v=abc"}]}}}
+        page = ("<script>var ytInitialPlayerResponse = " + json.dumps(pr) + ";var meta = 1;</script>").encode()
+        xml = ("<transcript>" + "".join(f"<text start='{i}'>The CPU runs instructions {i} &amp;#39;fast&amp;#39;</text>" for i in range(12)) + "</transcript>").encode()
+        with mock.patch("app.core.ai_client.http_bytes", side_effect=[page, xml]), mock.patch("socket.getaddrinfo", return_value=[(2, 1, 6, "", ("142.250.1.1", 0))]):
+            out = self.svc.import_url({"url": "https://youtu.be/dQw4w9WgXcQ"})
+        self.assertEqual(out["name"], "How a CPU works")
+        self.assertIn("runs instructions", self.svc.source_block(out["id"]))
+        nocap = ("<script>var ytInitialPlayerResponse = {};</script>").encode()
+        with mock.patch("app.core.ai_client.http_bytes", return_value=nocap), mock.patch("socket.getaddrinfo", return_value=[(2, 1, 6, "", ("142.250.1.1", 0))]):
+            with self.assertRaises(AppError) as c:
+                self.svc.import_url({"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"})
+            self.assertEqual(c.exception.code, "no_captions")
+            out2 = self.svc.import_url({"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "transcript": "Memory stores data. " * 10})
+        self.assertIn("Memory stores", self.svc.source_block(out2["id"]))

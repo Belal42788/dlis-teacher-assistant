@@ -31,25 +31,27 @@ export async function renderScheme(root) {
     const d = await guarded(() => api.get(`/api/scheme?grade=${gradeSel.value}&tri=${triSel.value}`)); if (!d) return;
     const today = new Date().toISOString().slice(0, 10);
     rows = d.weeks.map((w) => ({
-      w, unit: h("input", { type: "text", value: w.unit, maxlength: 80, style: { width: "9em" }, placeholder: t("sc_unit_ph"), "aria-label": t("sc_unit") }),
-      obj: h("textarea", { rows: 2, value: w.objectives, placeholder: t("sc_obj_ph"), "aria-label": t("sc_objectives"), style: { minHeight: "0", marginTop: ".3rem" } }),
+      w, unit: h("input", { type: "text", value: w.unit, maxlength: 80, placeholder: t("sc_unit_ph"), "aria-label": t("sc_unit") }),
+      obj: h("textarea", { rows: 3, value: w.objectives, placeholder: t("sc_obj_ph"), "aria-label": t("sc_objectives") }),
       topic: h("input", { type: "text", value: w.topic, maxlength: 160, placeholder: t("sc_topic_ph"), "aria-label": t("sc_topic") }),
-      pages: h("input", { type: "text", value: w.pages, maxlength: 60, dir: "ltr", style: { width: "7em" }, placeholder: "10-14", "aria-label": t("sc_pages") }),
+      pages: h("input", { type: "text", value: w.pages, maxlength: 60, dir: "ltr", placeholder: "10-14", "aria-label": t("sc_pages") }),
       src: h("select", { "aria-label": t("sc_source") }, h("option", { value: "" }, t("sc_no_source")), d.sources.map((s) => h("option", { value: s.id, selected: s.id === w.source_id }, s.title))),
     }));
     body.replaceChildren(
       d.sources.length ? null : h("p", { class: "muted small" }, t("sc_no_sources")),
-      h("div", { class: "table-wrap" }, h("table", { class: "tbl" },
-        h("thead", {}, h("tr", {}, ["sc_week", "sc_unit", "sc_topic", "sc_source", "sc_pages", "sc_status"].map((k) => h("th", {}, t(k))))),
-        h("tbody", {}, rows.map((r) => {
-          const w = r.w, off = w.school_days === 0, now = w.start <= today && today <= w.end;
-          return h("tr", { class: now ? "now" : "" },
-            h("td", {}, h("b", {}, w.week), h("div", { class: "muted small" }, `${fmtShort(w.start)} – ${fmtShort(w.end)}`), now ? h("span", { class: "chip on small" }, t("sc_now")) : null),
-            off ? h("td", { colspan: 4 }, h("span", { class: "muted" }, w.holiday || t("sc_no_classes"))) : h("td", {}, r.unit),
-            ...(off ? [] : [h("td", {}, r.topic, r.obj)]),
-            ...(off ? [] : [h("td", {}, r.src), h("td", {}, r.pages)]),
-            h("td", {}, w.has_plan ? h("span", { class: "chip on small" }, t("sc_planned")) : null, w.taught.length ? h("span", { class: "chip small", title: w.taught.join(" · ") }, t("sc_taught")) : null));
-        })))),
+      h("div", { class: "wk-list" }, rows.map((r) => {
+        const w = r.w, off = w.school_days === 0, now = w.start <= today && today <= w.end;
+        const head = h("div", { class: "wk-head" },
+          h("span", { class: "wk-num" }, w.week),
+          h("div", { class: "grow" }, h("b", {}, `${t("sc_week")} ${w.week}`), h("div", { class: "muted small" }, `${fmtShort(w.start)} – ${fmtShort(w.end)}`)),
+          now ? h("span", { class: "chip on small" }, t("sc_now")) : null,
+          w.has_plan ? h("span", { class: "chip on small" }, t("sc_planned")) : null,
+          w.taught.length ? h("span", { class: "chip small", title: w.taught.join(" · ") }, t("sc_taught")) : null);
+        if (off) return h("div", { class: "wk-card off" }, head, h("div", { class: "muted wk-off" }, w.holiday || t("sc_no_classes")));
+        const f = (key, ctl, cls) => h("label", { class: "wk-f " + (cls || "") }, h("span", { class: "label" }, t(key)), ctl);
+        return h("div", { class: "wk-card" + (now ? " now" : "") }, head,
+          h("div", { class: "wk-grid" }, f("sc_unit", r.unit), f("sc_topic", r.topic, "wide"), f("sc_pages", r.pages), f("sc_source", r.src, "wide"), f("sc_objectives", r.obj, "wide")));
+      })),
       h("div", { class: "row", style: { marginTop: ".8rem" } },
         h("button", { class: "btn primary", onClick: () => guarded(async () => { await saveRows(); toast(t("saved")); await load(); }) }, icon("check"), t("save")),
         h("button", { class: "btn", onClick: (e) => guarded(async () => { await saveRows(); const r = await api.post("/api/docs/trimester-plan", { grade_id: gradeSel.value, trimester: +triSel.value, lessons: rows.map((x) => x.topic.value) }); showFile(r); }) }, icon("file"), t("sc_word")),
