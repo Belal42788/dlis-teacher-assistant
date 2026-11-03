@@ -141,6 +141,31 @@ class CloudMixin:
         self._cloud_save(cfg)
         return {"ok": True, "role": role, "tables": tables}
 
+    def cloud_backup(self) -> dict:
+        """Administration only: every table of the school server is saved as a JSON file inside one zip, kept next to the app's own backups."""
+        import json
+        import zipfile
+        if self._cloud_cfg()["role"] != "admin":
+            raise AppError("cloud_admin_only", "Only the administration account can back up the school server.", status=403)
+        c = self._cloud_client()
+        store = self._need_store()
+        out = store.backup_root() / f"Server_Backup_{date.today().isoformat()}.zip"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        counts = {}
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+            for t in ("profiles", "classes", "students", "activation_codes", "parent_students", "grades", "publications", "week_plans", "announcements"):
+                rows, off = [], 0
+                while True:
+                    part = c.select(t, f"select=*&limit=1000&offset={off}")
+                    rows += part
+                    if len(part) < 1000:
+                        break
+                    off += 1000
+                counts[t] = len(rows)
+                z.writestr(f"{t}.json", json.dumps(rows, ensure_ascii=False, indent=1))
+            z.writestr("README.txt", "Backup of the school server tables (JSON). Files and pictures in storage are not inside this backup.\n")
+        return {"path": str(out), "name": out.name, "counts": counts}
+
     # ------------------------------------------------------------ announcements (only the administration writes them)
     def list_announcements(self) -> dict:
         cfg = self._cloud_cfg()

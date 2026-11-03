@@ -1654,3 +1654,20 @@ class TestYoutubeSource(TestAi):
             self.assertEqual(c.exception.code, "no_captions")
             out2 = self.svc.import_url({"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "transcript": "Memory stores data. " * 10})
         self.assertIn("Memory stores", self.svc.source_block(out2["id"]))
+
+
+class TestServerBackup(TestAi):
+    def test_backup_zip_admin_only(self):
+        import json
+        import zipfile
+        from unittest import mock
+        class Fake:
+            def select(self, table, q): return [{"id": 1, "name": "x"}]
+        with mock.patch.object(self.svc, "_cloud_cfg", return_value={"role": "admin"}), mock.patch.object(self.svc, "_cloud_client", return_value=Fake()):
+            r = self.svc.cloud_backup()
+        self.assertEqual(r["counts"]["students"], 1)
+        with zipfile.ZipFile(r["path"]) as z:
+            self.assertEqual(json.loads(z.read("grades.json"))[0]["name"], "x")
+        with mock.patch.object(self.svc, "_cloud_cfg", return_value={"role": "teacher"}):
+            with self.assertRaises(AppError):
+                self.svc.cloud_backup()

@@ -23,7 +23,7 @@ _TYPES = {".js": "application/javascript", ".mjs": "application/javascript", ".c
           ".ico": "image/x-icon", ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf", ".otf": "font/otf"}
 
 
-_SLOW = re.compile(r"/api/ai/(chat|test|models|lesson|quiz|trimester|revision)|/api/tools/run|/api/grades/upload|/api/slides/(source|plan|image|image-test)|/api/cloud/(login|test)|/api/announcements|/api/publications|/api/library/|/api/codes/prepare|/api/inspection-pack|/api/parent-week/|/api/status/|/api/sources/(import|url|[0-9a-f]+/(read|digest))")
+_SLOW = re.compile(r"/api/ai/(chat|test|models|lesson|quiz|trimester|revision)|/api/tools/run|/api/grades/upload|/api/slides/(source|plan|image|image-test)|/api/cloud/(login|test|backup)|/api/announcements|/api/publications|/api/library/|/api/codes/prepare|/api/inspection-pack|/api/parent-week/|/api/status/|/api/sources/(import|url|[0-9a-f]+/(read|digest))")
 
 
 class AppServer(ThreadingHTTPServer):
@@ -222,6 +222,7 @@ class Handler(BaseHTTPRequestHandler):
             ("POST", r"/api/publications/([0-9a-f-]{36})/delete", lambda m, b: svc.delete_publication(m.group(1))),
             ("GET", r"/api/codes", lambda m, b: svc.codes_status()),
             ("POST", r"/api/codes/prepare", lambda m, b: svc.prepare_codes()),
+            ("POST", r"/api/cloud/backup", lambda m, b: svc.cloud_backup()),
             ("POST", r"/api/cloud/test", lambda m, b: svc.cloud_test()),
             ("GET", r"/api/map", lambda m, b: svc.get_map()),
             ("PUT", r"/api/map", lambda m, b: svc.put_map(b)),

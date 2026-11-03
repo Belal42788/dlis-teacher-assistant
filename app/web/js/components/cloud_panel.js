@@ -14,6 +14,16 @@ function codesBox() {
     }) }, icon("file"), t("cd_make")), res);
 }
 
+function backupBox() {
+  const res = h("p", { class: "small" });
+  return h("div", {}, h("hr"), h("h3", {}, t("bk_srv_title")), h("p", { class: "muted" }, t("bk_srv_lead")),
+    h("button", { class: "btn", onClick: () => guarded(async () => {
+      res.textContent = t("cl_testing");
+      const r = await api.post("/api/cloud/backup", {});
+      res.replaceChildren(`${t("bk_srv_done", { n: Object.values(r.counts).reduce((a, b) => a + b, 0) })} `, h("button", { class: "btn small", onClick: () => guarded(() => api.post("/api/open", { path: r.path, folder: true })) }, icon("folder"), t("d_open_folder")));
+    }) }, icon("file"), t("bk_srv_make")), res);
+}
+
 export function cloudPanel() {
   const box = h("div", { class: "panel" });
   const out = h("p", { class: "small", style: { marginTop: ".6rem" } });
@@ -58,6 +68,7 @@ export function cloudPanel() {
               h("button", { class: "btn ghost", onClick: () => guarded(async () => { if (await confirmBox(t("cl_forget_confirm"), { okLabel: t("cl_forget"), danger: true })) { await api.post("/api/cloud/forget", {}); await draw(); } }) }, t("cl_forget")))),
       admin ? h("div", {}, h("hr"), adminBox(c)) : null,
       admin ? codesBox() : null,
+      admin ? backupBox() : null,
       out);
   }
   guarded(draw);
