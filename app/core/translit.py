@@ -55,20 +55,46 @@ def _norm(word: str) -> str:
     return _DIAC.sub("", word).replace("أ", "ا").replace("إ", "ا").replace("آ", "ا").replace("ى", "ي").replace("ة", "ه").strip()
 
 
-_KEYS = {_norm(k): v for k, v in WORDS.items()}
+from .translit_names import pairs as _more
+
+_KEYS = {_norm(k): v for k, v in _more().items()}
+_KEYS.update({_norm(k): v for k, v in WORDS.items()})       # the first list wins when both have a name
+
+
+_VOWELS = ("a", "e", "o", "i", "u", "ou")
 
 
 def _spell(word: str) -> str:
-    out = []
+    """Letter by letter, for names that are not in the lists. Arabic does not write short vowels, so an 'a' is put in when
+    three consonants would meet, and a letter waw / yaa inside the word becomes 'ou' / 'i' as in Nour and Nabil."""
     w = _DIAC.sub("", word)
+    parts = []
+    tail = ""
+    if len(w) > 3 and w[-1] in "هة":
+        w, tail = w[:-1], "a"
     for i, ch in enumerate(w):
         if ch == "و" and 0 < i < len(w) - 1:
-            out.append("o")
+            parts.append("ou")
         elif ch == "ي" and 0 < i < len(w) - 1:
-            out.append("i")
+            parts.append("i")
+        elif ch in "اأآ" and 0 < i:
+            parts.append("a")
         else:
-            out.append(_LETTERS.get(ch, ch))
-    s = "".join(out)
+            parts.append(_LETTERS.get(ch, ch))
+    out, run = [], 0
+    if len(parts) > 2 and parts[0] and parts[1] and parts[0][0] not in "aeiou" and parts[1][0] not in "aeiou":
+        parts.insert(1, "a")
+    for p in parts:
+        if not p:
+            continue
+        if p[0].lower() in "aeiou":
+            run = 0
+        else:
+            run += 1
+            if run == 3:
+                out.append("a"); run = 1
+        out.append(p)
+    s = "".join(out) + tail
     return s[:1].upper() + s[1:]
 
 

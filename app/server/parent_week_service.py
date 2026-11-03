@@ -66,8 +66,8 @@ class ParentWeekMixin:
             if self._cloud_cfg()["role"] not in ("teacher", "admin"):
                 raise AppError("cloud_staff_only", "Sign in with a teacher account first.", status=403)
             item["approved"] = publish
-            self._cloud_client().upsert("week_plans", [{"class_id": room, "trimester": tri, "week": week, "homework": item["homework"], "material": item["material"],
-                                                       "quiz_alerts": item["quiz_alerts"], "approved": publish, "updated_at": date.today().isoformat()}], "class_id,trimester,week")
+            self._cloud_client().upsert("week_plans", [{"class_id": room, "trimester": tri, "week": week, "subject": self._need_store().load_settings().subject or "", "homework": item["homework"], "material": item["material"],
+                                                       "quiz_alerts": item["quiz_alerts"], "approved": publish, "updated_at": date.today().isoformat()}], "class_id,trimester,week,subject")
         data[f"{room}|{tri}|{week}"] = item
         self._need_store().write_json(self._pw_path(), data)
         return self.get_parent_week(room, tri, week)
