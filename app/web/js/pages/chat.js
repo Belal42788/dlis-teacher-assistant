@@ -3,6 +3,7 @@ import { api, guarded } from "../api.js";
 import { t, getLang } from "../i18n.js";
 import { gradeName, roomLabel } from "../labels.js";
 import { state } from "../state.js";
+import { sourcePicker } from "../components/source_pick.js";
 
 // The open conversation stays here while the teacher visits other tabs; every conversation is also saved in the data folder.
 const chat = { id: "", messages: [], busy: false, student: null };  // student: { ar, en } chosen for a parent message
@@ -11,6 +12,7 @@ export async function renderChat(root) {
   const [ai, structure, pr] = await Promise.all([api.get("/api/ai"), api.get("/api/structure"), api.get("/api/ai/prompts")]);
   const lang = getLang();
   let prompts = pr;
+  const src = await sourcePicker((id) => { srcBtn && srcBtn.classList.toggle("has", !!id); }, { exact: true, pagesOnly: true });
 
   const gradeSel = h("select", { "aria-label": t("chat_grade") }, h("option", { value: "" }, t("chat_any_grade")),
     structure.grades.map((g) => h("option", { value: g.id }, gradeName(g))));
@@ -45,7 +47,7 @@ export async function renderChat(root) {
     chat.messages.push({ role: "user", content: text });
     input.value = ""; grow(); chat.busy = true; drawLog();
     try {
-      const r = await api.post("/api/ai/chat", { messages: chat.messages.map(({ role, content }) => ({ role, content })), grade_id: gradeSel.value });
+      const r = await api.post("/api/ai/chat", { messages: chat.messages.map(({ role, content }) => ({ role, content })), grade_id: gradeSel.value, ...(src && src.value() ? { source_id: src.value(), ...src.extra() } : {}) });
       chat.messages.push({ role: "assistant", content: r.reply });
     } catch (e) {
       chat.messages.push({ role: "assistant", content: e.friendly || e.message, error: true });
@@ -133,11 +135,14 @@ export async function renderChat(root) {
   let tray = "";
   const trayBox = h("div", { class: "chat-tray", hidden: true });
   const trayBtn = (id, label) => h("button", { type: "button", class: "chat-tool", "data-tray": id, onClick: () => { tray = tray === id ? "" : id; drawTray(); } }, icon("spark"), label);
-  const tools = h("div", { class: "chat-tools" }, trayBtn("builder", t("chat_builder")), parentBox ? trayBtn("parent", t("pm_title")) : null);
+  const srcBtn = src ? trayBtn("source", t("chat_src")) : null;
+  if (srcBtn) srcBtn.classList.toggle("has", !!src.value());
+  const srcBody = src ? h("div", {}, h("p", { class: "muted small" }, t("chat_src_hint")), src.el) : null;
+  const tools = h("div", { class: "chat-tools" }, trayBtn("builder", t("chat_builder")), parentBox ? trayBtn("parent", t("pm_title")) : null, srcBtn);
   function drawTray() {
     tools.querySelectorAll(".chat-tool").forEach((b) => b.classList.toggle("on", b.dataset.tray === tray));
     trayBox.hidden = !tray;
-    trayBox.replaceChildren(...(tray === "builder" ? [builderBody] : tray === "parent" && parentBox ? [parentBody] : []));
+    trayBox.replaceChildren(...(tray === "builder" ? [builderBody] : tray === "parent" && parentBox ? [parentBody] : tray === "source" && srcBody ? [srcBody] : []));
   }
 
   sendBtn.replaceChildren(icon("send"));

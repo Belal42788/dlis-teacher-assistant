@@ -1,7 +1,7 @@
 import { h, icon, toast } from "./dom.js";
 import { api } from "./api.js";
 import { t } from "./i18n.js";
-import { roomLabel, todayIso, fmt12, addDays, fmtShort, localName } from "./labels.js";
+import { roomLabel, todayIso, fmt12, addDays, fmtShort, localName, fmtDate } from "./labels.js";
 
 // A small pop-up shortly before each lesson or duty, while the app is open.
 let cfg = null, day = null, dayAt = 0, timer = null;
@@ -110,13 +110,40 @@ async function eventsEveTick() {
   show({ alarm: true, label: t("rem_events_tomorrow", { names: text }), start: cfg.events_time }, `events|${today}`, 0);
 }
 
+// In the evening: how many lessons tomorrow, and which classes still have no lesson plan.
+let tomorrowShown = "";
+async function tomorrowTick() {
+  if (cfg?.tomorrow === false || tomorrowShown === todayIso() || nowMin() < toMin(cfg?.tomorrow_time || "19:00")) return;
+  tomorrowShown = todayIso();
+  const r = await api.get(`/api/tomorrow?date=${todayIso()}`);
+  if (!r.found) return;
+  const dayName = r.tomorrow ? t("rem_tomorrow") : fmtDate(r.date, { weekday: "long", day: "numeric", month: "short" });
+  const text = r.missing.length ? t("rem_tmr_missing", { day: dayName, n: r.lessons, names: r.missing.join("، ") }) : t("rem_tmr_ready", { day: dayName, n: r.lessons });
+  show({ alarm: true, label: text, start: cfg.tomorrow_time }, `tomorrow|${todayIso()}`, 0);
+}
+
+// Every school day, when the prayer break starts.
+let prayerAt = null;
+async function prayerTick() {
+  if (cfg?.prayer === false) return;
+  const today = todayIso();
+  if (!prayerAt || prayerAt.date !== today) {
+    const [d, tt] = await Promise.all([api.get(`/api/today?date=${today}`), api.get("/api/timetable")]);
+    prayerAt = { date: today, time: d.school_day && tt.bell && tt.bell.prayer ? tt.bell.prayer.start : "" };
+  }
+  const n = nowMin(), key = `prayer|${today}`;
+  if (!prayerAt.time || handled.has(key) || n < toMin(prayerAt.time) || n >= toMin(prayerAt.time) + 5) return;
+  handled.add(key);
+  show({ alarm: true, label: t("rem_prayer"), start: prayerAt.time }, key, 0);
+}
+
 let seenDate = todayIso();
 async function tick() {
   if (seenDate !== todayIso()) {      // the app was left open overnight: show the new day
     seenDate = todayIso();
     if (["", "#/today", "#/"].includes(location.hash)) window.dispatchEvent(new HashChangeEvent("hashchange"));
   }
-  try { cfg = await api.get("/api/reminders"); await alarmsTick(); await eventsEveTick(); } catch { /* try again in a moment */ }
+  try { cfg = await api.get("/api/reminders"); await alarmsTick(); await eventsEveTick(); await tomorrowTick(); await prayerTick(); } catch { /* try again in a moment */ }
   try {
     if (!cfg.enabled || cfg.muted_date === todayIso()) return;
     const { items, date } = await loadDay();

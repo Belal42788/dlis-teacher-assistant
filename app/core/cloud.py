@@ -20,7 +20,7 @@ def clean_url(u: str) -> str:
 
 
 class Cloud:
-    def __init__(self, url: str, anon_key: str, refresh_token: str = "", timeout: int = 20):
+    def __init__(self, url: str, anon_key: str, refresh_token: str = "", timeout: int = 12):
         self.url, self.key, self.refresh, self.timeout = clean_url(url), (anon_key or "").strip(), refresh_token, timeout
         self.access, self.access_until, self.user = "", 0.0, {}
 
@@ -81,6 +81,31 @@ class Cloud:
         q = f"?on_conflict={urllib.parse.quote(on_conflict)}" if on_conflict else ""
         return self._call("POST", f"/rest/v1/{table}{q}", rows, token=self._token(),
                           extra={"Prefer": "resolution=merge-duplicates,return=representation"}) or []
+
+    def insert(self, table: str, row: dict) -> list:
+        return self._call("POST", f"/rest/v1/{table}", [row], token=self._token(), extra={"Prefer": "return=representation"}) or []
+
+    def upload(self, bucket: str, path: str, data: bytes, content_type: str) -> None:
+        if not self.url or not self.key:
+            raise AppError("cloud_not_set", "The server address and key are not set yet.", status=400)
+        req = urllib.request.Request(f"{self.url}/storage/v1/object/{bucket}/{urllib.parse.quote(path)}", data=data, method="POST")
+        req.add_header("apikey", self.key); req.add_header("Authorization", f"Bearer {self._token()}")
+        req.add_header("Content-Type", content_type); req.add_header("x-upsert", "true")
+        try:
+            urllib.request.urlopen(req, timeout=max(self.timeout, 60)).read()
+        except urllib.error.HTTPError as e:
+            raise AppError("cloud_error", f"The server said no ({e.code}) when saving the file.", status=502)
+        except (urllib.error.URLError, TimeoutError, OSError):
+            raise AppError("cloud_offline", "Could not reach the server. Check the internet and the server address.", status=502)
+
+    def remove_object(self, bucket: str, path: str) -> None:
+        try:
+            self._call("DELETE", f"/storage/v1/object/{bucket}/{urllib.parse.quote(path)}", token=self._token())
+        except AppError:
+            pass
+
+    def update(self, table: str, query: str, row: dict) -> None:
+        self._call("PATCH", f"/rest/v1/{table}?{query}", row, token=self._token())
 
     def delete(self, table: str, query: str) -> None:
         self._call("DELETE", f"/rest/v1/{table}?{query}", token=self._token())

@@ -415,7 +415,7 @@ class SourceMixin:
         self._src_save(src)
         return {**self._src_brief(src), "digest": digest}
 
-    def source_block(self, sid: str, pages=None) -> str:
+    def source_block(self, sid: str, pages=None, cite: bool = False) -> str:
         """Text added to the prompt of the writing helpers."""
         sid = str(sid or "")
         if not sid:
@@ -424,5 +424,7 @@ class SourceMixin:
             text = self._src_text(self._src(sid), pages=pages)
         except AppError:
             return ""
+        rule = (" After every fact you take from the material, write its slide number in square brackets exactly like [Slide 3] (or [Slide 3, 4]). "
+                "If the material does not answer the question, say so plainly and do not guess.") if cite else ""
         return ("\nSOURCE MATERIAL (the teacher's own sources). Use ONLY this material: do not add facts, examples or terms that are not in it, "
-                "and leave out anything it does not cover. Stay within it.\n" + text) if text.strip() else ""
+                "and leave out anything it does not cover. Stay within it." + rule + "\n" + text) if text.strip() else ""

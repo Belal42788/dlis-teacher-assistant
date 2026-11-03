@@ -1,4 +1,3 @@
-import { hubTabs } from "../components/hubtabs.js";
 import { h, icon, toast, confirmBox } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { t } from "../i18n.js";
@@ -8,11 +7,11 @@ import { gradeName, triName, fmtShort } from "../labels.js";
 // What the teacher typed and the slides being edited stay here while they visit other tabs (nothing is saved to disk until the file is made).
 const memo = { model: "", grade: "", tri: "", week: "", topic: "", objectives: "", count: 10, lang: "en", look: "auto", notes: "", prompt: "", source: "", slides: [], built: null };
 
-export async function renderSlides(root) {
+export async function renderSlides(root, { embedded = false } = {}) {
   const [structure, ov, ai, img] = await Promise.all([api.get("/api/structure"), api.get("/api/overview"), api.get("/api/ai"), api.get("/api/slides/image-config")]);
   const tris = ov.trimesters.filter((x) => x.weeks.length);
   if (!structure.grades.length || !tris.length) {
-    root.replaceChildren(h("div", { class: "page" }, hubTabs("slides", "slides"), h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_slides")))),
+    root.replaceChildren(h("div", { class: embedded ? "" : "page" }, h("div", { class: "page-head", hidden: embedded || null }, h("div", {}, h("h1", {}, t("nav_slides")))),
       h("div", { class: "banner warn" }, icon("warn"), h("div", {}, t("d_need_calendar")))));
     return;
   }
@@ -153,8 +152,8 @@ export async function renderSlides(root) {
   }
 
   fillWeeks(false);
-  root.replaceChildren(h("div", { class: "page" }, hubTabs("slides", "slides"),
-    h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_slides")), h("p", {}, t("sl_lead")))),
+  root.replaceChildren(h("div", { class: embedded ? "" : "page" },
+    h("div", { class: "page-head", hidden: embedded || null }, h("div", {}, h("h1", {}, t("nav_slides")), h("p", {}, t("sl_lead")))),
     h("div", { class: "panel" }, h("h3", {}, t("sl_step1")),
       h("div", { class: "pick-row" },
         h("label", {}, h("span", { class: "label" }, t("d_class")), gradeSel),
@@ -167,7 +166,7 @@ export async function renderSlides(root) {
       h("label", { class: "field" }, h("span", { class: "label" }, t("sl_notes")), notes)),
     h("div", { class: "panel" }, h("h3", {}, t("sl_build_title")), h("p", { class: "muted small" }, t("sl_build_lead")), imgSetup,
       h("div", { class: "row", style: { margin: ".8rem 0" } }, planBtn, addBtn, makeAllBtn, buildBtn), result, modelLine, deckBox),
-    h("div", { class: "panel" }, h("h3", {}, t("sl_nlm_title")), h("p", { class: "muted small" }, t("sl_nlm_lead")),
+    h("details", { class: "panel fold" }, h("summary", {}, h("h3", {}, t("sl_nlm_title"))), h("p", { class: "muted small" }, t("sl_nlm_lead")),
       h("div", { class: "row" }, promptBtn,
         h("button", { class: "btn", onClick: () => copy(promptBox) }, icon("copy"), t("chat_copy")),
         h("button", { class: "btn", onClick: () => guarded(() => api.post("/api/open-url", { url: "https://notebooklm.google.com/" })) }, icon("link"), t("sl_open_nlm"))),

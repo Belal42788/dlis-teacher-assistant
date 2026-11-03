@@ -264,8 +264,13 @@ class AiMixin:
     def _ai_context(self, b: dict) -> dict:
         grade = self._grade(str(b.get("grade_id", "")))
         s = self._need_store().load_settings()
+        sid, pages = b.get("source_id"), b.get("source_pages")
+        if not sid:   # nothing picked by hand: use the source planned for this topic in the scheme of work
+            sid, pages = self.scheme_source(grade.id, b.get("topic"))
+        goals = self.scheme_objectives(grade.id, b.get("topic"))
+        goal_text = ("\nCURRICULUM OBJECTIVES for this topic (cover them, do not go beyond them):\n" + goals) if goals else ""
         return {"grade": grade, "label": self._grade_label(grade), "subject": s.subject or "the subject",
-                "notes": str(b.get("notes", "")).strip()[:600] + self.source_block(b.get("source_id"), b.get("source_pages"))}
+                "notes": str(b.get("notes", "")).strip()[:600] + goal_text + self.source_block(sid, pages)}
 
     # ------------------------------------------------------------ writing helpers
     def ai_generate_lesson(self, b: dict) -> dict:

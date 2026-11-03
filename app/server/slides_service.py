@@ -98,15 +98,18 @@ class SlidesMixin:
         cal = self._calendar_service()
         data = self._plans()
         tri_titles = data["trimester"].get(f"{grade_id}|{tri}", {})
+        extra = data.get("scheme", {}).get(f"{grade_id}|{tri}", {})
         out = []
         for w in cal.trimester_weeks(tri):
             lp = data["lesson"].get(_key(grade_id, tri, w["number"]))
+            e = extra.get(str(w["number"]), {})
+            more = {"pages": e.get("pages", ""), "source_id": e.get("source_id", ""), "unit": e.get("unit", ""), "curriculum": e.get("objectives", "")}   # from the scheme of work
             if lp:
-                out.append({"week": w["number"], "topic": lp["topic"], "source": "lesson", "objectives": lp.get("objectives", "")})
+                out.append({"week": w["number"], "topic": lp["topic"], "source": "lesson", "objectives": lp.get("objectives", ""), **more})
             elif tri_titles.get(str(w["number"])):
-                out.append({"week": w["number"], "topic": tri_titles[str(w["number"])], "source": "trimester", "objectives": ""})
+                out.append({"week": w["number"], "topic": tri_titles[str(w["number"])], "source": "trimester", "objectives": "", **more})
             else:
-                out.append({"week": w["number"], "topic": "", "source": "", "objectives": ""})
+                out.append({"week": w["number"], "topic": "", "source": "", "objectives": "", **more})
         return {"weeks": out}
 
     # --- NotebookLM

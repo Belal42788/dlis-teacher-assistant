@@ -26,6 +26,8 @@ create table if not exists announcements (
   created_by uuid references auth.users default auth.uid(), created_at timestamptz not null default now()
 );
 
+alter table announcements add column if not exists image_path text not null default '';
+
 -- students: a code instead of a name goes to parents; the name stays here only if the school wants it
 create table if not exists students (
   code text primary key, class_id text not null, grade_id text not null default '', display_name text not null default ''
@@ -102,3 +104,46 @@ drop policy if exists p_files_staff on storage.objects;
 create policy p_files_staff on storage.objects for all using (bucket_id = 'files' and my_role() in ('admin','teacher')) with check (bucket_id = 'files' and my_role() in ('admin','teacher'));
 drop policy if exists p_files_parent on storage.objects;
 create policy p_files_parent on storage.objects for select using (bucket_id = 'files' and my_role() = 'parent' and name in (select file_path from publications where approved and class_id in (select my_classes())));
+
+-- public pictures for announcements (only the administration uploads)
+insert into storage.buckets (id, name, public) values ('announce', 'announce', true) on conflict do nothing;
+drop policy if exists p_announce_admin on storage.objects;
+create policy p_announce_admin on storage.objects for all using (bucket_id = 'announce' and my_role() = 'admin') with check (bucket_id = 'announce' and my_role() = 'admin');
+
+-- activation codes: the school prints one per student; the parent types it in the portal to link their account to the child
+create table if not exists activation_codes (
+  code text primary key, student_code text not null references students(code) on delete cascade,
+  used_by uuid references auth.users, used_at timestamptz, created_at timestamptz not null default now()
+);
+alter table activation_codes enable row level security;
+drop policy if exists p_codes_admin on activation_codes;
+create policy p_codes_admin on activation_codes for all using (my_role() = 'admin') with check (my_role() = 'admin');
+
+create or replace function claim_student(p_code text) returns text language plpgsql security definer set search_path = public as
+$$
+declare v activation_codes%rowtype;
+begin
+  if auth.uid() is null then raise exception 'not signed in'; end if;
+  select * into v from activation_codes where code = upper(replace(trim(p_code), '-', '')) for update;
+  if not found or v.used_by is not null then raise exception 'bad code'; end if;
+  update activation_codes set used_by = auth.uid(), used_at = now() where code = v.code;
+  insert into parent_students (parent_id, student_code) values (auth.uid(), v.student_code) on conflict do nothing;
+  return v.student_code;
+end $$;
+revoke all on function claim_student(text) from public, anon;
+grant execute on function claim_student(text) to authenticated;
+
+-- what the administration sees about each teacher's week (numbers only, never the files)
+create table if not exists teacher_status (
+  teacher_id uuid not null default auth.uid() references auth.users on delete cascade,
+  trimester int not null, week int not null,
+  teacher_name text not null default '', subject text not null default '',
+  done int not null default 0, total int not null default 0, progress_percent int not null default 0,
+  items jsonb not null default '[]', updated_at date not null default current_date,
+  primary key (teacher_id, trimester, week)
+);
+alter table teacher_status enable row level security;
+drop policy if exists p_ts_read on teacher_status;
+create policy p_ts_read on teacher_status for select using (my_role() = 'admin' or teacher_id = auth.uid());
+drop policy if exists p_ts_write on teacher_status;
+create policy p_ts_write on teacher_status for all using (my_role() in ('admin','teacher') and teacher_id = auth.uid()) with check (my_role() in ('admin','teacher') and teacher_id = auth.uid());

@@ -38,6 +38,19 @@
    "image": "17f_cover"
   },
   {
+   "id": "scheme",
+   "title": "خطة الشرح (إيه هيتشرح كل أسبوع)",
+   "steps": [
+    "افتح **تحضير ← خطة الشرح** واختار الصف والفصل الدراسي. هتلاقي سطر لكل أسبوع.",
+    "اكتب موضوع كل أسبوع، واختار المصدر (كتابك من «مصادري») وأرقام الصفحات. أسابيع الإجازة بتظهر لوحدها من غير خانات.",
+    "دوس **اكتب المواضيع بالذكاء الاصطناعي** لو عايزه يقترح المواضيع، وراجعها.",
+    "دوس **اعمل ملف Word للخطة** علشان تطلّع خطة الفصل الدراسي بقالب المدرسة.",
+    "الخطة دي هي نقطة البداية: صفحة «إنشاء» بتاخد منها الموضوع والصفحات، والذكاء الاصطناعي بيكتب من المصدر المربوط وما بيخرجش عنه.",
+    "علامة «خطة الدرس اتعملت» و«اتشرح» جنب كل أسبوع بتبان لوحدها. وتغيير أي أسبوع بعدين بتعدل سطره وتضغط حفظ.",
+    "**الوحدة وأهداف المنهج:** في كل أسبوع اكتب اسم الوحدة، وتحت الموضوع اكتب أهداف المنهج (هدف في كل سطر). الأهداف دي بتتحط تلقائي في خانة الأهداف في خطة الدرس، والذكاء الاصطناعي بيغطيها ومش بيزود عليها."
+   ]
+  },
+  {
    "id": "classes",
    "title": "الفصول والطلاب",
    "steps": [
@@ -50,20 +63,87 @@
    "image": "09_classes_ar"
   },
   {
-   "id": "docs",
-   "title": "الملفات (Word و Excel)",
+   "id": "grades",
+   "title": "درجات الأسبوع وبوابة أولياء الأمور",
    "steps": [
-    "اختار الفصل والفصل الدراسي والأسبوع من فوق، وبعدين اختار التبويب.",
-    "**الأسبوع كله:** اكتب موضوع كل صف (أو سيبه ييجي من الخطة) واضغط \"جهّز كل حاجة\": خطة الدرس والكويز وملف المراجعة وكشف الدرجات لكل الصفوف مرة واحدة.",
-    "**خطة الدرس:** اكتب الموضوع واضغط \"اكتب بالذكاء الاصطناعي\" ليملا الباقي. الأيام اللي مفيهاش حصة للصف بيتكتب فيها No session.",
-    "**الاختبار:** اختار أجزاء الاختبار: نوع كل جزء (اختيار من متعدد بعدد اختيارات تحدده، صح/خطأ، وصّل، مقالي، أكمل) وعدد الأسئلة وموضوع كل جزء، مثلاً سؤالين مقالي عن موضوع ومعاهم 5 اختيار من متعدد عن موضوع تاني. بعدين اضغط الكتابة بالذكاء الاصطناعي أو الصق أسئلتك. لو اخترت سلايدات من \"سلايداتي\" تقدر تحدد أرقام السلايدات (مثلاً 3-7) وتطلب إن الأسئلة تاخد كلام المادة بنفس ألفاظه.",
-    "**ملف المراجعة:** كلمات مهمة ونقط وأسئلة. زرار \"املا من سلايداتي\" بياخدها من سلايداتك، وتقدر تحدد أرقام السلايدات وتطلب كلام المادة بنفس ألفاظه.",
-    "**كشف الدرجات:** ملف Word لكل فصل لكل أسبوع. ولو هترفع الدرجات على الـ LMS دوس **جدول Excel للـ LMS**: اكتب الدرجات في عمود Grade وانسخه في الـ LMS.",
-    "**خطة الفصل الدراسي:** درس لكل أسبوع، والإجازات بتتكتب لوحدها.",
-    "**طريقة كتابة الـ AI:** تعدّل أسلوب الذكاء الاصطناعي لكل نوع ملف، وترجّع الافتراضي لما تحب.",
-    "اضغط \"فتح الملف\" علشان تفتحه، أو \"فتح المجلد\" علشان تلاقيه."
+    "افتح **الفصول ← الدرجات** واختار الفصل والفصل الدراسي والأسبوع.",
+    "اكتب الدرجات في الجدول (السلوك 10، الحضور 10، شغل الفصل 15، الواجب 15، الكويز 20). كل تغيير بيتحفظ لوحده وبيفضل لما تقفل البرنامج.",
+    "**الدرجة الكاملة للكل ما عدا الغايبين:** علّم على الغايبين في أول عمود، واختار الأجزاء اللي عاوز تملاها، واضغط الزرار. الكويز مش معلّم تلقائياً لأنه مش كل أسبوع.",
+    "**ملف LMS:** استورد ملف Excel أو CSV فيه عمود اسم الطالب وعمود الدرجة، والبرنامج يوصّل الدرجات بقايمة الفصل بالاسم ويقولك على الأسماء اللي ملقاهاش. اكتب الدرجة الكاملة في الـ LMS لو مش مكتوبة في عنوان العمود.",
+    "**بوابة أولياء الأمور:** بعد ما تسجل دخول سيرفر المدرسة، اضغط «ابعت لبوابة أولياء الأمور». ولي الأمر بيشوف درجات ابنه فقط، والغايب مبيظهرلهوش حاجة. لازم الإدارة تكون جهّزت أكواد أولياء الأمور الأول."
    ],
-   "image": "15_docs_lp"
+   "image": ""
+  },
+  {
+   "id": "insights",
+   "title": "نظرة على الفصل",
+   "steps": [
+    "افتح **الفصول ← نظرة على الفصل** واختار الفصل والفصل الدراسي.",
+    "فوق: متوسط الفصل، وعدد الطلبة، والحصص اللي اتشرحت (من سجل الحصص)، وعدد مرات الغياب.",
+    "الرسم بيوريك متوسط الفصل في كل أسبوع (أخضر 85% فأكتر، أزرق من 60%، برتقالي أقل من كده).",
+    "**طلبة محتاجين متابعة:** اللي متوسطهم أقل من 60% أو غابوا أسبوعين أو أكتر. كل ده محسوب من الدرجات اللي كتبتها في صفحة «الدرجات»، فلازم تكتبها الأول."
+   ],
+   "image": ""
+  },
+  {
+   "id": "files",
+   "title": "إنشاء الملفات (Word و Excel والسلايدز)",
+   "steps": [
+    "افتح **تحضير ← إنشاء** واختار الصف والفصل الدراسي والأسبوع من فوق. تحتهم سطر بيقولك موضوع الأسبوع من خطة الشرح.",
+    "من القايمة **عاوز تعمل إيه؟** اختار النوع، وهتشوفه لوحده.",
+    "**خطة الدرس الأسبوعية، الاختبار، ملف المراجعة، كشف الدرجات:** اكتب أو اضغط «اكتب بالذكاء الاصطناعي» وراجع النتيجة.",
+    "**الأسبوع كله:** سطر لكل صف، واضغط «جهّز كل حاجة»: خطة الدرس والكويز وملف المراجعة وكشف الدرجات لكل الصفوف مرة واحدة.",
+    "**الاختبار:** نسختين A وB بترتيب مختلف لو عايز. القالب الجديد فيه شعار المدرسة واسم القسم.",
+    "**ملف المراجعة:** علّم «حط الغلاف في أول الملف ده» وهيتحط غلاف المراجعة (لوجو المدرسة وCognia والدروس اللي اتغطت وصفحاتها) في أول صفحة من نفس الملف. زرار «املأ من سجل الحصص» بيجيب الدروس.",
+    "**كشف الدرجات:** ملف Word لكل فصل لكل أسبوع، أو **جدول Excel للـ LMS**: اكتب الدرجات في عمود Grade وانسخه في الـ LMS.",
+    "**السلايدز:** اختار «سلايدز» من القايمة. الموضوع بيتكتب من خطتك أو تكتبه بنفسك. شغّل «خطة السلايدز بالـ AI» وعدّل وزوّد صور، وبعدين اعمل ملف PowerPoint بشعار المدرسة. أو اكتب برومبت لـ NotebookLM.",
+    "بعد ما الملف يتعمل: **فتح الملف** أو **فتح المجلد** أو **شاركه مع الطلبة**.",
+    "**كويز أونلاين:** تحت أسئلة الكويز زرارين: **ملف Moodle** (صيغة GIFT تستوردها في بنك الأسئلة) و**Google Forms** (كود تلصقه في script.google.com فيعمل لك الفورم مصحّح أوتوماتيك). الأسئلة اللي ملهاش إجابة بتتحول لأسئلة مقالية."
+   ]
+  },
+  {
+   "id": "tools",
+   "title": "أدوات المعلم (27 أداة بالذكاء الاصطناعي)",
+   "steps": [
+    "افتح **تحضير ← أدوات المعلم**. القايمة مقسمة: **تخطيط** (خطة وحدة، مشروع PBL، شرح بأكتر من طريقة، مفردات...) و**تقييم** (rubric، أسئلة على نص، تذكرة خروج، تشخيصي...) و**نصوص** (تبسيط، تلخيص، ترجمة، تدقيق...) و**تواصل** (تعليق شهادة، رد إيميل، نشرة...).",
+    "اختار الأداة، واملا الفورم الصغير (الحقول اللي عليها * لازم). تقدر تختار الصف، ولغة الإجابة (عربي أو إنجليزي أو الاتنين).",
+    "لو عاوز الذكاء الاصطناعي يلتزم بمادتك، اختار **اكتب من مصادري** وحدد أرقام السلايدز. وساعتها ما بيخرجش بره المصدر.",
+    "دوس **اكتبها**، وبعدين عدّل في النص زي ما تحب. **نسخ** يحط النص في الكليبورد، و**احفظ كملف Word** يعمله في فولدر الملفات (وتقدر تشاركه مع الطلبة من المكتبة).",
+    "**تعليق الشهادة** و**ملاحظات على شغل طالب**: الذكاء الاصطناعي بيكتب [student] بدل الاسم، واختار الفصل والطالب وادوس **حط الاسم وانسخ**. أسماء الطلبة ما بتتبعتش للذكاء الاصطناعي أبداً، وملفات الأدوات دي مش بتتشارك.",
+    "راجع المسودة وصلّحها دايماً قبل ما تستخدمها. اللي كتبته بيفضل لما تروح لصفحة تانية وترجع."
+   ],
+   "image": ""
+  },
+  {
+   "id": "quick",
+   "title": "البحث السريع (Ctrl+K)",
+   "steps": [
+    "من أي صفحة اضغط **Ctrl+K** (أو **Cmd+K** على الماك)، أو دوس على «بحث سريع» تحت القايمة اللي على الجنب.",
+    "من غير ما تكتب حاجة هتشوف **آخر ملفاتك** (دوس على الملف يفتح) وأهم الصفحات.",
+    "اكتب أي كلمة: اسم صفحة، أداة من أدوات المعلم، فصل، ملف عملته، أو مصدر. البحث بيفهم الهمزات والتاء المربوطة.",
+    "الأسهم لفوق وتحت للتنقل، **Enter** للفتح، **Esc** للإغلاق."
+   ],
+   "image": ""
+  },
+  {
+   "id": "library",
+   "title": "المكتبة والمشاركة مع الطلبة",
+   "steps": [
+    "افتح **تحضير ← المكتبة**. فيها 3 تبويبات: **ملفاتي** (كل الملفات والسلايدز اللي البرنامج عملها)، و**المشاركة مع الطلبة**، و**مصادري**.",
+    "في **ملفاتي** دوس «شاركه مع الطلبة» على أي ملف، واختار الفصل. وقرر هل الطلبة يشوفوه دلوقتي، أو يستنى لحد ما توافق. الكويز لازم له تاريخ ظهور (بعد ما يخلص).",
+    "تقدر توقف المشاركة أو تخفي الملف في أي وقت. ملفات الدرجات وخطط الدروس ما ينفعش تتشارك أبداً.",
+    "في **المشاركة مع الطلبة** تضيف رابط (فيديو أو موقع) أو ملف من جهازك، وتشوف كل اللي اتشارك.",
+    "المشاركة محتاجة تسجيل دخول لسيرفر المدرسة."
+   ]
+  },
+  {
+   "id": "comm",
+   "title": "التواصل (إعلانات وخطة الأسبوع للأولياء)",
+   "steps": [
+    "**الإعلانات:** الإدارة بس (المدير أو الـ HR) تنشر. الإعلان ليه جمهور (موظفين / أولياء / الكل) وتاريخ ظهور وتاريخ انتهاء وصورة. تقدر **تعدّل** أي إعلان نازل أو تمسحه.",
+    "إعلانات اليوم بتظهر آخر صفحة اليوم، وللإدارة زرار «إضافة إعلان».",
+    "**خطة الأسبوع للأولياء:** الواجبات والروابط الإضافية وتنبيهات الكويزات. الأولياء بيشوفوها بعد ما تدوس «انشر» بس."
+   ]
   },
   {
    "id": "tasks",
@@ -85,7 +165,8 @@
     "من التنبيه: \"فكّرني بعد 5 دقايق\" أو \"تمام\" أو \"اقفلها النهارده\" أو \"اقفل التنبيهات\".",
     "لو جاي من حصة على طول مفيش تنبيه (تقدر تقفل الخيار ده).",
     "علشان تعمل **تنبيه جديد** افتح المهام ← التنبيهات: اكتب أي حاجة عاوز تتفكر بيها، في تاريخ معين أو كل أسبوع.",
-    "لو شغّلت \"سيب البرنامج شغال جنب الساعة\"، التنبيهات بتفضل شغالة بعد قفل النافذة. لقفله خالص: كليك يمين على الأيقونة جنب الساعة ← إغلاق تمامًا."
+    "لو شغّلت \"سيب البرنامج شغال جنب الساعة\"، التنبيهات بتفضل شغالة بعد قفل النافذة. لقفله خالص: كليك يمين على الأيقونة جنب الساعة ← إغلاق تمامًا.",
+    "**تذكير المساء:** بالليل (الساعة 7 مساءً تقدر تغيّرها) بيطلعلك تنبيه بعدد حصص بكرة والفصول اللي لسه ملهاش خطة درس. لو بكرة إجازة بيقولك على أول يوم دراسة بعده. تقدر تقفله من نفس الصفحة."
    ],
    "image": ""
   },
@@ -132,7 +213,7 @@
     "لو عملت سلايدات في NotebookLM ارفعها هنا (ملف PDF أو PowerPoint). ده حتى لو السلايدات صور.",
     "البرنامج بيقرا الصور بالذكاء الاصطناعي، واسم الموديل اللي قرا بيظهر على كارت الملف. لازم تستخدم خدمة بتقرا الصور (Gemini أسهلها).",
     "بعد القراءة تقدر تختار السلايدات دي في السلايدز وفي ملف المراجعة والكويز علشان تتملا منها.",
-    "**سلايدات البرنامج كمان هنا:** أي سلايدات عملتها من صفحة السلايدز بتظهر لوحدها في \"سلايداتي\" بعلامة \"اتعمل في البرنامج\"، وكمان أي ملف pptx في فولدر Slides. يعني كل سلايداتك في مكان واحد."
+    "**سلايدات البرنامج كمان هنا:** أي سلايدات عملتها من قسم «سلايدز» في صفحة إنشاء بتظهر لوحدها في \"سلايداتي\" بعلامة \"اتعمل في البرنامج\"، وكمان أي ملف pptx في فولدر Slides. يعني كل سلايداتك في مكان واحد."
    ],
    "image": ""
   },
@@ -152,10 +233,10 @@
    "id": "window",
    "title": "نافذة البرنامج (ويندوز)",
    "steps": [
-    "اسحب شريط العنوان الأزرق الغامق لتحريك النافذة. دوس مرتين عليه لتكبيرها أو تصغيرها.",
-    "أزرار الشريط: تصغير وتكبير وإغلاق."
-   ],
-   "image": ""
+    "البرنامج بيستخدم شريط العنوان العادي بتاع ويندوز: تصغير وتكبير وإغلاق.",
+    "وقّف مؤشر الماوس على زرار التكبير (أو اضغط Win + Z) علشان تقسم الشاشة بين البرنامج وبرنامج تاني.",
+    "لو اتثبّت على شريط المهام بأيقونة بايثون: شغّل ملف make_shortcut_windows.bat مرة، وبعدين ثبّت الاختصار اللي ظهر على سطح المكتب."
+   ]
   },
   {
    "id": "data",
@@ -176,20 +257,9 @@
     "اكتب في المربع اللي تحت. Enter للإرسال وShift+Enter لسطر جديد.",
     "فوق المربع زرارين: **طلبات جاهزة** (اشرح فكرة، ورقة عمل، نشاط...) و**رسالة لولي أمر**.",
     "رسالة ولي الأمر: اختار الفصل والطالب والسبب. الذكاء الاصطناعي مش بيشوف الاسم، بيكتب [student] والبرنامج هو اللي بيحط الاسم لما تدوس \"حط الاسم وانسخ\".",
+    "زرار **من مصادري**: اختار مصدر (وممكن أرقام السلايدز) والذكاء الاصطناعي يجاوب من المصدر بس، ويكتب رقم السلايد بعد كل معلومة، ولو المصدر ما فيهوش الإجابة يقولك كده بدل ما يخمّن.",
     "تحت كل رد زرار «نسخ» علشان تنقله لأي ملف.",
     "أسماء الطلبة بتتشال قبل الإرسال."
-   ],
-   "image": ""
-  },
-  {
-   "id": "slides",
-   "title": "السلايدز",
-   "steps": [
-    "افتح «السلايدز» واختار الصف والترم والأسبوع. الموضوع بيتكتب من خطة الدرس أو خطة الترم، أو اكتبه بنفسك. لو غيّرت الموضوع اكتبه الأول وبعدين اعمل الخطة.",
-    "**جوه البرنامج:** اضغط «خطة السلايدز بالـ AI»، عدّل العناوين والنقط، وزوّد صور لو حبيت، وبعدين اضغط اعمل ملف PowerPoint. فيه شعار المدرسة.",
-    "**NotebookLM:** اضغط «اكتب البرومبت» واكتب نص المصدر بالـ AI، افتح NotebookLM وضيف المصدر وافتح Studio ← Slide Deck والصق البرومبت.",
-    "ممكن تستخدم سلايداتك أنت كمصدر: اختارها من «سلايداتي».",
-    "راجع النتيجة قبل الحصة."
    ],
    "image": ""
   },
@@ -245,6 +315,19 @@
    "image": "17f_cover"
   },
   {
+   "id": "scheme",
+   "title": "Scheme of work (what is taught each week)",
+   "steps": [
+    "Open **Prepare → Scheme of work** and choose the grade and trimester. There is one row for every week.",
+    "Type the topic of each week and choose the source (your book from «My sources») and the pages. Holiday weeks show by themselves, without boxes.",
+    "Press **Write topics with AI** if you want suggestions, then check them.",
+    "Press **Make the Word file** to get the trimester plan in the school template.",
+    "This is the starting point: «Create» takes the topic and pages from it, and the AI writes from the linked source and stays inside it.",
+    "The «lesson plan made» and «taught» marks appear by themselves beside each week. To change a week later, edit its row and press Save.",
+    "**Unit and curriculum objectives:** for each week write the unit name, and under the topic the curriculum objectives (one per line). They are put into the Objectives box of the lesson plan, and the AI covers them and nothing beyond."
+   ]
+  },
+  {
    "id": "classes",
    "title": "Classes and students",
    "steps": [
@@ -257,20 +340,87 @@
    "image": "09_classes_ar"
   },
   {
-   "id": "docs",
-   "title": "Files (Word and Excel)",
+   "id": "grades",
+   "title": "Weekly marks and the parents' portal",
    "steps": [
-    "Choose the class, term and week at the top, then choose a tab.",
-    "**Whole week:** write each grade's topic (or let it come from the plan) and press \"Prepare everything\": lesson plan, quiz, revision sheet and grading sheet for all grades at once.",
-    "**Lesson plan:** write the topic and press \"Write with AI\" to fill the rest. Days without a lesson for the grade say No session.",
-    "**Quiz:** choose the parts of the quiz: the type of each part (multiple choice with the number of choices you want, true/false, matching, essay, fill in the blank), how many questions and the topic of each part, for example 2 essay questions about one topic and 5 multiple-choice about another. Then press the AI button or paste your own questions. If you pick a file from My slides you can choose which slides to use (for example 3-7) and ask for the exact wording of the material.",
-    "**Revision file:** key words, points and questions. \"Fill from my slides\" takes them from your slides; you can choose slide numbers and ask for the material's exact wording.",
-    "**Grading sheet:** a Word file per class per week. If you upload grades to the LMS press **Excel table for the LMS**: type the grades in the Grade column and copy it into the LMS.",
-    "**Trimester plan:** one lesson per week; holidays are written by themselves.",
-    "**How the AI writes:** change the AI's style for each kind of file and go back to the default any time.",
-    "Press \"Open file\" to open it, or \"Open folder\" to find it."
+    "Open **Classes → Marks** and choose the class, trimester and week.",
+    "Type the marks in the table (behavior 10, attendance 10, classwork 15, homework 15, quiz 20). Every change is saved by itself and stays when you close the program.",
+    "**Full mark for everyone except the absent:** tick the absent students in the first column, choose the parts to fill, and press the button. The quiz is not ticked by default because not every week has one.",
+    "**LMS file:** import an Excel or CSV file with a student-name column and a grade column. The grades are matched to the class list by name and the names that were not found are shown. Type the LMS full mark if it is not in the column title.",
+    "**Parents' portal:** after you sign in to the school server, press \"Send to the parents' portal\". A parent sees only their child's marks, and an absent student shows nothing. The administration must have prepared the parents' codes first."
    ],
-   "image": "15_docs_lp"
+   "image": ""
+  },
+  {
+   "id": "insights",
+   "title": "Class overview",
+   "steps": [
+    "Open **Classes → Class overview** and choose the class and trimester.",
+    "At the top: the class average, the number of students, the lessons taught (from the lesson log) and the number of absences.",
+    "The chart shows the class average for each week (green 85% or more, blue from 60%, orange below).",
+    "**Students to follow up:** average below 60% or absent two weeks or more. It all comes from the marks you entered on the Marks page, so enter them first."
+   ],
+   "image": ""
+  },
+  {
+   "id": "files",
+   "title": "Creating files (Word, Excel and slides)",
+   "steps": [
+    "Open **Prepare → Create** and choose the grade, trimester and week at the top. Under them a line shows the week's topic from your scheme of work.",
+    "From **What do you want to make?** choose the kind; you see only that one.",
+    "**Weekly lesson plan, quiz, revision sheet, grading sheet:** type, or press «Write with AI», then check the result.",
+    "**Whole week:** one row per grade; press «Prepare everything» to make the lesson plan, quiz, revision sheet and grading sheet for all grades at once.",
+    "**Quiz:** two versions A and B in a different order if you want. The new template has the school logo and the department name.",
+    "**Revision sheet:** tick «Put the cover page first in this file» to add the revision cover (school and Cognia logos, the lessons covered and their pages) as the first page of the same file. «Fill from my lesson log» brings the lessons.",
+    "**Grading sheet:** a Word file for each class each week, or an **Excel table for the LMS**: type the grades in the Grade column and copy it into the LMS.",
+    "**Slides:** choose «Slides» from the list. The topic comes from your plan or you type it. Press «Plan the slides with AI», edit, add pictures, then make the PowerPoint file with the school logo. Or write a prompt for NotebookLM.",
+    "After a file is made: **Open file**, **Open folder** or **Share with students**.",
+    "**Online quiz:** under the quiz questions there are two buttons: **Moodle file** (GIFT format for the question bank import) and **Google Forms** (a script you paste into script.google.com that builds a self-graded form). Questions without an answer become essay questions."
+   ]
+  },
+  {
+   "id": "tools",
+   "title": "Teacher tools (27 AI tools)",
+   "steps": [
+    "Open **Prepare → Teacher tools**. The list has groups: **Planning** (unit plan, PBL project, explain in several ways, vocabulary...), **Assessment** (rubric, questions on a text, exit ticket, diagnostic...), **Texts** (simplify, summarise, translate, proofread...) and **Communication** (report comment, email reply, newsletter...).",
+    "Choose a tool and fill its small form (fields marked * are required). You can choose the grade and the language of the answer (Arabic, English or both).",
+    "To keep the AI inside your own material, choose **Write from my sources** and give the slide numbers. It then stays inside that source.",
+    "Press **Write it**, then edit the text as you like. **Copy** puts it on the clipboard, **Save as Word** makes a file in your files folder (and you can share it with students from the Library).",
+    "**Report card comment** and **Feedback on student work**: the AI writes [student] instead of the name; choose the class and student and press **Put the name in and copy**. Student names are never sent to the AI, and these files cannot be shared.",
+    "Always read and fix the draft before you use it. What you wrote stays when you visit another page and come back."
+   ],
+   "image": ""
+  },
+  {
+   "id": "quick",
+   "title": "Quick search (Ctrl+K)",
+   "steps": [
+    "From any page press **Ctrl+K** (**Cmd+K** on a Mac), or click \"Search\" at the bottom of the side menu.",
+    "With nothing typed you see your **recent files** (click one to open it) and the main pages.",
+    "Type any word: a page name, a teacher tool, a class, a file you made, or a source.",
+    "Up and down arrows to move, **Enter** to open, **Esc** to close."
+   ],
+   "image": ""
+  },
+  {
+   "id": "library",
+   "title": "Library and sharing with students",
+   "steps": [
+    "Open **Prepare → Library**. It has 3 tabs: **My files** (every file and slide deck the app made), **Shared with students** and **My sources**.",
+    "In **My files** press «Share with students» on a file and choose the class. Decide if students see it now or it waits until you approve it. A quiz needs a «show from» date (after it ends).",
+    "You can stop sharing or hide a file at any time. Grading sheets and lesson plans can never be shared.",
+    "In **Shared with students** you add a link (video or site) or a file from your computer, and see everything that is shared.",
+    "Sharing needs you to be signed in to the school server."
+   ]
+  },
+  {
+   "id": "comm",
+   "title": "Communication (announcements and the parents' week plan)",
+   "steps": [
+    "**Announcements:** only the administration (principal or HR) can post. An announcement has an audience (staff / parents / everyone), a start and end date and a picture. You can **edit** a posted announcement or delete it.",
+    "Today's announcements show at the end of the Today page, and the administration gets an «Add» button.",
+    "**Parents' week plan:** homework, extra links and quiz alerts. Parents see it only after you press «Publish»."
+   ]
   },
   {
    "id": "tasks",
@@ -292,7 +442,8 @@
     "From the reminder: \"Remind me in 5 minutes\", \"OK\", \"Off for today\" or \"Turn reminders off\".",
     "If you come straight from another lesson there is no reminder (you can turn this off).",
     "To make a **new reminder** open Tasks → Reminders: write what you want to be reminded of, on a date or every week.",
-    "If you turn on \"Keep the app running\", reminders keep working after you close the window. To quit completely: right-click the icon near the clock → Quit."
+    "If you turn on \"Keep the app running\", reminders keep working after you close the window. To quit completely: right-click the icon near the clock → Quit.",
+    "**Evening reminder:** in the evening (7 pm, you can change it) an alert tells you how many lessons you have tomorrow and which classes still have no lesson plan. If tomorrow is a day off, it tells you about the next school day. You can turn it off on the same page."
    ],
    "image": ""
   },
@@ -339,7 +490,7 @@
     "If you made slides in NotebookLM, upload them here (PDF or PowerPoint), even if the slides are pictures.",
     "The app reads the pictures with the AI, and the name of the model that read them shows on the file's card. You need a service that reads pictures (Gemini is the easiest).",
     "After reading you can choose these slides in Slides and in the revision sheet and quiz to fill them.",
-    "**Slides made in the app are here too:** every deck built on the Slides page appears in My slides automatically (tagged \"Made in the app\"), and so does any .pptx in the Slides folder. All your slides in one place."
+    "**Slides made in the app are here too:** every deck built on the «Slides» choice in Create appears in My slides automatically (tagged \"Made in the app\"), and so does any .pptx in the Slides folder. All your slides in one place."
    ],
    "image": ""
   },
@@ -359,10 +510,10 @@
    "id": "window",
    "title": "The app window (Windows)",
    "steps": [
-    "Drag the dark blue title bar to move the window. Double-click it to maximise or restore.",
-    "Buttons on the bar: minimise, maximise and close."
-   ],
-   "image": ""
+    "The app uses the normal Windows title bar: minimise, maximise and close.",
+    "Hover over the maximise button (or press Win + Z) to split the screen between the app and another program.",
+    "If it was pinned to the taskbar with the Python icon: run make_shortcut_windows.bat once, then pin the shortcut it puts on the desktop."
+   ]
   },
   {
    "id": "data",
@@ -383,20 +534,9 @@
     "Type in the box at the bottom. Enter sends, Shift+Enter makes a new line.",
     "Above the box are two buttons: **Ready-made requests** (explain an idea, worksheet, activity...) and **Parent message**.",
     "Parent message: choose the class, the student and the reason. The AI never sees the name; it writes [student] and the app puts the name in when you press \"Put the name in and copy\".",
+    "The **From my sources** button: choose a source (and slide numbers if you like). The AI answers from that source only, writes the slide number after each fact, and says so when the source does not have the answer instead of guessing.",
     "Under each answer there is a Copy button to move it into any file.",
     "Student names are removed before sending."
-   ],
-   "image": ""
-  },
-  {
-   "id": "slides",
-   "title": "Slides",
-   "steps": [
-    "Open Slides and choose the grade, term and week. The topic comes from the lesson plan or trimester plan, or write it yourself. If you change the topic, write it first and then make the plan.",
-    "**Inside the app:** press \"Slide plan with AI\", edit the titles and points, add pictures if you like, then make the PowerPoint file. It has the school logo.",
-    "**NotebookLM:** press \"Write the prompt\" and have the AI write the source text, open NotebookLM, add the source, open Studio → Slide Deck and paste the prompt.",
-    "You can use your own slides as the source: choose them from \"My slides\".",
-    "Check the result before the lesson."
    ],
    "image": ""
   },

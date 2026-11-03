@@ -23,7 +23,7 @@ _TYPES = {".js": "application/javascript", ".mjs": "application/javascript", ".c
           ".ico": "image/x-icon", ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf", ".otf": "font/otf"}
 
 
-_SLOW = re.compile(r"/api/ai/(chat|test|models|lesson|quiz|trimester|revision)|/api/slides/(source|plan|image|image-test)|/api/cloud/(login|test)|/api/sources/(import|url|[0-9a-f]+/(read|digest))")
+_SLOW = re.compile(r"/api/ai/(chat|test|models|lesson|quiz|trimester|revision)|/api/tools/run|/api/grades/upload|/api/slides/(source|plan|image|image-test)|/api/cloud/(login|test)|/api/announcements|/api/publications|/api/library/|/api/codes/prepare|/api/inspection-pack|/api/parent-week/|/api/status/|/api/sources/(import|url|[0-9a-f]+/(read|digest))")
 
 
 class AppServer(ThreadingHTTPServer):
@@ -54,6 +54,7 @@ class AppServer(ThreadingHTTPServer):
 class Handler(BaseHTTPRequestHandler):
     server: AppServer
     protocol_version = "HTTP/1.1"
+    disable_nagle_algorithm = True  # headers and body go in two writes: without this Windows waits ~40-200 ms for an ACK on every request
     timeout = 60  # a half-sent request must not hold a thread forever
 
     def log_message(self, fmt, *args):  # keep the console quiet
@@ -175,10 +176,52 @@ class Handler(BaseHTTPRequestHandler):
             ("POST", r"/api/sources/([0-9a-f]{10})/delete", lambda m, b: svc.delete_source(m.group(1))),
             ("GET", r"/api/weekly", lambda m, b: svc.get_weekly(int(q.get("tri", 0)), int(q.get("week", 1)))),
             ("PUT", r"/api/weekly", lambda m, b: svc.set_weekly(b)),
+            ("POST", r"/api/usage", lambda m, b: svc.record_usage(str(b.get("page", "")))),
+            ("POST", r"/api/feedback", lambda m, b: svc.add_feedback(b)),
+            ("POST", r"/api/feedback/export", lambda m, b: svc.export_feedback()),
+            ("GET", r"/api/parent-week", lambda m, b: svc.get_parent_week(q.get("room", ""), int(q.get("tri", 0)), int(q.get("week", 1)))),
+            ("PUT", r"/api/parent-week", lambda m, b: svc.save_parent_week(b)),
+            ("POST", r"/api/parent-week/publish", lambda m, b: svc.save_parent_week(b, True)),
+            ("POST", r"/api/parent-week/unpublish", lambda m, b: svc.save_parent_week(b, False)),
+            ("GET", r"/api/docs/revision-cover", lambda m, b: svc.revision_cover_suggest(q.get("grade_id", ""), int(q.get("tri", 0)))),
+            ("POST", r"/api/docs/revision-cover", lambda m, b: svc.make_revision_cover(b)),
+            ("GET", r"/api/tomorrow", lambda m, b: svc.tomorrow_prep(q.get("date", ""))),
+            ("GET", r"/api/insights", lambda m, b: svc.insights_get(q.get("room", ""), int(q.get("tri", 0)))),
+            ("GET", r"/api/grades", lambda m, b: svc.grades_get(q.get("room", ""), int(q.get("tri", 0)), int(q.get("week", 1)))),
+            ("PUT", r"/api/grades", lambda m, b: svc.grades_put(b)),
+            ("POST", r"/api/grades/import", lambda m, b: svc.grades_import(b)),
+            ("POST", r"/api/grades/upload", lambda m, b: svc.grades_upload(b)),
+            ("GET", r"/api/week-prep", lambda m, b: svc.week_prep_status(q.get("date", ""))),
+            ("GET", r"/api/tools", lambda m, b: svc.tools_catalog()),
+            ("POST", r"/api/tools/run", lambda m, b: svc.tools_run(b)),
+            ("POST", r"/api/tools/word", lambda m, b: svc.tools_word(b)),
+            ("GET", r"/api/scheme", lambda m, b: svc.scheme_get(q.get("grade", ""), int(q.get("tri", 0)))),
+            ("PUT", r"/api/scheme", lambda m, b: svc.scheme_put(b)),
+            ("GET", r"/api/library", lambda m, b: svc.library_list()),
+            ("POST", r"/api/library/share", lambda m, b: svc.library_share(b)),
+            ("POST", r"/api/library/public", lambda m, b: svc.library_set_public(b)),
+            ("POST", r"/api/library/unshare", lambda m, b: svc.library_unshare(b)),
+            ("GET", r"/api/coverage", lambda m, b: svc.coverage(q.get("today", ""))),
+            ("POST", r"/api/inspection-pack", lambda m, b: svc.inspection_pack()),
+            ("POST", r"/api/status/push", lambda m, b: svc.push_status()),
+            ("GET", r"/api/status/staff", lambda m, b: svc.staff_status()),
             ("GET", r"/api/cloud", lambda m, b: svc.get_cloud()),
             ("PUT", r"/api/cloud", lambda m, b: svc.put_cloud(b)),
+            ("POST", r"/api/cloud/code", lambda m, b: svc.cloud_code_make()),
+            ("POST", r"/api/cloud/join", lambda m, b: svc.cloud_join(b)),
+            ("POST", r"/api/cloud/forget", lambda m, b: svc.cloud_forget_school()),
             ("POST", r"/api/cloud/login", lambda m, b: svc.cloud_login(b)),
             ("POST", r"/api/cloud/logout", lambda m, b: svc.cloud_logout()),
+            ("GET", r"/api/announcements", lambda m, b: svc.list_announcements()),
+            ("POST", r"/api/announcements", lambda m, b: svc.post_announcement(b)),
+            ("POST", r"/api/announcements/([0-9a-f-]{36})/update", lambda m, b: svc.update_announcement(m.group(1), b)),
+            ("POST", r"/api/announcements/([0-9a-f-]{36})/delete", lambda m, b: svc.delete_announcement(m.group(1))),
+            ("GET", r"/api/publications", lambda m, b: svc.list_publications()),
+            ("POST", r"/api/publications", lambda m, b: svc.add_publication(b)),
+            ("POST", r"/api/publications/([0-9a-f-]{36})", lambda m, b: svc.set_publication(m.group(1), b)),
+            ("POST", r"/api/publications/([0-9a-f-]{36})/delete", lambda m, b: svc.delete_publication(m.group(1))),
+            ("GET", r"/api/codes", lambda m, b: svc.codes_status()),
+            ("POST", r"/api/codes/prepare", lambda m, b: svc.prepare_codes()),
             ("POST", r"/api/cloud/test", lambda m, b: svc.cloud_test()),
             ("GET", r"/api/map", lambda m, b: svc.get_map()),
             ("PUT", r"/api/map", lambda m, b: svc.put_map(b)),
@@ -219,6 +262,7 @@ class Handler(BaseHTTPRequestHandler):
             ("POST", r"/api/docs/lesson-plan", lambda m, b: svc.make_lesson_plan(b)),
             ("POST", r"/api/docs/trimester-plan", lambda m, b: svc.make_trimester_plan(b)),
             ("POST", r"/api/docs/quiz", lambda m, b: svc.make_quiz(b)),
+            ("POST", r"/api/docs/quiz-export", lambda m, b: svc.export_quiz(b)),
             ("POST", r"/api/docs/revision", lambda m, b: svc.make_revision(b)),
             ("POST", r"/api/docs/cover-sheet", lambda m, b: svc.make_cover_sheet(b)),
             ("POST", r"/api/docs/grading-sheet", lambda m, b: svc.make_grading_sheet(b)),

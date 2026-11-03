@@ -10,7 +10,7 @@ import { calendarEditor } from "./components/calendar_editor.js";
 import { importOldDialog } from "./pages/settings.js";
 
 // First-run guide: language -> folder -> about you -> classes -> timetable -> calendar -> done.
-const ORDER = ["language", "folder", "about", "classes", "timetable", "calendar", "done"];
+const ORDER = ["language", "folder", "account", "about", "classes", "timetable", "calendar", "done"];
 
 export function startWizard(root, onFinished, startAt) {
   let idx = Math.max(0, ORDER.indexOf(startAt || "language"));
@@ -78,6 +78,25 @@ export function startWizard(root, onFinished, startAt) {
             if (p) { chosen = p; box.textContent = p; }
           } }, icon("folder"), t("choose_other_folder"))),
         h("div", { class: "banner info" }, icon("info"), h("div", {}, t("folder_cloud_tip"))));
+    },
+
+    // Work with the school server (sign in) or on this computer only (offline). Asked once; it can be changed in Settings.
+    async account(v) {
+      const c = await api.get("/api/cloud");
+      const form = h("div", { class: "panel", hidden: true });
+      const email = h("input", { type: "email", dir: "ltr", value: c.email, autocomplete: "username" }), pass = h("input", { type: "password", dir: "ltr", autocomplete: "current-password" });
+      const code = h("input", { type: "text", dir: "ltr", placeholder: "DLIS-…" });
+      const known = c.configured;
+      form.append(...(known ? [c.school ? h("p", {}, h("b", {}, c.school)) : null] : [h("label", { class: "field" }, h("span", { class: "label" }, t("cl_code")), code), h("p", { class: "muted small" }, t("cl_code_ask"))]),
+        h("label", { class: "field" }, h("span", { class: "label" }, t("cl_email")), email), h("label", { class: "field" }, h("span", { class: "label" }, t("cl_pass")), pass),
+        h("button", { class: "btn primary", onClick: (e) => { const b = e.currentTarget; b.disabled = true;
+          guarded(async () => { if (!known) await api.post("/api/cloud/join", { code: code.value }); await api.post("/api/cloud/login", { email: email.value, password: pass.value }); show("about"); }).then((r) => { if (r === undefined) b.disabled = false; }); } }, t("cl_login")));
+      return h("div", {},
+        h("h1", {}, t("ac_title")), h("p", { class: "lead" }, t("ac_lead")),
+        h("div", { class: "row" },
+          h("button", { class: "btn primary big", onClick: () => { form.hidden = false; } }, icon("user"), t("ac_online")),
+          h("button", { class: "btn big", onClick: () => guarded(async () => { await api.put("/api/cloud", { mode: "offline" }); show("about"); }) }, icon("folder"), t("ac_offline"))),
+        h("p", { class: "muted small" }, t("ac_note")), form);
     },
 
     async about(v) {

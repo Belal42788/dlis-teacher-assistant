@@ -234,7 +234,8 @@ def _main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="dlis")
     ap.add_argument("--browser", action="store_true", help="open in the normal browser instead of an app window")
     ap.add_argument("--no-window", action="store_true", help="only run the server (for tests)")
-    ap.add_argument("--native-titlebar", action="store_true", help="use the normal Windows title bar")
+    ap.add_argument("--native-titlebar", action="store_true", help="use the normal Windows title bar (this is the default now)")
+    ap.add_argument("--custom-titlebar", action="store_true", help="use our own slim title bar (Windows snap layouts do not work with it)")
     ap.add_argument("--background", action="store_true", help="start hidden near the clock (used when Windows starts)")
     ap.add_argument("--port", type=int, default=0)
     args = ap.parse_args(argv)
@@ -254,7 +255,7 @@ def _main(argv: list[str] | None = None) -> int:
         try:
             import webview  # pywebview: a real app window, no browser bars
 
-            frameless = sys.platform == "win32" and not args.native_titlebar  # our own slim title bar on Windows
+            frameless = sys.platform == "win32" and args.custom_titlebar and not args.native_titlebar  # the normal title bar gives Windows 11 snap layouts (hover on maximize, Win+Z)
             svc = server.service
             state = {"tray": None, "quitting": False, "hidden": False}
             holder: dict = {}

@@ -1,5 +1,5 @@
-import { h, icon, confirmBox } from "./dom.js";
-import { api } from "./api.js";
+import { h, icon, confirmBox, modal, toast } from "./dom.js";
+import { api, guarded } from "./api.js";
 import { t, setLang } from "./i18n.js";
 import { state } from "./state.js";
 import { startWizard } from "./wizard.js";
@@ -11,9 +11,19 @@ import { renderSettings } from "./pages/settings.js";
 import { renderDocs } from "./pages/docs.js";
 import { renderTasks } from "./pages/tasks.js";
 import { renderLog } from "./pages/log.js";
-import { renderSlides } from "./pages/slides.js";
 import { renderSources } from "./pages/sources.js";
+import { renderLibrary } from "./pages/library.js";
+import { renderScheme } from "./pages/scheme.js";
+import { renderTools } from "./pages/tools.js";
+import { renderGrades } from "./pages/grades.js";
+import { renderInsights } from "./pages/insights.js";
+import { openQuick } from "./components/quick.js";
 import { renderMap } from "./pages/map.js";
+import { renderAnnouncements } from "./pages/announcements.js";
+import { renderPublish } from "./pages/publish.js";
+import { renderProgress } from "./pages/progress.js";
+import { renderParentWeek } from "./pages/parentweek.js";
+import { renderFollowup } from "./pages/followup.js";
 import { renderChat } from "./pages/chat.js";
 import { renderHelp } from "./pages/help.js";
 import { renderReminders } from "./pages/reminders.js";
@@ -48,12 +58,21 @@ const PAGES = [
   { id: "calendar", icon: "calendar", group: "day", render: renderCalendar },
   { id: "tasks", icon: "tasks", group: "day", render: renderTasks },
   { id: "reminders", nav: "tasks", render: renderReminders },
-  { id: "log", nav: "classes", render: renderLog },
+  { id: "scheme", icon: "list", group: "prepare", render: renderScheme },
   { id: "docs", icon: "file", group: "prepare", render: renderDocs },
-  { id: "slides", icon: "slides", group: "prepare", render: renderSlides },
-  { id: "sources", nav: "slides", render: renderSources },
+  { id: "tools", icon: "tool", group: "prepare", render: renderTools },
+  { id: "library", icon: "folder", group: "prepare", render: renderLibrary },
+  { id: "sources", nav: "library", render: renderSources },
+  { id: "publish", nav: "library", render: renderPublish },
   { id: "chat", icon: "spark", group: "prepare", render: renderChat },
   { id: "classes", icon: "classes", group: "school", render: renderClasses },
+  { id: "log", nav: "classes", render: renderLog },
+  { id: "progress", nav: "classes", render: renderProgress },
+  { id: "grades", nav: "classes", render: renderGrades },
+  { id: "insights", nav: "classes", render: renderInsights },
+  { id: "announcements", icon: "megaphone", group: "school", need: "online", render: renderAnnouncements },
+  { id: "parentweek", nav: "announcements", render: renderParentWeek },
+  { id: "followup", icon: "tasks", group: "school", need: "admin", render: renderFollowup },
   { id: "map", icon: "map", group: "school", render: renderMap },
   { id: "settings", icon: "settings", group: "end", render: renderSettings },
   { id: "help", icon: "info", group: "end", render: renderHelp },
@@ -74,6 +93,12 @@ async function boot(forceWizardStep) {
   mode = "app";
   drawShell();
   showProblems(state.boot.problems || []);
+  api.get("/api/cloud").then((c) => {
+    document.querySelectorAll(".nav a[data-need]").forEach((a) => { a.hidden = a.dataset.need === "admin" ? !(c.signed_in && c.role === "admin") : !(c.signed_in && c.role); });
+    const today = new Date().toISOString().slice(0, 10);
+    if (c.signed_in && (c.role === "teacher" || c.role === "admin") && localStorage.getItem("pushed") !== today) { localStorage.setItem("pushed", today); api.post("/api/status/push", {}).catch(() => {}); }
+    const el = document.getElementById("net-chip"); if (!el) return; el.hidden = false;
+    el.textContent = c.signed_in ? `● ${t("net_online")}` : `○ ${t("net_offline")}`; el.classList.toggle("on", !!c.signed_in); }).catch(() => {});
   startReminders();
   await route();
 }
@@ -98,6 +123,20 @@ function showProblems(list) {
   document.body.append(box);
 }
 
+function feedbackDialog() {
+  const text = h("textarea", { rows: 5, maxlength: 1500, placeholder: t("fb_ph") });
+  const page = shownPage;
+  modal({ title: t("fb_title"), body: h("div", {}, h("p", { class: "muted small" }, t("fb_lead")), text),
+    actions: [
+      { label: t("fb_export"), onClick: async () => { const r = await guarded(() => api.post("/api/feedback/export", {})); if (r) await guarded(() => api.post("/api/open", { path: r.path })); return false; }, close: false },
+      { label: t("save"), kind: "primary", onClick: async () => { if (!text.value.trim()) return false; const r = await guarded(() => api.post("/api/feedback", { page, text: text.value })); if (!r) return false; toast(t("saved")); } }] });
+}
+
+// Ctrl+K (or Cmd+K) opens the quick search from anywhere inside the app
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.code === "KeyK" || String(e.key).toLowerCase() === "k") && mode === "app") { e.preventDefault(); openQuick(PAGES); }
+});
+
 function drawShell() {
   const s = state.settings;
   root.replaceChildren(h("div", { class: "shell" },
@@ -105,16 +144,19 @@ function drawShell() {
       h("div", { class: "brand" }, h("span", { class: "mark" }, h("img", { src: "/resources/logo-mark.png", alt: "" })), h("div", {}, h("b", {}, t("app_name")), h("small", {}, s.school_name))),
       h("nav", { class: "nav", "aria-label": t("main_menu") }, PAGES.filter((p) => p.icon).flatMap((p, i, all) => [
         i === 0 || all[i - 1].group !== p.group ? h("div", { class: "nav-group" }, p.group === "end" ? "" : t(`grp_${p.group}`)) : null,
-        h("a", { href: `#/${p.id}`, "data-page": p.id }, icon(p.icon), t(`nav_${p.id}`))])),
+        h("a", { href: `#/${p.id}`, "data-page": p.id, "data-need": p.need || null, hidden: p.need ? true : null }, icon(p.icon), t(`nav_${p.id}`))])),
       h("div", { class: "spacer" }),
+      h("button", { class: "quick-btn", type: "button", "aria-label": t("qk_btn"), onClick: () => openQuick(PAGES) }, icon("search"), h("span", {}, t("qk_btn")), h("kbd", {}, "Ctrl K")),
+      h("a", { class: "net-chip", href: "#/settings", id: "net-chip", hidden: true }),
       h("div", { class: "who" }, h("b", {}, s.teacher_name || "—"), s.subject || "")),
-    h("main", { class: "main", id: "main", tabindex: "-1" })));
+    h("main", { class: "main", id: "main", tabindex: "-1" }),
+    h("button", { class: "fb-btn", "aria-label": t("fb_title"), onClick: feedbackDialog }, t("fb_btn"))));
 }
 
 // What was typed on a page is kept while the teacher visits another tab, and comes back when they return.
-const DRAFT_PAGES = new Set(["docs", "tasks", "reminders", "log", "chat"]);
+const DRAFT_PAGES = new Set(["docs", "tasks", "reminders", "log", "chat", "tools"]);
 const drafts = new Map();
-const fieldsOf = (main) => [...main.querySelectorAll("input, textarea, select")].filter((el) => el.type !== "password" && el.type !== "file" && el.type !== "button");
+const fieldsOf = (main) => [...main.querySelectorAll("input, textarea, select")].filter((el) => el.type !== "password" && el.type !== "file" && el.type !== "button" && !el.closest("[data-nodraft]"));
 function saveDraft(pageId) {
   const main = document.getElementById("main");
   if (!main || !pageId || !DRAFT_PAGES.has(pageId)) return;
@@ -159,9 +201,11 @@ async function route() {
     let typed = false;
     const mark = (e) => { if (e.isTrusted) typed = true; };
     main.addEventListener("input", mark, true); main.addEventListener("change", mark, true);
-    try { await page.render(main, { reloadApp }); } finally { main.removeEventListener("input", mark, true); main.removeEventListener("change", mark, true); }
+    main.classList.add("busy");
+    try { await page.render(main, { reloadApp }); } finally { main.classList.remove("busy"); main.removeEventListener("input", mark, true); main.removeEventListener("change", mark, true); }
     if (shownPage !== page.id) main.scrollTop = 0; // a new tab starts at the top, not where the last one was scrolled to
     shownPage = page.id;
+    api.post("/api/usage", { page: page.id }).catch(() => {});
     if (!typed) restoreDraft(page.id);
   } catch (e) {
     console.error(e);

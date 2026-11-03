@@ -40,6 +40,46 @@ class RevisionMixin:
             raise AppError("ai_bad_output", "The AI answer was not in the expected shape. Try again.", status=502)
         return {"words": "\n".join(words), "points": "\n".join(points), "questions": "\n".join(qs[:n])}
 
+    def revision_cover_suggest(self, grade_id: str, tri: int) -> dict:
+        """Lessons taught this trimester (from the lesson log, and the trimester plan), as lines to fix and add book pages to."""
+        grade = self._grade(grade_id)
+        store = self._need_store()
+        cal = self._calendar_service()
+        weeks = cal.trimester_weeks(tri)
+        rooms = {r.id for r in store.load_structure().rooms if r.grade_id == grade.id}
+        lines, seen = [], set()
+        if weeks:
+            a, z = weeks[0]["start"], weeks[-1]["end"]
+            for e in sorted(self._log_data()["entries"], key=self._log_key):
+                topic = e.get("topic", "")
+                if e["room_id"] in rooms and a <= e["date"] <= z and topic and topic.lower() not in seen:
+                    seen.add(topic.lower()); lines.append(f" | {topic} | ")
+        if not lines:
+            titles = self._plans()["trimester"].get(f"{grade.id}|{tri}", {})
+            lines = [f" | {v} | " for k, v in sorted(titles.items(), key=lambda kv: int(kv[0])) if v]
+        return {"lines": "\n".join(lines)}
+
+    def _cover_ctx(self, grade, tri: int, text) -> dict:
+        rows = []
+        for ln in str(text or "").replace("\r", "").split("\n"):
+            if not ln.strip():
+                continue
+            parts = [x.strip() for x in ln.split("|")]
+            parts = (parts + ["", "", ""])[:3] if len(parts) >= 3 else ["", parts[0], parts[1] if len(parts) > 1 else ""]
+            rows.append(tuple(parts))
+        store = self._need_store()
+        s = store.load_settings()
+        return {"academic_year": store.load_calendar().academic_year, "grade_label": self._grade_label(grade), "subject": s.subject,
+                "teacher": s.teacher_name, "department": s.subject, "trimester": tri + 1, "rows": rows[:60]}
+
+    def make_revision_cover(self, b: dict) -> dict:
+        grade = self._grade(str(b.get("grade_id", "")))
+        tri = int(b.get("trimester", 0))
+        ctx = self._cover_ctx(grade, tri, b.get("rows"))
+        out = self._need_store().root / "Documents" / _safe(grade.name) / f"T{tri + 1}_Revision_Cover_Page.docx"
+        D.fill_revision_cover(D.template_path("revision_cover"), out, ctx)
+        return {**self._result(out), "rows": len(ctx["rows"])}
+
     def make_revision(self, b: dict) -> dict:
         grade = self._grade(str(b.get("grade_id", "")))
         tri, week = int(b.get("trimester", 0)), int(b.get("week", 0) or 0)
@@ -54,4 +94,12 @@ class RevisionMixin:
         D.fill_revision(D.template_path("revision"), out, {
             "grade_label": self._grade_label(grade), "trimester": tri + 1, "week": week, "title": title,
             "words": words, "points": points, "questions": qs, "with_answers": bool(b.get("with_answers"))})
+        if b.get("with_cover"):
+            # the cover page is the first page of the same file
+            import tempfile
+            from pathlib import Path
+            with tempfile.TemporaryDirectory() as tmp:
+                cov = Path(tmp) / "cover.docx"
+                D.fill_revision_cover(D.template_path("revision_cover"), cov, self._cover_ctx(grade, tri, b.get("cover_rows")))
+                D.put_cover_first(cov, out, out)
         return self._result(out)

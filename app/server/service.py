@@ -25,12 +25,18 @@ from .ai_chat_service import AiChatMixin
 from .ai_service import AiMixin
 from .alarms_service import AlarmsMixin
 from .chats_service import ChatsMixin
+from .parent_week_service import ParentWeekMixin
+from .coverage_service import CoverageMixin
 from .cloud_service import CloudMixin
 from .changes_service import ChangesMixin
 from .docs_service import DocsMixin
+from .library_service import LibraryMixin
 from .log_service import LogMixin
 from .map_service import MapMixin
 from .revision_service import RevisionMixin
+from .scheme_service import SchemeMixin
+from .tools_service import ToolsMixin
+from .grades_service import GradesMixin, InsightsMixin
 from .slides_service import SlidesMixin
 from .source_service import SourceMixin
 from .week_service import WeekMixin
@@ -48,7 +54,7 @@ def _validate(model, data):
         raise AppError("invalid_data", f"{where}: {first.get('msg', 'invalid')}", field=where) from e
 
 
-class Service(CloudMixin, DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesMixin, LogMixin, SlidesMixin, RevisionMixin, MapMixin, SourceMixin, WeekMixin, WeeklyMixin):
+class Service(InsightsMixin, GradesMixin, ToolsMixin, SchemeMixin, LibraryMixin, ParentWeekMixin, CoverageMixin, CloudMixin, DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesMixin, LogMixin, SlidesMixin, RevisionMixin, MapMixin, SourceMixin, WeekMixin, WeeklyMixin):
     def __init__(self):
         self.store: Optional[DataStore] = None
         folder = paths.read_prefs().get("data_folder")
@@ -92,7 +98,39 @@ class Service(CloudMixin, DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMix
         paths.write_prefs(language=lang)
         return {"language": lang}
 
-    REMINDER_DEFAULTS = {"enabled": True, "minutes": 10, "skip_back_to_back": True, "sound": True, "ring_seconds": 60, "muted_date": "", "events_eve": True, "events_time": "13:00"}
+    # ------------------------------------------------------------ how the app is used (stays on this computer: page counts and the teacher's own notes, no names)
+    PAGE_IDS = ("today", "timetable", "calendar", "tasks", "reminders", "log", "docs", "slides", "sources", "chat", "classes", "publish", "announcements", "map", "settings", "help")
+
+    def record_usage(self, page: str) -> dict:
+        if page in self.PAGE_IDS:
+            u = paths.read_prefs().get("usage") or {}
+            pages = u.get("pages") if isinstance(u.get("pages"), dict) else {}
+            pages[page] = int(pages.get(page, 0)) + 1
+            paths.write_prefs(usage={"since": u.get("since") or date.today().isoformat(), "pages": pages})
+        return {"ok": True}
+
+    def add_feedback(self, b: dict) -> dict:
+        text = str(b.get("text", "")).strip()[:1500]
+        if not text:
+            raise AppError("bad_value", "Write your note first.", status=400)
+        page = str(b.get("page", ""))[:30]
+        notes = list(paths.read_prefs().get("feedback") or [])[-199:]
+        notes.append({"date": date.today().isoformat(), "page": page, "text": text})
+        paths.write_prefs(feedback=notes)
+        return {"count": len(notes)}
+
+    def export_feedback(self) -> dict:
+        prefs = paths.read_prefs()
+        u = prefs.get("usage") or {}
+        lines = [f"DLIS Teacher Assistant v{paths.VERSION}", f"Usage since {u.get('since', '-')}", "", "Page opens:"]
+        lines += [f"  {k}: {v}" for k, v in sorted((u.get("pages") or {}).items(), key=lambda kv: -kv[1])]
+        lines += ["", "Notes:"] + [f"  [{n['date']}] ({n['page']}) {n['text']}" for n in (prefs.get("feedback") or [])]
+        out = self._need_store().root / "Documents" / "DLIS_Feedback.txt"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return self._result(out)
+
+    REMINDER_DEFAULTS = {"enabled": True, "minutes": 10, "skip_back_to_back": True, "sound": True, "ring_seconds": 60, "muted_date": "", "events_eve": True, "events_time": "13:00", "prayer": True, "tomorrow": True, "tomorrow_time": "19:00"}
 
     def get_reminders(self) -> dict:
         saved = paths.read_prefs().get("reminders")
@@ -118,6 +156,15 @@ class Service(CloudMixin, DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMix
             cur["ring_seconds"] = r
         if "events_eve" in b:
             cur["events_eve"] = bool(b["events_eve"])
+        if "prayer" in b:
+            cur["prayer"] = bool(b["prayer"])
+        if "tomorrow" in b:
+            cur["tomorrow"] = bool(b["tomorrow"])
+        if "tomorrow_time" in b:
+            tm = str(b["tomorrow_time"] or "")
+            if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", tm):
+                raise AppError("invalid_data", "Choose a time.")
+            cur["tomorrow_time"] = tm
         if "events_time" in b:
             tm = str(b["events_time"] or "")
             if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", tm):

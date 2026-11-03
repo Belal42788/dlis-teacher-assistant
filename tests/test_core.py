@@ -334,7 +334,7 @@ class TestCloud(unittest.TestCase):
         try:
             with tempfile.TemporaryDirectory() as d:
                 svc = Service(); svc.store = DataStore(d)
-                self.assertEqual(svc.get_cloud(), {"url": "", "key_set": False, "email": "", "signed_in": False, "role": ""})
+                self.assertEqual(svc.get_cloud(), {"url": "", "configured": False, "school": "", "key_set": False, "email": "", "signed_in": False, "role": "", "mode": ""})
                 with self.assertRaises(AppError):
                     svc.put_cloud({"url": "not a url"})
                 svc.put_cloud({"url": f"http://127.0.0.1:{srv.server_port}", "key": "ANON"})
@@ -342,8 +342,11 @@ class TestCloud(unittest.TestCase):
                     svc.cloud_login({"email": "a@b.c", "password": "bad"})
                 self.assertEqual(cm.exception.code, "cloud_bad_login")
                 out = svc.cloud_login({"email": "a@b.c", "password": "good"})
-                self.assertEqual((out["signed_in"], out["role"]), (True, "teacher"))
+                self.assertEqual((out["signed_in"], out["role"], out["mode"]), (True, "teacher", "online"))
                 self.assertNotIn("good", (svc._cloud_path()).read_text())            # the password is never saved
+                self.assertEqual(svc.get_cloud()["url"], "")                          # a teacher never sees the server's address
+                with self.assertRaises(AppError):
+                    svc.cloud_code_make()
                 self.assertTrue(svc.cloud_test()["ok"])
                 self.assertIn(("GET", "/rest/v1/profiles?select=role,full_name&limit=1", "ANON", "Bearer AT"), seen)
                 svc2 = Service(); svc2.store = DataStore(d)                           # a new start stays signed in through the refresh token
@@ -352,6 +355,240 @@ class TestCloud(unittest.TestCase):
                 svc.cloud_logout(); self.assertFalse(svc.get_cloud()["signed_in"])
         finally:
             srv.shutdown()
+
+    def test_school_code_round_trip(self):
+        import tempfile
+        from app.server.service import Service
+        from app.core.store import DataStore
+        with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
+            adm = Service(); adm.store = DataStore(a)
+            adm.put_cloud({"url": "https://abc.supabase.co", "key": "ANONKEY", "school": "DLIS"})
+            cfg = adm._cloud_cfg(); cfg["role"] = "admin"; adm._cloud_save(cfg)
+            code = adm.cloud_code_make()["code"]
+            self.assertTrue(code.startswith("DLIS-"))
+            tch = Service(); tch.store = DataStore(b)
+            r = tch.cloud_join({"code": " " + code[:20] + "\n" + code[20:]})        # spaces and line breaks from copy/paste are fine
+            self.assertEqual((r["configured"], r["school"], r["url"]), (True, "DLIS", ""))
+            self.assertEqual(tch._cloud_cfg()["key"], "ANONKEY")
+            with self.assertRaises(AppError):
+                tch.cloud_join({"code": "DLIS-nonsense"})
+            self.assertFalse(tch.cloud_forget_school()["configured"])
+
+    def test_announcements_admin_posts_teacher_cannot(self):
+        import json, tempfile, threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+        from app.server.service import Service
+        from app.core.store import DataStore
+        role = {"v": "admin"}; rows = []; sent = []
+
+        class H(BaseHTTPRequestHandler):
+            def log_message(self, *a): pass
+            def _out(self, out, code=200):
+                raw = json.dumps(out).encode(); self.send_response(code); self.send_header("Content-Length", str(len(raw))); self.end_headers(); self.wfile.write(raw)
+            def _body(self): return json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+            def do_GET(self):
+                if self.path.startswith("/rest/v1/profiles"): return self._out([{"role": role["v"]}])
+                if self.path.startswith("/rest/v1/announcements"): return self._out(rows)
+                self._out([])
+            def do_POST(self):
+                b = self._body()
+                if "grant_type" in self.path: return self._out({"access_token": "AT", "refresh_token": "RT", "expires_in": 3600})
+                sent.append(b); rows.extend({"id": "11111111-1111-1111-1111-111111111111", "starts_on": "2020-01-01", "ends_on": None, **r} for r in b); self._out(b)
+            def do_DELETE(self):
+                sent.append(self.path); rows.clear(); self._out([])
+
+        srv = HTTPServer(("127.0.0.1", 0), H); threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                svc = Service(); svc.store = DataStore(d)
+                self.assertFalse(svc.list_announcements()["connected"])
+                svc.put_cloud({"url": f"http://127.0.0.1:{srv.server_port}", "key": "K"})
+                svc.cloud_login({"email": "a@b.c", "password": "x"})
+                with self.assertRaises(AppError):
+                    svc.post_announcement({"title": "", "audience": "all"})
+                with self.assertRaises(AppError):
+                    svc.post_announcement({"title": "Hi", "audience": "nobody"})
+                out = svc.post_announcement({"title": "  Trip   day ", "body": "Bring food", "audience": "parents", "starts_on": "2020-01-01", "ends_on": ""})
+                self.assertEqual(sent[0][0]["title"], "Trip day"); self.assertNotIn("ends_on", sent[0][0])
+                self.assertTrue(out["connected"] and len(out["items"]) == 1 and out["items"][0]["active"])
+                svc.delete_announcement("11111111-1111-1111-1111-111111111111")
+                self.assertEqual(sent[-1], "/rest/v1/announcements?id=eq.11111111-1111-1111-1111-111111111111")
+                role["v"] = "teacher"; svc.cloud_login({"email": "a@b.c", "password": "x"})
+                with self.assertRaises(AppError) as cm:
+                    svc.post_announcement({"title": "x", "audience": "all"})
+                self.assertEqual(cm.exception.code, "cloud_admin_only")
+        finally:
+            srv.shutdown()
+
+    def test_publications_need_approval_and_pictures_are_shrunk(self):
+        import base64, io, json, tempfile, threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+        from PIL import Image
+        from app.server.service import Service
+        from app.core.store import DataStore
+        log = []; rows = []
+
+        class H(BaseHTTPRequestHandler):
+            def log_message(self, *a): pass
+            def _out(self, out, code=200):
+                raw = json.dumps(out).encode(); self.send_response(code); self.send_header("Content-Length", str(len(raw))); self.end_headers(); self.wfile.write(raw)
+            def _raw(self): return self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            def do_GET(self):
+                self._out([{"role": "teacher"}] if "/profiles" in self.path else (rows if "/publications" in self.path else []))
+            def do_POST(self):
+                raw = self._raw()
+                if "grant_type" in self.path: return self._out({"access_token": "AT", "refresh_token": "RT", "expires_in": 3600})
+                if "/storage/" in self.path: log.append(("up", self.path, len(raw))); return self._out({})
+                b = json.loads(raw); log.append(("ins", b)); rows.extend({"id": "22222222-2222-2222-2222-222222222222", **r} for r in b); self._out(b)
+            def do_PATCH(self): log.append(("patch", self.path, json.loads(self._raw()))); self._out({})
+
+        srv = HTTPServer(("127.0.0.1", 0), H); threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                svc = Service(); svc.store = DataStore(d)
+                svc.put_cloud({"url": f"http://127.0.0.1:{srv.server_port}", "key": "K"}); svc.cloud_login({"email": "t@b.c", "password": "x"})
+                with self.assertRaises(AppError) as cm:
+                    svc.add_publication({"class_id": "g4-a", "kind": "quiz", "title": "Q1", "url": "https://x.com/q"})
+                self.assertEqual(cm.exception.code, "quiz_needs_date")
+                with self.assertRaises(AppError):
+                    svc.add_publication({"class_id": "g4-a", "kind": "link", "title": "Video", "url": "javascript:alert(1)"})
+                svc.add_publication({"class_id": "g4-a", "kind": "link", "title": "Video", "url": "https://youtu.be/x"})
+                ins = [x for x in log if x[0] == "ins"][-1][1][0]
+                self.assertEqual((ins["approved"], ins["class_id"]), (False, "g4-a"))   # never visible before the teacher approves
+                svc.add_publication({"class_id": "g4-a", "kind": "quiz", "title": "Q1", "url": "https://x.com/q", "visible_from": "2026-11-05"})
+                self.assertTrue([x for x in log if x[0] == "ins"][-1][1][0]["visible_from"].startswith("2026-11-05T00:00:00"))
+                svc.add_publication({"class_id": "g4-a", "kind": "presentation", "title": "Slides", "file": {"filename": "a b.pptx", "data_b64": base64.b64encode(b"x" * 100).decode()}})
+                self.assertTrue(any(x[0] == "up" and "/object/files/g4-a/" in x[1] for x in log))
+                svc.set_publication("22222222-2222-2222-2222-222222222222", {"approved": True})
+                self.assertEqual([x for x in log if x[0] == "patch"][-1][2], {"approved": True})
+                # announcement picture: big photo becomes a small jpeg
+                im = Image.new("RGB", (4000, 3000), (200, 30, 30)); buf = io.BytesIO(); im.save(buf, "PNG")
+                from app.server.cloud_service import _small_jpeg
+                out = Image.open(io.BytesIO(_small_jpeg(base64.b64encode(buf.getvalue()).decode())))
+                self.assertEqual((out.format, max(out.size)), ("JPEG", 1280))
+                with self.assertRaises(AppError):
+                    _small_jpeg(base64.b64encode(b"not a picture").decode())
+        finally:
+            srv.shutdown()
+
+    def test_parents_are_blocked_and_codes_are_made_once(self):
+        import json, tempfile, threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+        from app.server.service import Service
+        from app.core.store import DataStore
+        role = {"v": "parent"}; posted = []
+
+        class H(BaseHTTPRequestHandler):
+            def log_message(self, *a): pass
+            def _out(self, out):
+                raw = json.dumps(out).encode(); self.send_response(200); self.send_header("Content-Length", str(len(raw))); self.end_headers(); self.wfile.write(raw)
+            def do_GET(self): self._out([{"role": role["v"]}] if "/profiles" in self.path else [])
+            def do_POST(self):
+                body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+                if "grant_type" in self.path: return self._out({"access_token": "AT", "refresh_token": "RT", "expires_in": 3600})
+                posted.append((self.path.split("?")[0], body)); self._out(body)
+
+        srv = HTTPServer(("127.0.0.1", 0), H); threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                svc = Service(); svc.store = DataStore(d)
+                svc.put_cloud({"url": f"http://127.0.0.1:{srv.server_port}", "key": "K"})
+                with self.assertRaises(AppError) as cm:
+                    svc.cloud_login({"email": "p@b.c", "password": "x"})
+                self.assertEqual(cm.exception.code, "cloud_parent_blocked")
+                self.assertFalse(svc.get_cloud()["signed_in"])                       # a parent never stays signed in to the teachers' program
+                role["v"] = "admin"; svc.cloud_login({"email": "a@b.c", "password": "x"})
+                svc.build_structure({"kg1": ["A"], "g4": ["A"]}); svc.put_students("g4-a", ["Ali Hassan", "Sara Omar"])
+                r1 = svc.prepare_codes()
+                codes1 = [row for path, rows in posted if path.endswith("/activation_codes") for row in rows]
+                n1 = len(codes1)
+                self.assertGreaterEqual(n1, 2)
+                self.assertTrue(all(len(c["code"]) == 8 for c in codes1) and len({c["code"] for c in codes1}) == n1)
+                self.assertTrue(r1["path"].endswith("Parent_Codes.docx"))
+                svc.prepare_codes()                                                   # running it again changes nothing for old students
+                self.assertEqual(len([row for path, rows in posted if path.endswith("/activation_codes") for row in rows]), n1)
+                role["v"] = "teacher"; svc.cloud_login({"email": "t@b.c", "password": "x"})
+                with self.assertRaises(AppError):
+                    svc.prepare_codes()
+        finally:
+            srv.shutdown()
+
+
+class TestUsageNotes(unittest.TestCase):
+    def test_usage_counts_and_notes_stay_local(self):
+        import os, tempfile
+        from app.server.service import Service
+        from app.core.store import DataStore
+        old = os.environ.get("DLIS_APP_HOME")
+        self.addCleanup(lambda: os.environ.pop("DLIS_APP_HOME", None) if old is None else os.environ.__setitem__("DLIS_APP_HOME", old))
+        with tempfile.TemporaryDirectory() as d:
+            os.environ["DLIS_APP_HOME"] = d
+            svc = Service(); svc.store = DataStore(d + "/data")
+            for pg in ("today", "today", "docs", "evil"):
+                svc.record_usage(pg)
+            svc.add_feedback({"page": "docs", "text": "  The quiz tab is hard to find "})
+            with self.assertRaises(AppError):
+                svc.add_feedback({"text": " "})
+            out = svc.export_feedback()
+            txt = open(out["path"], encoding="utf-8").read()
+            self.assertIn("today: 2", txt); self.assertIn("docs: 1", txt); self.assertNotIn("evil", txt)
+            self.assertIn("The quiz tab is hard to find", txt)
+
+
+class TestCoverage(unittest.TestCase):
+    def test_progress_pack_and_status(self):
+        import tempfile, zipfile
+        from app.server.service import Service
+        from app.core.store import DataStore
+        with tempfile.TemporaryDirectory() as d:
+            svc = Service(); svc.store = DataStore(d)
+            svc.put_settings({"teacher_name": "بلال عبدالناصر عبدالفتاح", "subject": "ICT"})
+            svc.build_structure({"kg1": ["A"]})
+            off = svc.school_calendar(); svc.put_calendar({"academic_year": off["academic_year"], "trimesters": off["trimesters"], "holidays": off["holidays"]})
+            svc.get_timetable()
+            cov = svc.coverage("2026-10-28")
+            self.assertEqual(cov["state"], "in_term")
+            row = next(r for r in cov["rows"] if r["room_id"] == "kg1-a")
+            self.assertGreater(row["held"], 3); self.assertEqual((row["logged"], row["status"]), (0, "bad"))
+            svc.log_save({"room_id": "kg1-a", "date": "2026-10-27", "period": "4", "topic": "Mouse"})
+            row = next(r for r in svc.coverage("2026-10-28")["rows"] if r["room_id"] == "kg1-a")
+            self.assertEqual((row["logged"], row["last_topic"]), (1, "Mouse"))
+            out = svc.inspection_pack()
+            with zipfile.ZipFile(out["path"]) as z:
+                names = z.namelist()
+            self.assertIn("Lesson_Log.csv", names); self.assertIn("Curriculum_Progress.csv", names); self.assertIn("README.txt", names)
+            with self.assertRaises(AppError):
+                svc.push_status()                                      # not signed in to the school server
+            with self.assertRaises(AppError):
+                svc.staff_status()
+
+
+class TestQuizVersionsAndParentWeek(unittest.TestCase):
+    def test_version_b_keeps_answers_right(self):
+        from app.core import documents as D
+        qs = D.parse_quiz("1. What is a CPU?\na) Brain\nb) Screen\nc) Mouse\nAnswer: a\n\n2. Which is input?\na) Mouse\nb) Speaker\nc) Printer\nAnswer: a\n\n3. Name one.\n")
+        b = D.shuffled_version(qs)
+        self.assertEqual(sorted(q["q"] for q in b), sorted(q["q"] for q in qs))
+        for q in b:
+            if q["type"] == "mcq":
+                right = dict(q["options"])[q["answer"].upper()]
+                self.assertEqual(right, "Brain" if "CPU" in q["q"] else "Mouse")        # the answer letter follows its choice
+        self.assertTrue(any(x["options"] != y["options"] for x in qs for y in b if x["q"] == y["q"]))
+
+    def test_parent_week_saved_clean_and_published_only_by_staff(self):
+        import tempfile
+        from app.server.service import Service
+        from app.core.store import DataStore
+        with tempfile.TemporaryDirectory() as d:
+            svc = Service(); svc.store = DataStore(d)
+            svc.build_structure({"kg1": ["A"]})
+            out = svc.save_parent_week({"room_id": "kg1-a", "trimester": 0, "week": 8, "homework": "Page 12\n\n  Draw a mouse ",
+                                        "material": "Video | https://youtu.be/x\nbad | javascript:alert(1)", "quiz_alerts": "Unit 2 quiz | 2026-11-12"})
+            self.assertEqual(out["homework"], ["Page 12", "Draw a mouse"])
+            self.assertEqual(out["material"], [{"title": "Video", "url": "https://youtu.be/x"}])
+            self.assertEqual(out["quiz_alerts"][0]["date"], "2026-11-12"); self.assertFalse(out["approved"])
+            with self.assertRaises(AppError):
+                svc.save_parent_week({"room_id": "kg1-a", "trimester": 0, "week": 8}, True)
 
 
 class TestReadyTimetable(unittest.TestCase):
@@ -487,6 +724,63 @@ class TestDocsAndTasks(unittest.TestCase):
             self.svc.open_file("/etc/passwd")
         with self.assertRaises(Exception):
             self.svc.build_structure({"g5": ["A"]}); self.svc.make_grading_sheet({"room_id": "g5-a", "trimester": 0, "week": 8})  # no students
+
+    def test_library_lists_files_and_keeps_private_ones_off_the_server(self):
+        r1 = self.svc.make_quiz({"grade_id": "g4", "trimester": 0, "week": 8, "number": 1, "text": "1. Q?\na) x\nb) y\nAnswer: a"})
+        r2 = self.svc.make_lesson_plan({"grade_id": "g4", "trimester": 0, "week": 8, "content": {"topic": "Hardware"}})
+        items = {x["name"]: x for x in self.svc.library_list()["items"]}
+        q = items[r1["name"]]
+        self.assertEqual((q["kind"], q["private"], q["shared"]), ("quiz", False, None))
+        self.assertTrue(items[r2["name"]]["private"])
+        with self.assertRaises(AppError) as cm:
+            self.svc.library_share({"rel": r2["rel"], "class_id": "g4-a", "public": True})
+        self.assertEqual(cm.exception.code, "private_file")
+        with self.assertRaises(AppError):
+            self.svc.library_share({"rel": "../../etc/passwd", "class_id": "g4-a"})
+
+    def test_scheme_of_work_round_trip_and_planned_source(self):
+        d = self.svc.scheme_get("g4", 0)
+        self.assertTrue(d["weeks"])
+        w1 = next(w for w in d["weeks"] if w["school_days"] > 0)["week"]
+        out = self.svc.scheme_put({"grade_id": "g4", "trimester": 0, "weeks": [{"week": w1, "topic": " Hardware  basics ", "pages": "10-14", "source_id": "nope"}, {"week": 999, "topic": "ignored"}]})
+        row = next(w for w in out["weeks"] if w["week"] == w1)
+        self.assertEqual((row["topic"], row["pages"], row["source_id"]), ("Hardware basics", "10-14", ""))   # an unknown source is dropped
+        self.assertNotIn("ignored", str(out["weeks"]))
+        data = self.svc._plans(); data["scheme"]["g4|0"][str(w1)]["source_id"] = "abc"; self.svc._need_store().write_json(self.svc._plans_path(), data)
+        self.assertEqual(self.svc.scheme_source("g4", "hardware BASICS"), ("abc", "10-14"))
+        self.assertEqual(self.svc.scheme_source("g5", "hardware basics"), ("", ""))
+        wk = next(x for x in self.svc.slide_topics("g4", 0)["weeks"] if x["week"] == w1)       # the Create page reads the same plan
+        self.assertEqual((wk["topic"], wk["pages"], wk["source_id"]), ("Hardware basics", "10-14", "abc"))
+        st = self.svc.week_prep_status("2026-10-28")
+        self.assertEqual(st["state"], "in_term"); self.assertLessEqual(st["ready"], st["total"])
+
+    def test_revision_cover_page(self):
+        from docx import Document
+        self.svc.make_trimester_plan({"grade_id": "g4", "trimester": 0, "lessons": ["Hardware", "Software"]})
+        sug = self.svc.revision_cover_suggest("g4", 0)
+        self.assertIn("Hardware", sug["lines"])
+        rows = "Unit 1 | Hardware | 10-14\nSoftware | 15-20\n" + "\n".join(f"U{i} | L{i} | {i}" for i in range(12))
+        r = self.svc.make_revision_cover({"grade_id": "g4", "trimester": 0, "rows": rows})
+        self.assertTrue(r["rel"].replace("\\", "/").endswith("Documents/Grade 4/T1_Revision_Cover_Page.docx"), r["rel"])
+        d = Document(r["path"])
+        text = "\n".join(p.text for p in d.paragraphs)
+        for w in ("Final Trimester 1 Revision Pack", "ICT", "Test Teacher", "Grade Level: 4"):
+            self.assertIn(w, text)
+        cells = [[c.text for c in row.cells] for row in d.tables[0].rows]
+        self.assertEqual(cells[1], ["Unit 1", "Hardware", "10-14"])
+        self.assertEqual(cells[2], ["", "Software", "15-20"])   # two parts = lesson | pages
+        self.assertEqual(len(cells), 15)                         # grew past the 9 empty rows
+        head = " ".join(p.text for p in d.sections[0].header.paragraphs)
+        self.assertIn("ICT Department", head); self.assertIn("Trimester 1-Grade (4)", head)
+        self.assertEqual(sum(len(x.drawing_images) if hasattr(x, "drawing_images") else 0 for x in []), 0)
+        with self.assertRaises(AppError):
+            self.svc.make_revision_cover({"grade_id": "nope", "trimester": 0, "rows": ""})
+        # the cover is the first page of the revision file itself
+        r = self.svc.make_revision({"grade_id": "g4", "trimester": 0, "week": 0, "title": "Hardware", "words": "CPU: brain", "with_cover": True, "cover_rows": "Unit 1 | Hardware | 10-14"})
+        d = Document(r["path"])
+        text = "\n".join(p.text for p in d.paragraphs)
+        self.assertIn("Final Trimester 1 Revision Pack", text); self.assertIn("Revision Sheet", " ".join(c.text for t in d.tables for row in t.rows for c in row.cells) + text)
+        self.assertEqual(d.tables[0].rows[1].cells[1].text, "Hardware")
 
     def test_tasks(self):
         from datetime import date
@@ -1123,3 +1417,212 @@ class TestUrlSource(TestAi):
         with self.assertRaises(AppError):
             self.svc.import_url({"url": "file:///etc/passwd"})
 
+
+
+class TestTeacherTools(TestAi):
+    def test_catalog_is_well_formed(self):
+        from app.server.tools_catalog import TOOLS, GROUPS
+        cat = self.svc.tools_catalog()
+        self.assertEqual(len(cat["tools"]), len(TOOLS)); self.assertGreaterEqual(len(TOOLS), 27)
+        ids = [x["id"] for x in TOOLS]
+        self.assertEqual(len(ids), len(set(ids)))
+        groups = {g[0] for g in GROUPS}
+        for x in TOOLS:
+            self.assertIn(x["group"], groups)
+            for k in ("en", "ar"):
+                self.assertTrue(x["name"][k] and x["desc"][k], x["id"])
+            self.assertTrue(x["instruction"].strip(), x["id"])
+            self.assertTrue(x["fields"], x["id"])
+            self.assertTrue(any(f["required"] for f in x["fields"]), x["id"])
+            keys = [f["key"] for f in x["fields"]]
+            self.assertEqual(len(keys), len(set(keys)), x["id"])
+            for f in x["fields"]:
+                self.assertTrue(f["label"]["en"] and f["label"]["ar"], x["id"])
+                self.assertIn(f["type"], ("text", "textarea", "number", "select"))
+                if f["type"] == "select":
+                    self.assertTrue(f["options"], x["id"])
+
+    def test_run_asks_ai_hides_names_and_cleans_markdown(self):
+        self.svc.ai_save({"provider": "groq", "api_key": "k", "model": "m"})
+        self.reply = "**Rubric**\n## Criteria\n- Clear | Good | Weak"
+        r = self.svc.tools_run({"tool": "rubric", "grade_id": "g4", "language": "ar",
+                                "values": {"task": "Poster about Sara Ali Hassan's hobby", "criteria": "Clarity", "levels": "4"}})
+        self.assertNotIn("**", r["text"]); self.assertNotIn("#", r["text"]); self.assertIn("Rubric", r["text"])
+        body = json.dumps(self.sent[-1][3])
+        self.assertNotIn("Sara", body); self.assertIn("Arabic", body); self.assertIn("ICT", body)
+        with self.assertRaises(AppError):
+            self.svc.tools_run({"tool": "rubric", "values": {}})                 # a required field is empty
+        with self.assertRaises(AppError):
+            self.svc.tools_run({"tool": "nope", "values": {}})
+
+    def test_run_stays_inside_the_chosen_source(self):
+        self.svc.ai_save({"provider": "groq", "api_key": "k", "model": "m"})
+        import base64
+        sid = self.svc.import_source({"filename": "Unit 1.txt", "data_b64": base64.b64encode(("The mouse is an input device. " * 30).encode()).decode()})["id"]
+        self.reply = "ok"
+        self.svc.tools_run({"tool": "summarizer", "values": {"text": "x", "length": "short"}, "source_id": sid})
+        self.assertIn("SOURCE MATERIAL", json.dumps(self.sent[-1][3]))
+
+    def test_word_file_with_table_and_arabic(self):
+        from docx import Document
+        text = "Unit plan\n- Aim one\n- Aim two\nCriterion | Good | Weak\nClear | 4 | 1\n1. Start\nعنوان بالعربي\n- نقطة"
+        out = self.svc.tools_word({"tool": "unit_plan", "text": text, "grade_id": "g4"})
+        self.assertTrue(Path(out["path"]).exists())
+        doc = Document(out["path"])
+        alltext = "\n".join(p.text for p in doc.paragraphs) + "\n".join(c.text for tb in doc.tables for r in tb.rows for c in r.cells)
+        self.assertIn("Aim one", alltext); self.assertIn("نقطة", alltext); self.assertTrue(doc.tables)
+        out2 = self.svc.tools_word({"tool": "unit_plan", "text": text, "grade_id": "g4"})
+        self.assertNotEqual(out["path"], out2["path"])                           # a second save never replaces the first
+        out3 = self.svc.tools_word({"tool": "unit_plan", "text": text})          # no class chosen
+        self.assertIn("Tools", out3["rel"])
+        with self.assertRaises(AppError):
+            self.svc.tools_word({"tool": "unit_plan", "text": "  "})
+
+    def test_student_tools_cannot_be_shared(self):
+        self.svc.ai_save({"provider": "groq", "api_key": "k", "model": "m"})
+        out = self.svc.tools_word({"tool": "report_comment", "text": "[student] works hard.", "grade_id": "g4"})
+        mine = [f for f in self.svc.library_list()["items"] if f["name"] == out["name"]]
+        self.assertTrue(mine and mine[0]["private"])
+        ok = self.svc.tools_word({"tool": "rubric", "text": "Rubric", "grade_id": "g4"})
+        self.assertFalse([f for f in self.svc.library_list()["items"] if f["name"] == ok["name"]][0]["private"])
+
+    def test_answers_from_my_sources_with_slide_numbers(self):
+        import base64
+        self.svc.ai_save({"provider": "groq", "api_key": "k", "model": "m"})
+        text = "The mouse is an input device. " * 30
+        sid = self.svc.import_source({"filename": "Unit 1.txt", "data_b64": base64.b64encode(text.encode()).decode()})["id"]
+        self.reply = "ok"
+        self.svc.ai_chat({"messages": [{"role": "user", "content": "What is a mouse?"}], "source_id": sid})
+        system = self.sent[-1][3]["messages"][0]["content"]
+        self.assertIn("SOURCE MATERIAL", system); self.assertIn("[Slide 3]", system); self.assertIn("do not guess", system)
+        self.svc.ai_chat({"messages": [{"role": "user", "content": "What is a mouse?"}]})          # no source: nothing added
+        self.assertNotIn("SOURCE MATERIAL", self.sent[-1][3]["messages"][0]["content"])
+        self.svc.tools_run({"tool": "summarizer", "values": {"text": "x", "length": "One paragraph"}, "source_id": sid, "cite": True})
+        self.assertIn("[Slide 3]", json.dumps(self.sent[-1][3]))
+        self.svc.tools_run({"tool": "summarizer", "values": {"text": "x", "length": "One paragraph"}, "source_id": sid})
+        self.assertNotIn("[Slide 3]", json.dumps(self.sent[-1][3])); self.assertIn("SOURCE MATERIAL", json.dumps(self.sent[-1][3]))
+
+
+class TestGradeFillAndReminder(TestAi):
+    def test_full_mark_fill_skips_the_absent(self):
+        from docx import Document
+        out = self.svc.make_grading_sheet({"room_id": "g4-a", "trimester": 0, "week": 3, "lang": "ar", "fill": ["behavior", "classwork", "nonsense"], "absent": ["عمر سامي"]})
+        rows = Document(out["path"]).tables[1].rows
+        self.assertEqual([c.text for c in rows[1].cells][2:7], ["2"] * 5)         # behaviour: 5 boxes x 2 = 10
+        self.assertEqual([c.text for c in rows[1].cells][12:17], ["3"] * 5)        # classwork: 5 x 3 = 15
+        self.assertEqual([c.text for c in rows[1].cells][7:12], [""] * 5)          # a part that was not chosen stays empty
+        self.assertTrue(all(c.text == "" for c in rows[2].cells[2:]))              # the absent student stays empty
+        plain = self.svc.make_grading_sheet({"room_id": "g4-a", "trimester": 0, "week": 3, "lang": "ar"})
+        self.assertTrue(all(c.text == "" for c in Document(plain["path"]).tables[1].rows[1].cells[2:]))
+        from openpyxl import load_workbook
+        x = self.svc.make_grading_sheet({"room_id": "g4-a", "trimester": 0, "week": 3, "lang": "ar", "format": "xlsx", "fill": ["behavior", "attendance", "classwork", "homework"], "absent": ["عمر سامي"]})
+        ws = load_workbook(x["path"]).active
+        self.assertEqual([ws.cell(3, 3).value, ws.cell(4, 3).value], [50, None])
+
+
+class TestTomorrowAlert(TestAi):
+    def test_evening_alert_finds_next_lessons_and_missing_plans(self):
+        from datetime import date, timedelta
+        wk = self.svc.overview()["trimesters"][0]["weeks"]
+        w = wk[3]
+        sun = date.fromisoformat(w["start"])
+        while sun.weekday() != 6:                                    # a Sunday inside the term
+            sun += timedelta(days=1)
+        r = self.svc.tomorrow_prep(sun.isoformat())                  # Sunday evening -> Monday lesson
+        self.assertTrue(r["found"] and r["tomorrow"]); self.assertEqual(r["date"], (sun + timedelta(days=1)).isoformat())
+        self.assertEqual(r["lessons"], 1); self.assertEqual(len(r["missing"]), 1)
+        self.svc.make_lesson_plan({"grade_id": "g4", "trimester": 0, "week": w["number"], "content": {"topic": "Hardware"}})
+        self.assertEqual(self.svc.tomorrow_prep(sun.isoformat())["missing"], [])
+        thu = sun + timedelta(days=4)                                # Thursday evening -> Sunday, said with its date
+        r = self.svc.tomorrow_prep(thu.isoformat())
+        self.assertTrue(r["found"]); self.assertFalse(r["tomorrow"])
+        fri = sun + timedelta(days=5)                                # the weekend itself: no alert
+        self.assertFalse(self.svc.tomorrow_prep(fri.isoformat())["found"])
+        self.assertTrue(self.svc.get_reminders()["tomorrow"]); self.assertEqual(self.svc.put_reminders({"tomorrow_time": "20:30"})["tomorrow_time"], "20:30")
+        with self.assertRaises(AppError):
+            self.svc.put_reminders({"tomorrow_time": "25:00"})
+
+
+class TestQuizExport(TestAi):
+    TEXT = ("1. What is a CPU?\na) Brain\nb) Screen\nc) Mouse\nAnswer: a\n2. A mouse is an input device.\na) True\nb) False\nAnswer: a\n"
+            "3. Match the device with its use.\nMouse = points\nKeyboard = types\nSpeaker = sound\n4. The ___ is the brain of the computer.\nAnswer: CPU\n5. Explain: why?\n6. Which is output?\na) Mouse\nb) Printer\n")
+
+    def test_moodle_gift_and_google_forms_script(self):
+        g = self.svc.export_quiz({"grade_id": "g4", "trimester": 0, "week": 3, "number": 1, "text": self.TEXT, "format": "gift"})
+        body = Path(g["path"]).read_text(encoding="utf-8")
+        self.assertTrue(g["name"].endswith("_Moodle.txt")); self.assertEqual(g["questions"], 6)
+        self.assertIn("{ =Brain ~Screen ~Mouse }", body); self.assertIn("{TRUE}", body)
+        self.assertIn("=Mouse -> points", body); self.assertIn("The {=CPU} is the brain", body)
+        self.assertIn("Explain\\: why? {}", body)
+        self.assertIn("Which is output? {}", body)                       # no answer given: imported as an essay question
+        f = self.svc.export_quiz({"grade_id": "g4", "trimester": 0, "week": 3, "number": 1, "text": self.TEXT, "format": "forms"})
+        js = Path(f["path"]).read_text(encoding="utf-8")
+        self.assertIn("FormApp.create", js); self.assertIn('createChoice("Brain", true)', js); self.assertIn("addListItem", js); self.assertIn("Answer: CPU", js)
+        with self.assertRaises(AppError):
+            self.svc.export_quiz({"grade_id": "g4", "text": "  "})
+
+
+class TestGrades(TestAi):
+    def test_marks_are_kept_checked_imported_and_uploaded(self):
+        import base64
+        from unittest import mock
+        names = self.svc.get_students("g4-a")["names"]
+        base = {"room_id": "g4-a", "trimester": 0, "week": 3}
+        out = self.svc.grades_put({**base, "rows": [{"name": names[0], "marks": {"behavior": 10, "attendance": "10", "quiz": 18.5}}, {"name": names[1], "absent": True, "marks": {"behavior": 5}}, {"name": "nobody"}]})
+        self.assertEqual(out["students"][0]["marks"], {"behavior": 10, "attendance": 10, "quiz": 18.5})
+        self.assertTrue(out["students"][1]["absent"]); self.assertEqual(out["students"][1]["marks"], {})
+        with self.assertRaises(AppError):
+            self.svc.grades_put({**base, "rows": [{"name": names[0], "marks": {"behavior": 11}}]})
+        self.assertEqual(self.svc.grades_get("g4-a", 0, 3)["students"][0]["marks"]["quiz"], 18.5)   # the bad save changed nothing
+        csv_text = "Student Name,Grade (50)\nSara Ali Hassan,45\nOmar Samy,40\nSomeone Else,10\n"
+        r = self.svc.grades_import({**base, "filename": "lms.csv", "data_b64": base64.b64encode(csv_text.encode()).decode()})
+        self.assertEqual(r["imported"], 2); self.assertEqual(r["unmatched"], ["Someone Else"]); self.assertEqual(r["lms_max"], 50)
+        self.assertEqual([s["marks"].get("lms") for s in r["students"]], [45, 40]); self.assertFalse(r["students"][1]["absent"])
+        # upload: students are found on the school server by name; absent ones are cleared there
+        calls = []
+        class Fake:
+            def select(self, table, q): calls.append(("select", table, q)); return [{"code": "s1", "display_name": names[0]}, {"code": "s2", "display_name": names[1]}]
+            def upsert(self, table, rows, on): calls.append(("upsert", table, rows, on))
+            def delete(self, table, q): calls.append(("delete", table, q))
+        with mock.patch.object(self.svc, "_cloud_cfg", return_value={"role": "teacher"}), mock.patch.object(self.svc, "_cloud_client", return_value=Fake()):
+            res = self.svc.grades_upload(base)
+        up = [c for c in calls if c[0] == "upsert"][0]
+        self.assertEqual(res["sent"], 2); self.assertEqual({r["item"] for r in up[2]}, {"Behavior", "Attendance", "Quiz", "Total"})
+        self.assertTrue(all(r["subject"] == "ICT" and r["trimester"] == 0 and r["week"] == 3 for r in up[2]))
+        self.assertEqual(up[3], "student_code,trimester,week,subject,item")
+        with mock.patch.object(self.svc, "_cloud_cfg", return_value={"role": "parent"}):
+            with self.assertRaises(AppError):
+                self.svc.grades_upload(base)
+        self.assertTrue(self.svc.grades_get("g4-a", 0, 3)["uploaded"])
+
+
+class TestInsights(TestAi):
+    def test_class_overview_from_marks_and_log(self):
+        names = self.svc.get_students("g4-a")["names"]
+        for week, rows in ((2, [{"name": names[0], "marks": {"behavior": 10, "classwork": 15}}, {"name": names[1], "marks": {"behavior": 2, "classwork": 3}}]),
+                            (3, [{"name": names[0], "marks": {"behavior": 10}}, {"name": names[1], "absent": True}]),
+                            (4, [{"name": names[0], "marks": {"quiz": 20}}, {"name": names[1], "absent": True}])):
+            self.svc.grades_put({"room_id": "g4-a", "trimester": 0, "week": week, "rows": rows})
+        r = self.svc.insights_get("g4-a", 0)
+        self.assertEqual([w["week"] for w in r["weeks"]], [2, 3, 4])
+        self.assertEqual(r["weeks"][0]["avg"], 60)                    # (100 + 20) / 2
+        self.assertEqual(r["weeks"][1]["marked"], 1); self.assertEqual(r["absences"], 2)
+        a, b = r["rows"]
+        self.assertEqual(a["avg"], 100); self.assertFalse(a["attention"])
+        self.assertEqual((b["avg"], b["absent"]), (20, 2)); self.assertTrue(b["attention"])
+        self.assertEqual(self.svc.insights_get("g4-a", 1)["weeks"], [])
+
+
+class TestSchemeUnits(TestAi):
+    def test_unit_and_curriculum_objectives_reach_the_ai_and_the_files_page(self):
+        w = self.svc.overview()["trimesters"][0]["weeks"][3]["number"]
+        self.svc.scheme_put({"grade_id": "g4", "trimester": 0, "weeks": [{"week": w, "topic": "Hardware", "unit": "Unit 2: Computers", "objectives": "Name the parts\n\nExplain what a CPU does"}]})
+        got = [x for x in self.svc.scheme_get("g4", 0)["weeks"] if x["week"] == w][0]
+        self.assertEqual((got["unit"], got["objectives"]), ("Unit 2: Computers", "Name the parts\nExplain what a CPU does"))
+        top = [x for x in self.svc.slide_topics("g4", 0)["weeks"] if x["week"] == w][0]
+        self.assertEqual((top["unit"], top["curriculum"]), ("Unit 2: Computers", "Name the parts\nExplain what a CPU does"))
+        self.svc.ai_save({"provider": "groq", "api_key": "k", "model": "m"})
+        self.reply = json.dumps({"topic": "Hardware"})
+        self.svc.ai_generate_lesson({"grade_id": "g4", "trimester": 0, "week": w, "topic": "hardware"})
+        sent = json.dumps(self.sent[-1][3])
+        self.assertIn("CURRICULUM OBJECTIVES", sent); self.assertIn("Explain what a CPU does", sent)

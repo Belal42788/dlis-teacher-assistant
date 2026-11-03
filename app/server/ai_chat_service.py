@@ -93,6 +93,7 @@ class AiChatMixin:
         if gid:
             grade = self._grade(gid)
             context += f" Grade being discussed = {self._grade_label(grade)}."
+        context += self.source_block(b.get("source_id"), b.get("source_pages"), cite=True)
         names = self._all_student_names()
         cfg = self._ai_config()
         text, model = self._chat_auto(cfg, redact(system + context, names), "", messages=[{**m, "content": redact(m["content"], names)} for m in msgs],

@@ -4,7 +4,10 @@ import { logDialog, lastLine } from "../components/log_dialog.js";
 import { forgetDay } from "../reminders.js";
 import { t } from "../i18n.js";
 import { state } from "../state.js";
+import { announceCard } from "../components/announce_list.js";
 import { tasksTable } from "../components/tasks_table.js";
+
+const aiHint = { hidden: false };   // "not now" hides the AI hint until the program is opened again
 import { fmtDate, fmtShort, fmtDay, roomLabel, gradeName, todayIso, addDays, triName, localName, fmt12, stageTone } from "../labels.js";
 
 export async function renderToday(root) {
@@ -17,6 +20,29 @@ export async function renderToday(root) {
     logInfo = { last: lastRes.last, today: dayLog.entries };
     state.structure = structure;
     const isToday = day === todayIso();
+    const annBox = h("div", {});
+    const aiBox = h("div", {});     // shown at the start while the AI is not set up: a button that explains how to turn it on
+    if (isToday && !aiHint.hidden) api.get("/api/ai").then((r) => {
+      if (r.ready) return;
+      aiBox.append(h("div", { class: "banner info", style: { marginBottom: ".8rem" } }, icon("spark"),
+        h("div", { class: "grow" }, h("b", {}, t("aih_title")), h("div", { class: "small muted" }, t("aih_text"))),
+        h("a", { class: "btn small primary", href: "#/help?open=ai" }, t("aih_how")),
+        h("a", { class: "btn small", href: "#/settings" }, t("aih_settings")),
+        h("button", { class: "btn small ghost", onClick: () => { aiHint.hidden = true; aiBox.replaceChildren(); } }, t("aih_later"))));
+    }).catch(() => {});
+    const prepBox = h("div", {});   // "prepare my week": how many classes already have their lesson plan
+    if (isToday) api.get("/api/week-prep").then((r) => {
+      if (!r.total) return;
+      const done = r.ready >= r.total;
+      prepBox.append(h("div", { class: `banner ${done ? "ok" : "info"}`, style: { marginBottom: ".8rem" } }, icon(done ? "check" : "file"),
+        h("div", { class: "grow" }, h("b", {}, done ? t("pw_all_ready") : t("pw_status", { a: r.ready, b: r.total })), done ? null : h("div", { class: "small muted" }, (() => { const m = r.grades.filter((g) => !g.has_plan); return m.slice(0, 5).map((g) => g.name + (g.topic ? ` (${g.topic})` : "")).join(" · ") + (m.length > 5 ? ` +${m.length - 5}` : ""); })())),
+        done ? null : h("a", { class: "btn small primary", href: "#/docs" }, icon("spark"), t("pw_go")))); }).catch(() => {});
+    if (isToday) Promise.all([api.get("/api/announcements"), api.get("/api/cloud").catch(() => ({}))]).then(([a, c]) => {
+      const live = (a.items || []).filter((x) => x.active).slice(0, 3), admin = c.role === "admin";
+      if (live.length || admin) annBox.append(h("div", { class: "panel", style: { marginTop: ".9rem" } },
+        h("div", { class: "row" }, h("h3", { style: { margin: 0 } }, t("an_today")), h("span", { class: "grow" }),
+          admin ? h("a", { class: "btn small primary", href: "#/announcements" }, icon("plus"), t("an_add_short")) : null),
+        ...live.map((x) => announceCard(x)))); }).catch(() => {});
     const pos = d.position;
     root.replaceChildren(h("div", { class: "page" },
       h("div", { class: "date-head" },
@@ -27,15 +53,18 @@ export async function renderToday(root) {
         isToday ? null : h("button", { class: "btn", onClick: () => { day = todayIso(); load(); } }, t("back_to_today")),
         h("button", { class: "btn", "aria-label": t("next_day"), onClick: () => { day = addDays(day, 1); load(); } }, t("next_day"), icon("chevron")),
         isToday ? null : h("span", { class: "muted" }, fmtDate(day))),
+      aiBox,
+      prepBox,
       notices(d, structure),
       sessionsView(d, structure, isToday),
-      isToday ? tasksSection(tasks) : null));
+      isToday ? tasksSection(tasks) : null,
+      annBox));
   }
 
   function tasksSection(data) {
     return h("div", { class: "today-tasks" },
       h("h3", { class: "sec" }, icon("tasks"), t("nav_tasks"), data.overdue ? h("span", { class: "tag" }, t("tasks_late_n", { n: data.overdue })) : null),
-      tasksTable(data, { limit: 6, onChange: () => load() }));
+      tasksTable(data, { limit: 3, onChange: () => load() }));
   }
 
   const logged = (s) => logInfo.today.find((e) => e.room_id === s.room_id && String(e.period) === String(s.period));
@@ -132,10 +161,12 @@ export async function renderToday(root) {
             s.plan && s.plan.topic ? h("div", { class: "plan-line small" }, icon("file"), " ", t("tn_planned"), " ", h("b", {}, s.plan.topic), s.plan.slides ? h("span", { class: "muted" }, ` · ${t("tn_slides_n", { n: s.plan.slides })}`) : null) : null,
             lastLine(logInfo.last[s.room_id]),
             h("div", { class: "row small" },
-              h("button", { class: "btn small ghost", onClick: () => openLog(s) }, icon("file"), logged(s) ? t("log_edit") : t("log_lesson")),
-              h("a", { class: "btn small ghost go", href: `#/docs?room=${s.room_id}` }, icon("file"), t("nav_docs")),
-              isToday ? h("button", { class: "btn small ghost", onClick: () => moveDialog(d, structure, s) }, t("ch_move")) : null,
-              isToday ? h("button", { class: "btn small ghost", onClick: () => change({ action: "cancel", period: s.period }) }, t("ch_cancel")) : null)),
+              h("button", { class: "btn small primary", onClick: () => openLog(s) }, icon("file"), logged(s) ? t("log_edit") : t("log_lesson")),
+              h("details", { class: "lesson-more" }, h("summary", { class: "btn small ghost", "aria-label": t("more") }, "⋯"),
+                h("div", { class: "row small" },
+                  h("a", { class: "btn small ghost go", href: `#/docs?room=${s.room_id}` }, icon("file"), t("nav_docs")),
+                  isToday ? h("button", { class: "btn small ghost", onClick: () => moveDialog(d, structure, s) }, t("ch_move")) : null,
+                  isToday ? h("button", { class: "btn small ghost", onClick: () => change({ action: "cancel", period: s.period }) }, t("ch_cancel")) : null)))),
           timeCell(s.start, s.end));
       } })),
       ...(d.cancelled || []).map((s) => ({ start: s.start || "99", node: () => {

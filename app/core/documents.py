@@ -284,28 +284,112 @@ def parse_quiz(text: str) -> list[dict]:
     return out
 
 
+def _right_option(q: dict) -> str:
+    """The text of the correct choice of a multiple-choice or true/false question ('' when no answer is given)."""
+    ans = str(q.get("answer", "")).strip().strip("()").upper()
+    for letter, text in q.get("options") or []:
+        if ans and (ans == str(letter).upper() or ans == text.strip().upper()):
+            return text
+    return ""
+
+
+def quiz_to_gift(questions: list[dict], title: str = "Quiz") -> str:
+    """Moodle's GIFT text format (Question bank > Import > GIFT). Questions without a usable answer become essay questions."""
+    def esc(x):
+        return re.sub(r"([~=#{}:\\])", r"\\\1", str(x))
+    lines = [f"// {title}", f"$CATEGORY: {esc(title)}", ""]
+    for i, q in enumerate(questions, 1):
+        kind = q.get("type") or _kind(q)
+        head = f"::Q{i}:: "
+        text = esc(q["q"])
+        if kind == "match" and len(q.get("pairs") or []) >= 3:
+            body = " ".join(f"={esc(a)} -> {esc(b)}" for a, b in q["pairs"])
+            lines.append(f"{head}{text} {{ {body} }}")
+        elif kind in ("mcq", "tf") and q.get("options") and _right_option(q):
+            right = _right_option(q)
+            if kind == "tf":
+                lines.append(f"{head}{text} {{{'TRUE' if right.strip().lower().rstrip('.') in ('true', 'صح') else 'FALSE'}}}")
+            else:
+                body = " ".join(("=" if text_ == right else "~") + esc(text_) for _l, text_ in q["options"])
+                lines.append(f"{head}{text} {{ {body} }}")
+        elif kind == "fill" and str(q.get("answer", "")).strip() and "___" in q["q"]:
+            lines.append(head + re.sub(r"_{3,}", "{=" + esc(str(q["answer"]).strip()) + "}", esc(q["q"]), count=1).replace("\\{", "{").replace("\\}", "}").replace("\\=", "="))
+        else:
+            lines.append(f"{head}{text} {{}}")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def quiz_to_forms_script(questions: list[dict], title: str = "Quiz") -> str:
+    """A Google Apps Script that builds the quiz as a Google Form (script.google.com > New project > paste > Run createQuiz)."""
+    import json
+    j = lambda x: json.dumps(str(x), ensure_ascii=False)
+    out = ["function createQuiz() {", f"  var form = FormApp.create({j(title)});", "  form.setIsQuiz(true);", "  var it;"]
+    for q in questions:
+        kind = q.get("type") or _kind(q)
+        if kind in ("mcq", "tf") and q.get("options"):
+            right = _right_option(q)
+            out.append(f"  it = form.addMultipleChoiceItem().setTitle({j(q['q'])}).setPoints(1).setRequired(false);")
+            out.append("  it.setChoices([" + ", ".join(f"it.createChoice({j(t_)}, {'true' if t_ == right and right else 'false'})" for _l, t_ in q["options"]) + "]);")
+        elif kind == "match" and q.get("pairs"):
+            rights = [b for _a, b in q["pairs"]]
+            for a, b in q["pairs"]:
+                out.append(f"  it = form.addListItem().setTitle({j(q['q'] + ' — ' + a)}).setPoints(1).setRequired(false);")
+                out.append("  it.setChoices([" + ", ".join(f"it.createChoice({j(r_)}, {'true' if r_ == b else 'false'})" for r_ in rights) + "]);")
+        else:
+            long = kind == "essay"
+            out.append(f"  it = form.{'addParagraphTextItem' if long else 'addTextItem'}().setTitle({j(q['q'])}).setPoints(1).setRequired(false);")
+            if str(q.get("answer", "")).strip():
+                out.append(f"  it.setGeneralFeedback(FormApp.createFeedback().setText({j('Answer: ' + str(q['answer']).strip())}).build());")
+    out += ["  Logger.log('Edit: ' + form.getEditUrl());", "  Logger.log('Students: ' + form.getPublishedUrl());", "}", ""]
+    return "\n".join(out)
+
+
+def shuffled_version(questions: list[dict], seed: int = 7) -> list[dict]:
+    """Version B of a quiz: the questions in another order, and the choices of every multiple-choice question in another order
+    (the answer letter follows its choice). True/false and matching keep their order, so nothing becomes confusing."""
+    import random
+    rnd = random.Random(seed)
+    out = []
+    for q in questions:
+        q = {**q, "options": list(q.get("options") or []), "pairs": list(q.get("pairs") or [])}
+        if q.get("type") == "mcq" and len(q["options"]) > 1:
+            letters = [o[0] for o in q["options"]]
+            texts = [o[1] for o in q["options"]]
+            order = list(range(len(texts)))
+            rnd.shuffle(order)
+            if order == list(range(len(texts))):
+                order = order[1:] + order[:1]
+            ans = str(q.get("answer", "")).strip().strip("()").upper()[:1]
+            if ans in letters:
+                q["answer"] = letters[order.index(letters.index(ans))]
+            q["options"] = [(letters[i], texts[order[i]]) for i in range(len(texts))]
+        out.append(q)
+    rnd.shuffle(out)
+    return out
+
+
 def fill_quiz(template: Path, out: Path, ctx: dict) -> Path:
     """ctx: grade_label ('4' or 'KG 1'), trimester, week, number, questions(list), with_answers"""
     ctx = _scrub(ctx)
     doc = Document(str(template))
     pars = doc.paragraphs
-    # 'Grade 1 Trimester 1 week 7:'
-    r = pars[1].runs
     label = _clean(ctx.get("grade_label"))
-    if label.upper().startswith("KG"):
-        r[0].text, r[2].text = "KG", label[2:].strip() or ""
-    else:
-        r[2].text = label
-    r[6].text = str(ctx.get("trimester", ""))
-    r[10].text = str(ctx.get("week", ""))
-    set_par(pars[2], f"Quiz {ctx.get('number', 1)}:")
+    grade_text = label if label.upper().startswith("KG") else f"Grade {label}"
+    head = doc.tables[0].rows[0].cells[1].paragraphs
+    set_par(head[0], f"{_clean(ctx.get('subject'))} Department")
+    set_par(head[1], f"{grade_text} - Trimester {ctx.get('trimester', '')}")
+    set_par(head[2], f"Quiz {ctx.get('number', 1)}: Week {ctx.get('week', '')}")
+    total = len(ctx.get("questions") or [])
+    score = doc.tables[1].rows[1].cells[2].paragraphs[0]
+    set_par(score, f"Score:  ____ / {total}")
 
-    anchor = pars[2]
-    base = _first_run(pars[2])
-    font = base.font.name
+    anchor = pars[2]            # the empty line under the student table: the questions go here, "Good luck!" stays last
+    base = pars[2]
+    font = _first_run(pars[4]).font.name if len(pars) > 4 else None
 
     def add_par(after: Paragraph, text: str, bold: bool = False, indent: float = 0, space_after: float = 4) -> Paragraph:
-        new = copy.deepcopy(pars[3]._p) if len(pars) > 3 else copy.deepcopy(pars[2]._p)
+        new = copy.deepcopy(pars[3]._p)
         after._p.addnext(new)
         p = Paragraph(new, after._parent)
         for rr in list(p.runs):
@@ -318,6 +402,7 @@ def fill_quiz(template: Path, out: Path, ctx: dict) -> Path:
             run.font.name = font
         p.paragraph_format.left_indent = Pt(indent)
         p.paragraph_format.space_after = Pt(space_after)
+        p.alignment = 0   # left: the template's empty lines are centred
         return p
 
     questions = ctx.get("questions") or []
@@ -359,8 +444,14 @@ def fill_quiz(template: Path, out: Path, ctx: dict) -> Path:
 
 
 # ------------------------------------------------------------------ grading sheet
+# The school's sheet: five daily boxes for each part. The full mark of a part is shared equally between its five boxes.
+GRADE_PARTS = {"behavior": (2, 2), "attendance": (7, 2), "classwork": (12, 3), "homework": (17, 3), "quiz": (22, 20)}   # part -> (first column, mark per box)
+GRADE_TOTALS = {"behavior": 10, "attendance": 10, "classwork": 15, "homework": 15, "quiz": 20}
+
+
 def fill_grading_sheet(template: Path, out: Path, ctx: dict) -> Path:
-    """ctx: term, week, date, subject, grade_label, students(list of names)"""
+    """ctx: term, week, date, subject, grade_label, students(list of names),
+    optional full(list of parts to fill with the full mark: behavior, attendance, classwork, homework, quiz) and absent(list of student indexes left empty)"""
     ctx = _scrub(ctx)
     doc = Document(str(template))
     for cell in doc.tables[0].rows[0].cells:
@@ -381,15 +472,22 @@ def fill_grading_sheet(template: Path, out: Path, ctx: dict) -> Path:
             break
         set_par(row.cells[0].paragraphs[0], str(i + 1))
         set_par(row.cells[1].paragraphs[0], students[i])
+        if i in set(ctx.get("absent") or []):
+            continue                                             # the absent student's marks stay empty for the teacher
+        for part in ctx.get("full") or []:
+            first, each = GRADE_PARTS[part]
+            boxes = 1 if part == "quiz" else 5
+            for c in range(first, first + boxes):
+                set_par(row.cells[c].paragraphs[0], str(each))
     out.parent.mkdir(parents=True, exist_ok=True)
     _save(doc, out)
     return out
 
 
-def write_grade_table(out: Path, names: list, subject: str = "", label: str = "", term: int = 0, week: int = 0) -> Path:
+def write_grade_table(out: Path, names: list, subject: str = "", label: str = "", term: int = 0, week: int = 0, full_mark=None, absent=()) -> Path:
     """A plain on-screen table (Excel or CSV) with the class list and an empty grade column, to copy into the LMS."""
     out.parent.mkdir(parents=True, exist_ok=True)
-    rows = [[i + 1, _scrub({"n": n})["n"], ""] for i, n in enumerate(names)]
+    rows = [[i + 1, _scrub({"n": n})["n"], ("" if (full_mark is None or i in set(absent)) else full_mark)] for i, n in enumerate(names)]
     if out.suffix.lower() == ".csv":
         import csv
         with open(out, "w", newline="", encoding="utf-8-sig") as f:
@@ -588,9 +686,10 @@ def fill_cover(template: Path, out: Path, ctx: dict) -> Path:
 TEMPLATES = {
     "lesson_plan": "Lesson_Plan_Temp.docx",
     "trimester_plan": "Trimester_Plan_Template.docx",
-    "quiz": "quiz_Template.docx",
+    "quiz": "Quiz_Template_v2.docx",
     "grading_sheet": "Grading_Sheet_Template.docx",
     "revision": "quiz_Template.docx",
+    "revision_cover": "Revision_Cover_Template.docx",
 }
 
 
@@ -599,6 +698,133 @@ def _save(doc, out: Path) -> None:
         doc.save(str(out))
     except PermissionError:  # the same file is still open in Word
         raise AppError("file_in_use", f"Close this file in Word first: {out.name}", status=409)
+
+
+def fill_revision_cover(template: Path, out: Path, ctx: dict) -> Path:
+    """The first page of the Trimester revision pack (school logo, Cognia logo, subject, covered material).
+    ctx: academic_year, grade_label, subject, teacher, department, trimester, rows[(unit, lesson, pages)]"""
+    import copy as _copy
+    ctx = _scrub(ctx)
+    doc = Document(str(template))
+    tri = str(ctx.get("trimester", 1))
+    pars = doc.paragraphs
+    pars[1].runs[0].text = f"Final Trimester {tri} Revision Pack – Covered Material Report"
+    for par, key in ((pars[2], "academic_year"), (pars[3], "grade_label"), (pars[4], "subject"), (pars[5], "teacher")):
+        par.runs[1].text = _clean(ctx.get(key))
+    hp = doc.sections[0].header.paragraphs
+    dept = _clean(ctx.get("department")) or _clean(ctx.get("subject"))
+    hp[0].runs[0].text = f"{dept} Department"
+    hp[1].runs[0].text = f"\t\tRevision Pack-Trimester {tri}-Grade ({_clean(ctx.get('grade_label'))})"
+    table = doc.tables[0]
+    rows = list(ctx.get("rows") or [])
+    while len(table.rows) - 1 < len(rows):
+        table._tbl.append(_copy.deepcopy(table.rows[-1]._tr))
+    while len(table.rows) - 1 > max(len(rows), 5):   # the template's spare lines would push the page to a second sheet
+        table._tbl.remove(table.rows[-1]._tr)
+    for i, row in enumerate(table.rows[1:]):
+        vals = rows[i] if i < len(rows) else ("", "", "")
+        for cell, v in zip(row.cells, vals):
+            par = cell.paragraphs[0]
+            if par.runs:
+                par.runs[0].text = _clean(v)
+                for extra in par.runs[1:]:
+                    extra.text = ""
+            else:
+                par.add_run(_clean(v))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    doc.save(str(out))
+    return out
+
+
+def put_cover_first(cover: Path, doc: Path, out: Path) -> Path:
+    """One file: the cover page, then a page break, then the body of `doc` (its own header is dropped: the cover's header with both logos is used for all pages)."""
+    import copy as _copy
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
+    base, extra = Document(str(cover)), Document(str(doc))
+    body = base.element.body
+    sect = body.find(qn("w:sectPr"))
+    br = OxmlElement("w:p"); r = OxmlElement("w:r"); b = OxmlElement("w:br"); b.set(qn("w:type"), "page"); r.append(b); br.append(r)
+    sect.addprevious(br)
+    for el in list(extra.element.body):
+        if el.tag == qn("w:sectPr"):
+            continue
+        new = _copy.deepcopy(el)
+        for blip in new.iter(qn("a:blip")):
+            rid = blip.get(qn("r:embed"))
+            if rid and rid in extra.part.rels:
+                import io as _io
+                new_rid, _ = base.part.get_or_add_image(_io.BytesIO(extra.part.rels[rid].target_part.blob))
+                blip.set(qn("r:embed"), new_rid)
+        sect.addprevious(new)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    base.save(str(out))
+    return out
+
+
+def write_plain_doc(out: Path, title: str, text: str, meta: dict) -> Path:
+    """A simple Word file for the extra tools: school logo, title, then the text (bullets, numbers and '|' tables are recognised)."""
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+    ctx = _scrub({"t": title, "x": text, "s": meta.get("school"), "u": meta.get("subject"), "n": meta.get("teacher")})
+    doc = Document()
+    sec = doc.sections[0]
+    sec.left_margin = sec.right_margin = Pt(54)
+    logo = meta.get("logo")
+    if logo and Path(logo).is_file():
+        doc.add_picture(str(logo), height=Pt(46))
+    head = doc.add_paragraph()
+    r = head.add_run(ctx["t"]); r.bold = True; r.font.size = Pt(16)
+    sub = " · ".join(x for x in (_clean(ctx["s"]), _clean(ctx["u"]), _clean(ctx["n"])) if x)
+    if sub:
+        doc.add_paragraph(sub)
+    arabic = re.compile(r"[\u0600-\u06FF]")
+
+    def rtl(par, line):
+        if len(arabic.findall(line)) > len(line) * 0.3:
+            par._p.get_or_add_pPr().append(OxmlElement("w:bidi"))
+            par.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+    rows: list = []
+
+    def flush():
+        if not rows:
+            return
+        width = max(len(r) for r in rows)
+        tbl = doc.add_table(rows=len(rows), cols=width)
+        tbl.style = "Table Grid"
+        for i, row in enumerate(rows):
+            for j in range(width):
+                cell = tbl.cell(i, j)
+                cell.text = row[j] if j < len(row) else ""
+                if i == 0:
+                    for run in cell.paragraphs[0].runs:
+                        run.bold = True
+        rows.clear()
+        doc.add_paragraph()
+
+    for raw in ctx["x"].splitlines():
+        line = raw.rstrip()
+        if line.count("|") >= 1 and not line.lstrip().startswith("- "):
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if not all(set(c) <= set("-: ") for c in cells):
+                rows.append(cells)
+            continue
+        flush()
+        if not line.strip():
+            continue
+        if line.lstrip().startswith(("- ", "• ")):
+            p = doc.add_paragraph(line.lstrip()[2:].strip(), style="List Bullet")
+        elif re.match(r"^[A-Z][A-Z0-9 ,&/()'-]{3,}:?$", line.strip()) or (line.strip().endswith(":") and len(line) < 70):
+            p = doc.add_paragraph(); rr = p.add_run(line.strip()); rr.bold = True
+        else:
+            p = doc.add_paragraph(line.strip())
+        rtl(p, line)
+    flush()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    _save(doc, out)
+    return out
 
 
 def template_path(kind: str) -> Path:

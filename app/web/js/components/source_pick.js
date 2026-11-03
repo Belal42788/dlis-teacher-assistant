@@ -15,7 +15,7 @@ export async function sourcePicker(onPick, opts = {}) {
   sel.value = picked.id;
   const pages = h("input", { type: "text", dir: "ltr", placeholder: t("src_pages_ph"), "aria-label": t("src_pages"), style: { maxWidth: "11em" } });
   const verb = h("input", { type: "checkbox" });
-  const more = opts.exact ? h("div", { class: "row small", style: { marginTop: ".3rem" } }, h("label", { class: "row" }, t("src_pages"), pages), h("label", { class: "row" }, verb, t("qt_verbatim"))) : null;
+  const more = opts.exact ? h("div", { class: "row small", style: { marginTop: ".3rem" } }, h("label", { class: "row" }, t("src_pages"), pages), opts.pagesOnly ? null : h("label", { class: "row" }, verb, t("qt_verbatim"))) : null;
   const el = h("div", { class: "src-pick-box" }, h("label", { class: "field src-pick" }, h("span", { class: "label" }, t("src_use")), sel), more);
-  return { el, value: () => sel.value, list: () => list, extra: () => (opts.exact && sel.value ? { source_pages: pages.value.trim(), verbatim: verb.checked } : {}) };
+  return { el, value: () => sel.value, list: () => list, extra: () => (opts.exact && sel.value ? { source_pages: pages.value.trim(), ...(opts.pagesOnly ? {} : { verbatim: verb.checked }) } : {}) };
 }

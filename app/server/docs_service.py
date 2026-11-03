@@ -191,8 +191,31 @@ class DocsMixin:
         number = int(b.get("number", 1) or 1)
         out = self.doc_file("quiz", grade.name, tri, week, extra=f"_{number}")
         D.fill_quiz(D.template_path("quiz"), out, {
-            "grade_label": self._grade_label(grade), "trimester": tri + 1, "week": week, "number": number,
+            "grade_label": self._grade_label(grade), "subject": self._need_store().load_settings().subject, "trimester": tri + 1, "week": week, "number": number,
             "questions": questions, "with_answers": bool(b.get("with_answers"))})
+        res = self._result(out)
+        res["questions"] = len(questions)
+        if int(b.get("versions", 1) or 1) == 2:   # version B: another order, so neighbours cannot copy
+            out_b = self.doc_file("quiz", grade.name, tri, week, extra=f"_{number}B")
+            D.fill_quiz(D.template_path("quiz"), out_b, {
+                "grade_label": self._grade_label(grade), "subject": self._need_store().load_settings().subject, "trimester": tri + 1, "week": week, "number": f"{number} (B)",
+                "questions": D.shuffled_version(questions), "with_answers": bool(b.get("with_answers"))})
+            res["b"] = self._result(out_b)
+        return res
+
+    def export_quiz(self, b: dict) -> dict:
+        """The quiz text as a Moodle GIFT file or a Google Forms script (a text file the teacher pastes into script.google.com)."""
+        grade = self._grade(str(b.get("grade_id", "")))
+        tri, week = int(b.get("trimester", 0)), int(b.get("week", 1))
+        questions = D.parse_quiz(b.get("text", ""))
+        if not questions:
+            raise AppError("no_questions", "Paste at least one question first.")
+        fmt = "forms" if b.get("format") == "forms" else "gift"
+        number = int(b.get("number", 1) or 1)
+        title = f"{grade.name} T{tri + 1}-W{week:02d} Quiz {number}"
+        out = self.doc_file("quiz", grade.name, tri, week, extra=f"_{number}_{'GoogleForms' if fmt == 'forms' else 'Moodle'}").with_suffix(".txt")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(D.quiz_to_forms_script(questions, title) if fmt == "forms" else D.quiz_to_gift(questions, title), encoding="utf-8")
         res = self._result(out)
         res["questions"] = len(questions)
         return res
@@ -211,13 +234,17 @@ class DocsMixin:
             raise AppError("no_students", "This class has no students yet. Add them in Classes first.", status=409)
         out = self.doc_file("grading_sheet", grade.name, tri, week, extra=room.name)
         fmt = str(b.get("format", "docx"))
+        parts = [x for x in (b.get("fill") or []) if x in D.GRADE_PARTS]                  # parts to give the full mark
+        gone = {str(x).strip() for x in (b.get("absent") or [])}
+        absent = [i for i, x in enumerate(full) if x["name"].strip() in gone]            # absent students stay empty
         if fmt in ("xlsx", "csv"):  # for the LMS: a plain table to fill on screen, never printed
             out = out.with_suffix("." + fmt)
-            D.write_grade_table(out, names, subject=store.load_settings().subject, label=room.name, term=tri + 1, week=week)
+            D.write_grade_table(out, names, subject=store.load_settings().subject, label=room.name, term=tri + 1, week=week,
+                                full_mark=(sum(D.GRADE_TOTALS[x] for x in parts) if parts else None), absent=absent)
             return self._result(out)
         D.fill_grading_sheet(D.template_path("grading_sheet"), out, {
             "term": tri + 1, "week": week, "date": _fmt_full(date.fromisoformat(ctx["start"])),
-            "subject": store.load_settings().subject, "grade_label": room.name, "students": names})
+            "subject": store.load_settings().subject, "grade_label": room.name, "students": names, "full": parts, "absent": absent})
         return self._result(out)
 
     def open_file(self, path: str, folder: bool = False) -> dict:

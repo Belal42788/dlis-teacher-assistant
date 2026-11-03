@@ -18,6 +18,8 @@ export function reminderPanel() {
     const mutedToday = cfg.muted_date === todayIso();
     const evTime = timeInput12(cfg.events_time || "13:00");
     evTime.addEventListener("change", () => save({ events_time: evTime.value }));
+    const tmTime = timeInput12(cfg.tomorrow_time || "19:00");
+    tmTime.addEventListener("change", () => save({ tomorrow_time: tmTime.value }));
     box.replaceChildren(
       h("h3", {}, t("rem_title")), h("p", { class: "muted" }, t("rem_lead")),
       check(t("rem_on"), "enabled"),
@@ -26,6 +28,9 @@ export function reminderPanel() {
           [5, 10, 15, 20, 30].map((m) => h("option", { value: m, selected: m === cfg.minutes }, t("rem_min", { n: m }))))),
       check(t("rem_skip_b2b"), "skip_back_to_back"),
       check(t("rem_sound"), "sound"),
+      check(t("rem_prayer_on"), "prayer"),
+      check(t("rem_tomorrow_on"), "tomorrow"),
+      h("label", { class: "row", style: { marginBottom: ".5rem" } }, t("rem_tomorrow_at"), tmTime),
       check(t("rem_events"), "events_eve"),
       h("label", { class: "row", style: { marginBottom: ".5rem" } }, t("rem_events_at"), evTime),
       h("label", { class: "row", style: { marginBottom: ".5rem" } }, t("rem_ring"),
