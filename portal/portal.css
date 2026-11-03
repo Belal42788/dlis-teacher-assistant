@@ -1,0 +1,23 @@
+:root { --ink: #173a73; --blue: #1d6fc4; --bg: #f2f8fd; --line: #d6e8f1; --ok: #3f8f2a; --warn: #c27a00; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Cairo, "Segoe UI", Tahoma, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.5; }
+.top { display: flex; align-items: center; gap: .8rem; padding: .7rem 1rem; background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; }
+.grow { flex: 1; }
+main { max-width: 760px; margin: 0 auto; padding: 1rem; }
+.card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1rem; margin-bottom: .8rem; }
+h1 { font-size: 1.4rem; margin: .2rem 0 .6rem; } h2 { font-size: 1.1rem; margin: 0 0 .5rem; }
+label { display: block; margin: .6rem 0 .2rem; font-weight: 600; font-size: .9rem; }
+input { width: 100%; padding: .65rem .8rem; border: 1px solid var(--line); border-radius: 10px; font: inherit; }
+button { font: inherit; cursor: pointer; }
+.btn { background: var(--blue); color: #fff; border: 0; border-radius: 10px; padding: .65rem 1.1rem; margin-top: .8rem; }
+.btn.ghost { background: #fff; color: var(--blue); border: 1px solid var(--blue); }
+.link { background: none; border: 0; color: var(--blue); text-decoration: underline; padding: .2rem; }
+.tabs { display: flex; gap: .4rem; flex-wrap: wrap; margin: .6rem 0; }
+.tab { background: #fff; border: 1px solid var(--line); border-radius: 99px; padding: .35rem .9rem; color: var(--ink); }
+.tab.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+table { width: 100%; border-collapse: collapse; } td, th { padding: .45rem .5rem; border-bottom: 1px solid var(--line); text-align: start; }
+.msg { padding: .6rem .8rem; border-radius: 10px; margin: .6rem 0; background: #fff6e0; color: #6b4a00; } .msg.err { background: #fde8e8; color: #8a1f1f; }
+.muted { color: #5d7894; font-size: .85rem; }
+.pic { max-width: 100%; border-radius: 10px; margin: .4rem 0; }
+.chip { display: inline-block; padding: .05rem .6rem; border-radius: 99px; background: #e1effc; font-size: .78rem; }
+a { color: var(--blue); }

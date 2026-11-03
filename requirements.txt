@@ -1,0 +1,11 @@
+pydantic>=2.5
+openpyxl>=3.1
+# App window (optional: without it the app opens in your normal browser)
+pywebview>=5.0
+# Word / PowerPoint files:
+python-docx>=1.1
+python-pptx>=1.0
+certifi>=2024.2
+pystray>=0.19; sys_platform == "win32"
+Pillow>=10
+pypdfium2>=4   # reads PDF slides as pictures
