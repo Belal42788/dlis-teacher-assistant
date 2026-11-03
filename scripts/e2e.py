@@ -141,6 +141,10 @@ try:
         page.fill(".wk-card input[placeholder='الوحدة 2'] >> nth=0", "Unit 2"); page.fill(".wk-card textarea >> nth=0", "Name the parts\nExplain the CPU"); page.click("button:has-text('حفظ')"); page.wait_for_timeout(600)
         page.reload(); page.wait_for_selector(".nav"); page.click(".nav a[data-page=scheme]"); page.wait_for_selector(".wk-card")
         assert page.input_value(".wk-card input[placeholder='الوحدة 2'] >> nth=0") == "Unit 2" and "Explain the CPU" in page.input_value(".wk-card textarea >> nth=0")
+        page.evaluate("window.__cp = ''; navigator.clipboard.writeText = async (x) => { window.__cp = x; }")
+        page.goto(page.url.split("#")[0] + "#/parentweek"); page.wait_for_selector("button:has-text('عربي')")
+        page.fill("textarea >> nth=0", "صفحة 12"); page.click("button:has-text('عربي')"); page.wait_for_timeout(300)
+        cp = page.evaluate("window.__cp"); assert "السلام عليكم" in cp and "صفحة 12" in cp, cp
         page.click(".nav a[data-page=today]"); page.wait_for_selector(".plan-line"); page.click("text=ورقة للمدرس البديل"); page.wait_for_selector("text=Cover_Sheet"); shot("08c_today_plan")
         page.click(".nav a[data-page=tasks]"); page.wait_for_selector(".task-add")
         page.fill(".task-add input[type=text]", "طباعة الاختبارات"); page.select_option(".task-add select", "high"); setdate(page.locator(".task-add .date3"), "2026-10-20")
