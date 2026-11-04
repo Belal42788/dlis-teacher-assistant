@@ -18,6 +18,14 @@ function container() {
   return c;
 }
 
+// With three or more alerts at once (for example when the app opens late), one button dismisses them all instead of leaving a pile over the page.
+function syncAll() {
+  const c = container(), cards = [...c.querySelectorAll(".reminder")];
+  c.querySelector(".rem-all")?.remove();
+  if (cards.length < 3) return;
+  c.prepend(h("button", { class: "btn small rem-all", onClick: () => cards.forEach((x) => x.querySelector(".rem-actions button:nth-child(2)")?.click()) }, t("rem_dismiss_all", { n: cards.length })));
+}
+
 const nativeSound = () => !!window.pywebview?.api?.reminder_alert;   // the desktop app rings by itself, also when minimised
 function beep() {
   if (!cfg?.sound || nativeSound()) return;
@@ -40,7 +48,7 @@ async function save(change) { cfg = await api.put("/api/reminders", change); ret
 function show(item, key, minutesLeft) {
   const card = h("div", { class: "reminder", role: "alert" });
   let ringTimer = null;
-  const close = () => { clearInterval(ringTimer); card.remove(); try { window.pywebview?.api?.reminder_stop?.(); } catch { /* browser mode */ } };
+  const close = () => { clearInterval(ringTimer); card.remove(); syncAll(); try { window.pywebview?.api?.reminder_stop?.(); } catch { /* browser mode */ } };
   const when = item.alarm ? t("rem_alarm", { what: item.label }) : minutesLeft <= 0 ? t("rem_now", { what: item.label, time: fmt12(item.start) }) : t("rem_in", { what: item.label, n: Math.ceil(minutesLeft), time: fmt12(item.start) });
   card.append(
     h("div", { class: "rem-head" }, icon("clock"), h("b", {}, when)),
@@ -49,6 +57,7 @@ function show(item, key, minutesLeft) {
       h("button", { class: "btn small", onClick: () => { handled.add(key); close(); } }, t("rem_dismiss")),
       item.alarm ? null : h("button", { class: "btn small", onClick: async () => { await save({ muted_date: todayIso() }); close(); toast(t("rem_muted_today")); } }, t("rem_mute_today"))));
   container().append(card);
+  syncAll();
   beep();
   // keep ringing until the teacher answers, or until the chosen ring time is over (0 = until answered)
   const ringMs = (cfg?.ring_seconds ?? 60) * 1000, began = Date.now();

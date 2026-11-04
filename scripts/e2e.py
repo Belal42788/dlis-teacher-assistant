@@ -137,10 +137,10 @@ try:
         page.wait_for_function("[...document.querySelectorAll('textarea')].some(t => t.value === 'CPU: the brain')")
         page.click("text=اعمل ملف المراجعة"); page.wait_for_selector("text=Revision_Sheet"); shot("16b_docs_revision")
         tab("gs"); page.click("text=إنشاء كشف الدرجات"); page.wait_for_selector("text=الملف جاهز")
-        page.click(".nav a[data-page=scheme]"); page.wait_for_selector(".wk-card"); page.click("text=اعمل ملف Word للخطة"); page.wait_for_selector("text=الملف جاهز")
-        page.fill(".wk-card input[placeholder='الوحدة 2'] >> nth=0", "Unit 2"); page.fill(".wk-card textarea >> nth=0", "Name the parts\nExplain the CPU"); page.click("button:has-text('حفظ')"); page.wait_for_timeout(600)
-        page.reload(); page.wait_for_selector(".nav"); page.click(".nav a[data-page=scheme]"); page.wait_for_selector(".wk-card")
-        assert page.input_value(".wk-card input[placeholder='الوحدة 2'] >> nth=0") == "Unit 2" and "Explain the CPU" in page.input_value(".wk-card textarea >> nth=0")
+        page.click(".nav a[data-page=scheme]"); page.wait_for_selector(".sw-card"); page.click("text=اعمل ملف Word للخطة"); page.wait_for_selector("text=الملف جاهز")
+        page.fill(".sw-card input[placeholder='الوحدة 2'] >> nth=0", "Unit 2"); page.fill(".sw-card textarea >> nth=0", "Name the parts\nExplain the CPU"); page.click("button:has-text('حفظ')"); page.wait_for_timeout(600)
+        page.reload(); page.wait_for_selector(".nav"); page.click(".nav a[data-page=scheme]"); page.wait_for_selector(".sw-card")
+        assert page.input_value(".sw-card input[placeholder='الوحدة 2'] >> nth=0") == "Unit 2" and "Explain the CPU" in page.input_value(".sw-card textarea >> nth=0")
         page.evaluate("window.__cp = ''; navigator.clipboard.writeText = async (x) => { window.__cp = x; }")
         page.goto(page.url.split("#")[0] + "#/parentweek"); page.wait_for_selector("button:has-text('عربي')")
         page.fill("textarea >> nth=0", "صفحة 12"); page.click("button:has-text('عربي')"); page.wait_for_timeout(300)
@@ -289,7 +289,7 @@ try:
             for tab_ in ("wk", "lp", "quiz", "rv", "sl", "gs"):
                 page.select_option("select[data-kind]", tab_); snap(f"files_{tab_}")
             go("library"); page.click("a.seg-btn[href='#/sources']"); snap("library_sources")
-            go("scheme"); page.wait_for_selector(".wk-card"); snap("scheme")
+            go("scheme"); page.wait_for_selector(".sw-card"); snap("scheme")
             go("library"); page.wait_for_selector(".banner.info"); snap("library")
             go("tools"); page.wait_for_selector(".tl-form"); snap("tools")
             go("chat"); snap("chat")
@@ -336,7 +336,7 @@ try:
               const p = el.parentElement; if (!p) continue; const pr = p.getBoundingClientRect(); const pcs = getComputedStyle(p);
               const clipped = el.scrollWidth > el.clientWidth + 2 && cs.overflowX === 'visible' && el.children.length === 0 && !(el instanceof SVGElement) && el.textContent.trim().length > 0;
               const outside = (r.right > pr.right + 2 || r.left < pr.left - 2) && pcs.overflowX === 'visible' && cs.position !== 'absolute' && cs.position !== 'fixed' && pr.width > 0;
-              if (clipped || outside) out.push((el.tagName + '.' + el.className).slice(0, 50) + ' | ' + el.textContent.trim().slice(0, 40) + ' | ' + Math.round(r.width) + ' vs ' + Math.round(pr.width)); }
+              if (clipped || outside) out.push((el.tagName + '.' + el.className).slice(0, 50) + ' | ' + el.textContent.trim().slice(0, 40) + ' | ' + Math.round(r.width) + ' vs ' + Math.round(pr.width) + ' in ' + p.tagName + '.' + p.className + ' ws=' + pcs.whiteSpace + ' disp=' + pcs.display + ' kids=' + [...p.children].map(k => Math.round(k.getBoundingClientRect().width) + '@' + Math.round(k.getBoundingClientRect().left)).join(',') + ' td@' + Math.round(pr.left) + ' pad=' + pcs.paddingLeft + '/' + pcs.paddingRight + ' minw=' + pcs.minWidth); }
               return out.slice(0, 12); }"""
             for route in ("today", "timetable", "calendar", "tasks", "docs", "scheme", "tools", "library", "sources", "publish", "chat", "classes", "log", "progress", "parentweek", "map", "settings", "help"):
                 page.evaluate(f"location.hash = '#/{route}'"); page.wait_for_timeout(700)
