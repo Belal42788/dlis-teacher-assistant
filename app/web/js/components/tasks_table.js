@@ -30,9 +30,9 @@ export function tasksTable(data, opts = {}) {
         h("td", { class: "c-chk" }, h("span", { class: "auto-ic" }, icon("file"))),
         h("td", {}, h("b", {}, t("t_auto_lp", { grade: x.grade, tri: triName(`T${x.trimester + 1}`), n: x.week })), h("div", { class: "small muted" }, t("t_auto_hint"))),
         h("td", {}, badge(x.importance)), h("td", {}, when(x)),
-        h("td", { class: "c-act" },
+        h("td", { class: "c-act" }, h("div", { class: "c-act-in" },
           h("a", { class: "btn small primary", href: `#/docs?grade=${x.grade_id}&tri=${x.trimester}&week=${x.week}` }, t("t_write")),
-          h("button", { class: "btn small ghost", title: t("t_skip_hint"), onClick: () => act(() => api.post("/api/tasks/dismiss", { id: x.id })) }, t("t_skip"))));
+          h("button", { class: "btn small ghost", title: t("t_skip_hint"), onClick: () => act(() => api.post("/api/tasks/dismiss", { id: x.id })) }, t("t_skip")))));
     }
     return h("tr", { class: `${x.done ? "done" : ""}${late ? " late-row" : ""}` },
       h("td", { class: "c-chk" }, h("input", { type: "checkbox", checked: x.done, "aria-label": t("t_done"), onChange: (e) => act(() => api.post(`/api/tasks/${x.id}/update`, { done: e.target.checked })) })),

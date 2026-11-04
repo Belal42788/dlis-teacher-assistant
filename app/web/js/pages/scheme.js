@@ -39,18 +39,18 @@ export async function renderScheme(root) {
     }));
     body.replaceChildren(
       d.sources.length ? null : h("p", { class: "muted small" }, t("sc_no_sources")),
-      h("div", { class: "wk-list" }, rows.map((r) => {
+      h("div", { class: "sw-list" }, rows.map((r) => {
         const w = r.w, off = w.school_days === 0, now = w.start <= today && today <= w.end;
-        const head = h("div", { class: "wk-head" },
-          h("span", { class: "wk-num" }, w.week),
+        const head = h("div", { class: "sw-head" },
+          h("span", { class: "sw-num" }, w.week),
           h("div", { class: "grow" }, h("b", {}, `${t("sc_week")} ${w.week}`), h("div", { class: "muted small" }, `${fmtShort(w.start)} – ${fmtShort(w.end)}`)),
           now ? h("span", { class: "chip on small" }, t("sc_now")) : null,
           w.has_plan ? h("span", { class: "chip on small" }, t("sc_planned")) : null,
           w.taught.length ? h("span", { class: "chip small", title: w.taught.join(" · ") }, t("sc_taught")) : null);
-        if (off) return h("div", { class: "wk-card off" }, head, h("div", { class: "muted wk-off" }, w.holiday || t("sc_no_classes")));
-        const f = (key, ctl, cls) => h("label", { class: "wk-f " + (cls || "") }, h("span", { class: "label" }, t(key)), ctl);
-        return h("div", { class: "wk-card" + (now ? " now" : "") }, head,
-          h("div", { class: "wk-grid" }, f("sc_unit", r.unit), f("sc_topic", r.topic, "wide"), f("sc_pages", r.pages), f("sc_source", r.src, "wide"), f("sc_objectives", r.obj, "wide")));
+        if (off) return h("div", { class: "sw-card off" }, head, h("div", { class: "muted sw-off" }, w.holiday || t("sc_no_classes")));
+        const f = (key, ctl, cls) => h("label", { class: "sw-f " + (cls || "") }, h("span", { class: "label" }, t(key)), ctl);
+        return h("div", { class: "sw-card" + (now ? " now" : "") }, head,
+          h("div", { class: "sw-grid" }, f("sc_unit", r.unit), f("sc_topic", r.topic, "wide"), f("sc_pages", r.pages), f("sc_source", r.src, "wide"), f("sc_objectives", r.obj, "wide")));
       })),
       h("div", { class: "row", style: { marginTop: ".8rem" } },
         h("button", { class: "btn primary", onClick: () => guarded(async () => { await saveRows(); toast(t("saved")); await load(); }) }, icon("check"), t("save")),

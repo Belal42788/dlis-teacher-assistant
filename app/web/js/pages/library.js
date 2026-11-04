@@ -34,18 +34,18 @@ export async function renderLibrary(root) {
           h("button", { class: "btn primary", onClick: () => act(async () => { await api.post("/api/library/share", { rel: f.rel, class_id: room.value, public: pub.checked, visible_from: from.value || undefined, kind: f.kind }); openForm = ""; toast(t("lb_shared")); }) }, icon("send"), t("lb_share")),
           h("button", { class: "btn ghost", onClick: () => { openForm = ""; load(); } }, t("cancel"))));
     }
-    const row = (f) => h("div", { class: "pub-row" },
-      h("div", { class: "row", style: { justifyContent: "space-between" } },
-        h("div", {}, h("b", {}, f.name), h("div", { class: "muted small" }, `${f.folder} · ${fmtDate(new Date(f.mtime * 1000).toISOString().slice(0, 10), { day: "numeric", month: "short" })}`)),
-        f.shared ? h("span", { class: `chip small ${f.shared.public ? "on" : ""}` }, f.shared.public ? t("pb_live") : t("pb_wait")) : f.private ? h("span", { class: "chip small" }, t("lb_private")) : null),
-      h("div", { class: "row" },
+    const row = (f) => h("div", { class: "pub-row file-row" },
+      h("div", { class: "file-main" }, h("span", { class: `file-ico ext-${(f.name || "").split(".").pop().toLowerCase()}` }, icon("file")),
+        h("div", { style: { minWidth: 0 } }, h("b", {}, f.name), h("div", { class: "muted small" }, `${f.folder} · ${fmtDate(new Date(f.mtime * 1000).toISOString().slice(0, 10), { day: "numeric", month: "short" })}`))),
+      f.shared ? h("span", { class: `chip small ${f.shared.public ? "on" : ""}` }, f.shared.public ? t("pb_live") : t("pb_wait")) : f.private ? h("span", { class: "chip small" }, t("lb_private")) : null,
+      h("div", { class: "file-acts" },
         h("button", { class: "btn small", onClick: () => guarded(() => api.post("/api/open", { path: lib.root + "/" + f.rel })) }, icon("file"), t("d_open_file")),
-        h("button", { class: "btn small ghost", onClick: () => guarded(() => api.post("/api/open", { path: lib.root + "/" + f.rel, folder: true })) }, icon("folder"), t("d_open_folder")),
+        h("button", { class: "btn small ghost", title: t("d_open_folder"), "aria-label": t("d_open_folder"), onClick: () => guarded(() => api.post("/api/open", { path: lib.root + "/" + f.rel, folder: true })) }, icon("folder")),
         f.shared ? [
           h("button", { class: "btn small", onClick: () => post("/api/library/public", { rel: f.rel, public: !f.shared.public }) }, f.shared.public ? t("pb_unapprove") : t("pb_approve")),
           h("button", { class: "btn small ghost", onClick: async () => { if (await confirmBox(t("lb_unshare_confirm"))) post("/api/library/unshare", { rel: f.rel }); } }, icon("trash"), t("lb_unshare"))]
           : online && !f.private ? h("button", { class: "btn small primary", onClick: () => { openForm = f.rel; load(); } }, icon("send"), t("lb_share")) : null),
-      openForm === f.rel && !f.shared ? shareForm(f) : null);
+      openForm === f.rel && !f.shared ? h("div", { class: "file-form" }, shareForm(f)) : null);
 
     root.replaceChildren(h("div", { class: "page" }, hubTabs("library", "library"),
       h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_library")), h("p", {}, t("lb_lead")))),
