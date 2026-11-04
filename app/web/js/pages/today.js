@@ -44,21 +44,21 @@ export async function renderToday(root) {
           admin ? h("a", { class: "btn small primary", href: "#/announcements" }, icon("plus"), t("an_add_short")) : null),
         ...live.map((x) => announceCard(x)))); }).catch(() => {});
     const pos = d.position;
-    root.replaceChildren(h("div", { class: "page" },
-      h("div", { class: "date-head" },
-        h("h1", {}, isToday ? t("today") + " · " + fmtDate(day, { day: "numeric", month: "long" }) : fmtDate(day)),
-        weekBadge(pos)),
-      h("div", { class: "row", style: { marginBottom: "1.2rem" } },
-        h("button", { class: "btn", "aria-label": t("previous_day"), onClick: () => { day = addDays(day, -1); load(); } }, icon("back"), t("previous_day")),
-        isToday ? null : h("button", { class: "btn", onClick: () => { day = todayIso(); load(); } }, t("back_to_today")),
-        h("button", { class: "btn", "aria-label": t("next_day"), onClick: () => { day = addDays(day, 1); load(); } }, t("next_day"), icon("chevron")),
-        isToday ? null : h("span", { class: "muted" }, fmtDate(day))),
-      aiBox,
-      prepBox,
+    const first = String(state.settings?.teacher_name || "").trim().split(/\s+/)[0] || "";
+    const nextBox = h("div", {});   // the next lesson with the time left (only today)
+    root.replaceChildren(h("div", { class: "page wide" },
+      h("div", { class: "today-head" },
+        h("div", {}, h("h1", {}, isToday && first ? t("td_hello", { name: first }) : isToday ? t("today") : fmtDate(day)),
+          h("div", { class: "muted today-sub" }, isToday ? [fmtDate(day, { weekday: "long", day: "numeric", month: "long" }), d.school_day ? ` · ${t("td_day_sum", { a: d.sessions.length, b: (d.duties || []).length })}` : ""] : [t("today_other_day"), " ", fmtDate(day)])),
+        weekBadge(pos), h("span", { class: "grow" }),
+        h("div", { class: "row" },
+          h("button", { class: "btn small", "aria-label": t("previous_day"), onClick: () => { day = addDays(day, -1); load(); } }, icon("back"), t("previous_day")),
+          isToday ? null : h("button", { class: "btn small", onClick: () => { day = todayIso(); load(); } }, t("back_to_today")),
+          h("button", { class: "btn small", "aria-label": t("next_day"), onClick: () => { day = addDays(day, 1); load(); } }, t("next_day"), icon("chevron")))),
       notices(d, structure),
-      sessionsView(d, structure, isToday),
-      isToday ? tasksSection(tasks) : null,
-      annBox));
+      h("div", { class: "today-cols" },
+        h("div", { class: "today-main" }, nextBox, sessionsView(d, structure, isToday, nextBox)),
+        h("div", { class: "today-side" }, aiBox, prepBox, isToday ? tasksSection(tasks) : null, annBox))));
   }
 
   function tasksSection(data) {
@@ -125,31 +125,59 @@ export async function renderToday(root) {
   const mins = (hhmm) => { const m = /^(\d{1,2}):(\d{2})/.exec(hhmm || ""); return m ? +m[1] * 60 + +m[2] : null; };
   const nowMins = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
 
-  // Marks the lesson that is running now and fades the ones that are over (re-checked every half minute while the page is open).
-  function trackNow(items) {
-    const live = items.filter((x) => x.live && mins(x.start) !== null && mins(x.end) !== null);
+  const fmtLeft = (m) => { m = Math.max(0, Math.ceil(m)); if (m < 60) return t("td_min", { n: m }); const hh = Math.floor(m / 60), mm = m % 60; return mm ? t("td_hm", { h: hh, m: mm }) : t("td_h", { h: hh }); };
+  // Marks the lesson that is running now, fades the ones that are over, writes the time left on each row and keeps the "next lesson" bar current
+  // (re-checked every 15 seconds while the page is open).
+  function trackNow(items, nextBox) {
+    const lessons = items.filter((x) => x.lesson && mins(x.start) !== null && mins(x.end) !== null);
+    let shown = null;
     const tick = () => {
       const rows = document.querySelectorAll(".slot[data-s]");
       if (!rows.length) { clearInterval(timer); return; }
       const n = nowMins();
       rows.forEach((el) => {
         const a = mins(el.dataset.s), b = mins(el.dataset.e);
-        el.dataset.state = a === null || b === null ? "" : n >= b ? "past" : n >= a ? "now" : "";
+        const st = a === null || b === null ? "" : n >= b ? "past" : n >= a ? "now" : "";
+        el.dataset.state = st;
+        const u = el.querySelector(".until");
+        if (u && a !== null) { u.textContent = st === "past" ? t("td_done") : st === "now" ? t("td_now") : t("td_in", { x: fmtLeft(a - n) }); u.className = "until" + (st === "past" ? " done" : st === "now" || a - n <= 15 ? " soon" : ""); }
       });
+      if (!nextBox) return;
+      const cur = lessons.find((x) => n < mins(x.end));
+      if (!cur) { nextBox.replaceChildren(); shown = null; return; }
+      if (cur !== shown) { shown = cur; nextBox.replaceChildren(cur.banner()); }
+      const a = mins(cur.start), running = n >= a, left = running ? mins(cur.end) - n : a - n;
+      const num = nextBox.querySelector(".nb-num"), unit = nextBox.querySelector(".nb-unit"), lab = nextBox.querySelector(".nb-lab");
+      const big = Math.max(0, Math.ceil(left));
+      if (num) { num.textContent = big < 60 ? String(big) : `${Math.floor(big / 60)}:${String(big % 60).padStart(2, "0")}`; unit.textContent = big < 60 ? t("td_unit_min") : t("td_unit_h"); }
+      if (lab) lab.textContent = running ? t("td_left", { x: fmtLeft(left) }) : t("td_next_at", { time: fmt12(cur.start) });
+      nextBox.firstChild?.classList.toggle("running", running);
     };
-    const timer = setInterval(tick, 30000);
+    const timer = setInterval(tick, 15000);
     setTimeout(tick, 0);
-    return live.length;
+    return lessons.length;
   }
 
   const slot = (x) => h("div", { class: "slot", style: { "--tone": x.tone || "var(--blue)" }, "data-s": x.live ? x.start : "", "data-e": x.live ? x.end || "" : "" },
-    h("div", { class: "slot-time", dir: "ltr" }, x.start && x.start !== "99" ? [h("b", {}, fmt12(x.start)), x.end ? h("span", {}, fmt12(x.end)) : null] : null),
+    h("div", { class: "slot-time", dir: "ltr" }, x.start && x.start !== "99" ? [h("b", {}, fmt12(x.start)), x.end ? h("span", {}, fmt12(x.end)) : null] : null, x.live ? h("span", { class: "until" }) : null),
     x.node());
 
+  const nextBanner = (s, structure) => {
+    const room = structure.rooms.find((r) => r.id === s.room_id);
+    return h("div", { class: "nextbar" },
+      h("div", { class: "nb-cd" }, h("b", { class: "nb-num" }, "—"), h("small", { class: "nb-unit" })),
+      h("div", { class: "nb-txt" }, h("div", { class: "nb-lab" }),
+        h("h2", {}, room ? roomLabel(room, structure) : s.room_id, " · ", t("ch_period_n", { n: s.period })),
+        s.plan && s.plan.topic ? h("div", { class: "nb-plan" }, icon("file"), " ", s.plan.topic, s.plan.slides ? ` · ${t("tn_slides_n", { n: s.plan.slides })}` : "") : null),
+      h("div", { class: "nb-btns" },
+        h("button", { class: "btn primary", onClick: () => openLog(s) }, icon("file"), logged(s) ? t("log_edit") : t("log_lesson")),
+        h("a", { class: "btn", href: `#/docs?room=${s.room_id}` }, icon("spark"), t("nav_docs"))));
+  };
+
   const coverOut = h("div", {});
-  function sessionsView(d, structure, isToday) {
+  function sessionsView(d, structure, isToday, nextBox) {
     const items = [
-      ...d.sessions.map((s) => ({ start: s.start || "99", end: s.end, live: true, tone: stageTone(s.grade_id), label: sessionLabel(s, structure), node: () => {
+      ...d.sessions.map((s) => ({ start: s.start || "99", end: s.end, live: true, lesson: true, tone: stageTone(s.grade_id), label: sessionLabel(s, structure), banner: () => nextBanner(s, structure), node: () => {
         const room = structure.rooms.find((r) => r.id === s.room_id);
         const grade = structure.grades.find((g) => g.id === s.grade_id);
         return h("div", { class: `lesson${s.extra ? " extra" : ""}` },
@@ -200,7 +228,7 @@ export async function renderToday(root) {
                 h("button", { class: "btn small", onClick: () => guarded(() => api.post("/api/open", { path: r.path, folder: true })) }, icon("folder"), t("d_open_folder")))));
           } }, icon("file"), t("tn_cover_sheet")) : null,
           d.changed ? h("button", { class: "btn small ghost", onClick: () => change({ action: "restore" }) }, t("ch_restore")) : null) : null,
-        isToday ? trackNow(items) && null : null,
+        isToday ? trackNow(items, nextBox) && null : null,
         h("div", { class: "ladder" }, items.map(slot)),
         h("p", { class: "muted small", style: { marginTop: ".8rem" } }, t("sessions_count", { n: d.sessions.length })));
     }

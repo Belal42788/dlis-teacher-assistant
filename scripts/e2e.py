@@ -17,6 +17,18 @@ url = proc.stdout.readline().strip()
 print("server", url)
 errors = []
 
+def _open_group(page_):
+    """The menu shows the pages of one group at a time: open the group of a page before clicking its link."""
+    orig = page_.click
+    def click(sel, *a, **k):
+        m = re.match(r"\.nav a\[data-page=(\w+)\]$", sel)
+        if m:
+            page_.evaluate("(id) => { const l = document.querySelector(`.nav a[data-page=${id}]`); const g = l && l.dataset.group; const t = g && document.querySelector(`.tab[data-group=${g}]`); if (t) t.click(); }", m.group(1))
+        return orig(sel, *a, **k)
+    page_.click = click
+    return page_
+
+
 def setdate(loc, iso):
     """Fill one day/month/year field (loc = the .date3 element)."""
     y, m, d = (int(x) for x in iso.split("-"))
@@ -52,7 +64,7 @@ try:
     with sync_playwright() as p:
         b = p.chromium.launch()
         ctx = b.new_context(viewport={"width": 1280, "height": 860})
-        page = ctx.new_page(); page.clock.install(time=_dt.datetime(2026, 10, 28, 9, 0, 0))
+        page = _open_group(ctx.new_page()); page.clock.install(time=_dt.datetime(2026, 10, 28, 9, 0, 0))
         page.on("console", lambda m: errors.append(f"console {m.type}: {m.text}") if m.type in ("error", "warning") else None)
         page.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
         shot = lambda n: page.screenshot(path=str(SHOTS / f"{n}.png"))
@@ -266,7 +278,7 @@ try:
         page.set_viewport_size({"width": 1280, "height": 500})
         for name in ("today", "classes", "docs", "scheme", "tools", "library", "chat", "map", "tasks", "settings"):
             page.click(f".nav a[data-page={name}]"); page.wait_for_timeout(500)
-            m = page.evaluate("(() => { const m = document.querySelector('.main'), s = document.querySelector('.side'); m.scrollTop = 0; return {side: s.getBoundingClientRect().height, win: innerHeight, sh: m.scrollHeight, ch: m.clientHeight, doc: document.documentElement.scrollHeight} })()")
+            m = page.evaluate("(() => { const m = document.querySelector('.main'), s = document.querySelector('.shell'); m.scrollTop = 0; return {side: s.getBoundingClientRect().height, win: innerHeight, sh: m.scrollHeight, ch: m.clientHeight, doc: document.documentElement.scrollHeight} })()")
             assert abs(m["side"] - m["win"]) < 2, (name, m)
             assert m["doc"] <= m["win"] + 1, (name, m)
             if m["sh"] > m["ch"] + 5:
@@ -320,7 +332,7 @@ try:
         assert page.locator(".students li").count() == 17
         # english + unsaved-changes guard
         page.click(".nav a[data-page=settings]"); page.click(".seg-btn[data-tab=me]"); page.wait_for_selector("button[lang=en]"); page.click("button[lang=en]")
-        page.wait_for_selector("text=Settings"); assert page.evaluate("document.documentElement.dir") == "ltr"
+        page.wait_for_selector(".tab:has-text('My day')"); assert page.evaluate("document.documentElement.dir") == "ltr"
         page.click(".nav a[data-page=timetable]"); page.wait_for_selector("table.grid")
         page.locator("table.grid tbody select").nth(2).select_option(index=1)
         page.click(".nav a[data-page=today]"); page.wait_for_selector(".overlay"); shot("12_unsaved_guard")
@@ -347,7 +359,7 @@ try:
         mon = _dt.date(2026, 10, 28); mon -= _dt.timedelta(days=(mon.weekday() - 0) % 7)
         def at(h, m, day=None):
             day = day or mon
-            pg = ctx.new_page(); pg.clock.install(time=_dt.datetime(day.year, day.month, day.day, h, m, 0)); pg.goto(url)
+            pg = _open_group(ctx.new_page()); pg.clock.install(time=_dt.datetime(day.year, day.month, day.day, h, m, 0)); pg.goto(url)
             pg.wait_for_selector(".shell"); pg.clock.run_for(5000); pg.wait_for_timeout(1500); pg.clock.run_for(25000); pg.wait_for_timeout(1500); return pg
         pg = at(13, 31); assert pg.locator(".reminder").count() >= 1, "expected a reminder before the 13:40 lesson"; assert pg.locator(".reminder:has-text('Prayer')").count() == 1, "expected the prayer-break reminder"; pg.close()
         pg = at(13, 45); pg.click(".nav a[data-page=today]"); pg.wait_for_selector(".slot[data-state=now]"); pg.screenshot(path="/tmp/shots/08b_today_now.png"); pg.close()
