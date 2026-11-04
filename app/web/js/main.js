@@ -137,20 +137,30 @@ document.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.code === "KeyK" || String(e.key).toLowerCase() === "k") && mode === "app") { e.preventDefault(); openQuick(PAGES); }
 });
 
+const GROUPS = ["day", "prepare", "school"];
+let openGroup = "day";
+// The bar on top has the three groups; the pages of the open group are listed under it, so every page is visible without scrolling anything.
+function setGroup(g) {
+  openGroup = g;
+  document.querySelectorAll(".tab").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.group === g)));
+  document.querySelectorAll(".sub a").forEach((a) => a.classList.toggle("off", a.dataset.group !== g));
+}
 function drawShell() {
   const s = state.settings;
+  const link = (p) => h("a", { href: `#/${p.id}`, "data-page": p.id, "data-group": p.group, "data-need": p.need || null, hidden: p.need ? true : null, title: t(`nav_${p.id}`) }, icon(p.icon), h("span", {}, t(`nav_${p.id}`)));
   root.replaceChildren(h("div", { class: "shell" },
-    h("aside", { class: "side" },
+    h("header", { class: "top" },
       h("div", { class: "brand" }, h("span", { class: "mark" }, h("img", { src: "/resources/logo-mark.png", alt: "" })), h("div", {}, h("b", {}, t("app_name")), h("small", {}, s.school_name))),
-      h("nav", { class: "nav", "aria-label": t("main_menu") }, PAGES.filter((p) => p.icon).flatMap((p, i, all) => [
-        i === 0 || all[i - 1].group !== p.group ? h("div", { class: "nav-group" }, p.group === "end" ? "" : t(`grp_${p.group}`)) : null,
-        h("a", { href: `#/${p.id}`, "data-page": p.id, "data-need": p.need || null, hidden: p.need ? true : null }, icon(p.icon), t(`nav_${p.id}`))])),
-      h("div", { class: "spacer" }),
-      h("button", { class: "quick-btn", type: "button", "aria-label": t("qk_btn"), onClick: () => openQuick(PAGES) }, icon("search"), h("span", {}, t("qk_btn")), h("kbd", {}, "Ctrl K")),
-      h("a", { class: "net-chip", href: "#/settings", id: "net-chip", hidden: true }),
-      h("div", { class: "who" }, h("b", {}, s.teacher_name || "—"), s.subject || "")),
+      h("div", { class: "tabs", role: "tablist", "aria-label": t("main_menu") }, GROUPS.map((g) => h("button", { class: "tab", role: "tab", type: "button", "data-group": g, "aria-selected": "false", onClick: () => setGroup(g) }, t(`grp_${g}`)))),
+      h("div", { class: "tools" },
+        h("button", { class: "quick-btn", type: "button", "aria-label": t("qk_btn"), onClick: () => openQuick(PAGES) }, icon("search"), h("span", {}, t("qk_btn")), h("kbd", {}, "Ctrl K")),
+        h("a", { class: "net-chip", href: "#/settings", id: "net-chip", hidden: true }),
+        h("div", { class: "nav" }, PAGES.filter((p) => p.group === "end").map(link)),
+        h("div", { class: "who" }, h("b", {}, s.teacher_name || "—"), s.subject || ""))),
+    h("nav", { class: "nav sub", "aria-label": t("main_menu") }, PAGES.filter((p) => p.icon && GROUPS.includes(p.group)).map(link)),
     h("main", { class: "main", id: "main", tabindex: "-1" }),
     h("button", { class: "fb-btn", "aria-label": t("fb_title"), onClick: feedbackDialog }, t("fb_btn"))));
+  setGroup(openGroup);
 }
 
 // What was typed on a page is kept while the teacher visits another tab, and comes back when they return.
@@ -194,6 +204,8 @@ async function route() {
   const page = PAGES.find((p) => p.id === id) || PAGES[0];
   state.isDirty = null;
   document.querySelectorAll(".nav a").forEach((a) => { if (a.dataset.page === (page.nav || page.id)) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  const owner = PAGES.find((p) => p.id === (page.nav || page.id));
+  if (owner && GROUPS.includes(owner.group)) setGroup(owner.group);
   const main = document.getElementById("main");
   lastHash = `#/${page.id}`;
   try {
