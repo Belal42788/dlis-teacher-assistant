@@ -234,8 +234,9 @@ export async function renderDocs(root) {
 
   // ---------- prepare the whole week: lesson plan + quiz + revision + grading sheets, for every grade you teach
   const weekGrades = structure.grades.filter((g) => rooms.some((r) => r.grade_id === g.id && used.has(r.id)));
-  const wk = weekGrades.map((g) => ({ g, topic: h("input", { type: "text", placeholder: t("wk_topic_ph"), onInput: (e) => { e.target.dataset.typed = "1"; } }),
-    lp: h("input", { type: "checkbox", checked: true }), qz: h("input", { type: "checkbox", checked: true }), rv: h("input", { type: "checkbox", checked: true }), gs: h("input", { type: "checkbox", checked: true }) }));
+  const wk = weekGrades.map((g) => ({ g, topic: h("input", { type: "text", placeholder: t("wk_topic_ph"), "aria-label": `${gradeName(g)} · ${t("d_topic")}`, onInput: (e) => { e.target.dataset.typed = "1"; } }),
+    lp: h("input", { type: "checkbox", checked: true, "aria-label": `${gradeName(g)} · ${t("d_lp_title")}` }), qz: h("input", { type: "checkbox", checked: true, "aria-label": `${gradeName(g)} · ${t("d_quiz_title")}` }),
+    rv: h("input", { type: "checkbox", checked: true, "aria-label": `${gradeName(g)} · ${t("rv_title")}` }), gs: h("input", { type: "checkbox", checked: true, "aria-label": `${gradeName(g)} · ${t("d_gs_title")}` }) }));
   let docsDir = "", topicsKey = "";
   const keep = (r) => { if (r && r.folder) docsDir = r.folder; return r; };
   const wkOut = h("div", { class: "wk-out" });

@@ -1,3 +1,4 @@
+import { getFontSize, setFontSize } from "../fontsize.js";
 import { h, icon, toast, modal } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { t, setLang, getLang } from "../i18n.js";
@@ -71,7 +72,10 @@ export async function renderSettings(root, { reloadApp }) {
       h("div", { class: "row" }, [["ar", "العربية"], ["en", "English"]].map(([code, label]) =>
         h("button", { class: `chip${getLang() === code ? " on" : ""}`, "aria-pressed": String(getLang() === code), lang: code, onClick: async () => {
           await api.put("/api/prefs", { language: code }); setLang(code); state.boot.language = code; reloadApp(false);
-        } }, label)))))],
+        } }, label)))),
+    h("div", { class: "panel" }, h("h3", {}, t("fs_title")), h("p", { class: "muted small" }, t("fs_hint")),
+      (() => { const row = h("div", { class: "row" }); const draw = () => row.replaceChildren(...[["s", "fs_s"], ["m", "fs_m"], ["l", "fs_l"]].map(([v, k]) =>
+        h("button", { class: `chip${getFontSize() === v ? " on" : ""}`, "aria-pressed": String(getFontSize() === v), onClick: () => { setFontSize(v); draw(); } }, t(k)))); draw(); return row; })()))],
 
     ["data", t("data_folder"), h("div", { class: "panel" }, h("h3", {}, t("data_folder")),
       h("p", { class: "muted" }, t("data_folder_hint")),

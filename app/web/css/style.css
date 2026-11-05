@@ -7,7 +7,7 @@
 :root {
   --ink: #1c1f4d;
   --ink-2: #444a6e;
-  --muted: #6b7491;
+  --muted: #566083;
   --paper: #eef5fa;
   --sheet: #ffffff;
   --rule: #e1eaf2;
@@ -37,7 +37,7 @@
 }
 
 * { box-sizing: border-box; }
-html { font-size: 14.5px; }
+html { font-size: 16px; }
 body {
   margin: 0; color: var(--ink); font-family: var(--font); line-height: 1.55; -webkit-font-smoothing: antialiased;
   background:
@@ -341,10 +341,10 @@ h3.sec.late-h { color: var(--margin); }
 .tasks-table td { padding: .5rem .8rem; border-bottom: 1px solid var(--rule); vertical-align: middle; }
 .tasks-table tr:last-child td { border-bottom: 0; }
 .tasks-table .c-chk { width: 2.4rem; }
-.tasks-table .c-act { width: 1%; white-space: nowrap; }
+.tasks-table .c-act { width: 1%; min-width: 7.5rem; white-space: nowrap; }
 .c-act-in { display: flex; gap: .3rem; justify-content: flex-end; width: max-content; margin-inline-start: auto; }
-.tasks-table .c-act .btn + .btn { margin-inline-start: .3rem; }
-.tasks-table input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--blue); }
+.tasks-table .c-act > .btn + .btn { margin-inline-start: .3rem; }
+.tasks-table input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--blue); }
 .tasks-table tr.done b { text-decoration: line-through; color: var(--muted); }
 .tasks-table tr.auto { background: #fbfdf4; }
 .tasks-table tr.late-row { box-shadow: inset 3px 0 0 var(--margin); }
@@ -352,7 +352,8 @@ h3.sec.late-h { color: var(--margin); }
 .today-tasks { margin-top: 1.4rem; }
 h3.sec { display: flex; align-items: center; gap: .5rem; }
 /* reminders */
-#reminders { position: fixed; z-index: 200; bottom: 16px; inset-inline-end: 16px; display: grid; gap: .6rem; width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; }
+#reminders { position: fixed; z-index: 200; bottom: 16px; inset-inline-end: 16px; display: grid; gap: .6rem; width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 130px); overflow-y: auto; pointer-events: none; }
+#reminders > * { pointer-events: auto; }   /* the alerts never cover the menu bars, and the empty space around them stays clickable */
 .rem-all { justify-self: end; box-shadow: 0 4px 14px rgba(28,31,77,.2); }
 .reminder { background: #fff; border: 1px solid var(--rule-strong); border-inline-start: 5px solid var(--pencil); border-radius: 10px; padding: .8rem .9rem; box-shadow: 0 10px 34px rgba(28,31,77,.28); }
 .rem-head { display: flex; gap: .5rem; align-items: flex-start; margin-bottom: .6rem; }
@@ -488,7 +489,7 @@ table.grid td select.filled { --tone: var(--blue); background: color-mix(in srgb
 .plan-line { margin-top: .15rem; color: var(--ink-2); }
 .wk-grid { display: grid; grid-template-columns: minmax(7rem, auto) minmax(10rem, 1fr) repeat(4, auto); gap: .5rem .8rem; align-items: center; margin-top: .6rem; }
 .wk-head { font-size: var(--step--1); color: var(--muted); font-weight: 600; }
-.wk-grid input[type=checkbox] { justify-self: center; width: 1.2rem; height: 1.2rem; }
+.wk-grid input[type=checkbox] { justify-self: center; width: 1.4rem; height: 1.4rem; }
 .wk-out { display: grid; gap: .3rem; margin-top: .8rem; }
 .wk-line { font-size: var(--step--1); }
 .wk-line.ok { color: #3f7a2a; } .wk-line.err { color: var(--margin); } .wk-line.busy { color: var(--muted); }
@@ -666,7 +667,7 @@ html[dir="ltr"] .btn { white-space: normal; }
 .mark { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 10px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
 .mark img { width: 30px; height: 30px; object-fit: contain; }
 .brand b { display: block; font-size: .98rem; line-height: 1.25; color: #fff; }
-.brand small { color: #c5d3ef; font-size: .72rem; line-height: 1.3; display: block; }
+.brand small { color: #c5d3ef; font-size: .76rem; line-height: 1.3; display: block; }
 .tabs { display: flex; gap: .3rem; flex: 1; min-width: 0; }
 .tab { background: none; border: 0; color: #dbe7fb; font: inherit; font-weight: 700; padding: .45rem 1.1rem; border-radius: 999px; cursor: pointer; white-space: nowrap; }
 .tab:hover { background: rgba(255,255,255,.12); }
@@ -681,8 +682,8 @@ html[dir="ltr"] .btn { white-space: normal; }
 .quick-btn { display: flex; align-items: center; gap: .5rem; padding: .3rem .8rem; border-radius: 10px; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.14); color: #fff; font: inherit; font-size: .88rem; cursor: pointer; }
 .quick-btn:hover { background: rgba(255,255,255,.22); }
 .quick-btn .i { width: 1rem; height: 1rem; }
-.quick-btn kbd { font: inherit; font-size: .68rem; padding: .05rem .35rem; border-radius: 5px; background: rgba(255,255,255,.2); }
-.net-chip { padding: .15rem .7rem; border-radius: 99px; font-size: .76rem; background: rgba(255,255,255,.14); color: #dbe7f5; text-decoration: none; white-space: nowrap; }
+.quick-btn kbd { font: inherit; font-size: .75rem; padding: .05rem .35rem; border-radius: 5px; background: rgba(255,255,255,.2); }
+.net-chip { padding: .25rem .8rem; min-height: 28px; display: inline-flex; align-items: center; border-radius: 99px; font-size: .8rem; background: rgba(255,255,255,.14); color: #dbe7f5; text-decoration: none; white-space: nowrap; }
 .net-chip.on { background: rgba(162,198,90,.3); color: #f2ffe0; }
 .who { text-align: start; line-height: 1.25; font-size: .74rem; color: #c5d3ef; padding-inline: .4rem; }
 .who b { display: block; color: #fff; font-size: .88rem; }

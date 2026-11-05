@@ -1,6 +1,7 @@
 import { h, icon, confirmBox, modal, toast } from "./dom.js";
 import { api, guarded } from "./api.js";
-import { t, setLang } from "./i18n.js";
+import { t, setLang, hasKey } from "./i18n.js";
+import { applyFontSize } from "./fontsize.js";
 import { state } from "./state.js";
 import { startWizard } from "./wizard.js";
 import { renderToday } from "./pages/today.js";
@@ -195,7 +196,18 @@ function restoreDraft(pageId) {
   main.querySelectorAll("details").forEach((el, i) => { if (d.open[i] !== undefined) el.open = d.open[i]; });
   main.scrollTop = d.scroll;
 }
+applyFontSize();
 let shownPage = null;
+
+// Safety net for screen readers: a box with no label of its own is named after the text on its row, so it is never read as just "checkbox".
+function nameLooseControls(root) {
+  root.querySelectorAll("input:not([type=hidden]):not([aria-label]), select:not([aria-label]), textarea:not([aria-label])").forEach((el) => {
+    if (el.labels && el.labels.length) return;
+    const row = el.closest("label, tr, .row, .list-row, .task, .c-act-in") || el.parentElement;
+    const txt = row ? row.textContent.replace(/\s+/g, " ").trim().slice(0, 50) : "";
+    if (txt) el.setAttribute("aria-label", txt);
+  });
+}
 
 async function route() {
   if (mode !== "app") return;
@@ -208,6 +220,7 @@ async function route() {
   if (owner && GROUPS.includes(owner.group)) setGroup(owner.group);
   const main = document.getElementById("main");
   lastHash = `#/${page.id}`;
+  document.title = hasKey(`nav_${page.id}`) ? `${t(`nav_${page.id}`)} · ${t("app_name")}` : t("app_name");   // the window title says where you are
   try {
     // if the teacher starts typing while the page is still loading, their new text wins over the old draft
     let typed = false;
@@ -217,6 +230,7 @@ async function route() {
     try { await page.render(main, { reloadApp }); } finally { main.classList.remove("busy"); main.removeEventListener("input", mark, true); main.removeEventListener("change", mark, true); }
     if (shownPage !== page.id) main.scrollTop = 0; // a new tab starts at the top, not where the last one was scrolled to
     shownPage = page.id;
+    nameLooseControls(main);
     api.note("/api/usage", { page: page.id }).catch(() => {});
     if (!typed) restoreDraft(page.id);
   } catch (e) {
