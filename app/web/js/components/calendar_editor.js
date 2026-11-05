@@ -37,7 +37,15 @@ export function calendarEditor({ calendar, withEvents = false, onChange }) {
 
   const byDate = (k) => (x, y) => (x[k] || "~").localeCompare(y[k] || "~");
 
+  // the school events list is long; its rows are only built when the teacher opens it
+  const evBox = h("div", { class: "scroll-list" });
+  const eventRows = () => cal.events.map((ev, i) => h("div", { class: "list-row two" },
+    dateInput(ev, "date"),
+    h("input", { type: "text", value: ev.name, placeholder: t("event_name"), "aria-label": t("event_name"), onInput: (e) => { ev.name = e.target.value; changed(); } }),
+    h("button", { class: "btn icon ghost", "aria-label": t("remove"), onClick: () => { cal.events.splice(i, 1); changed(); render(); } }, icon("trash"))));
+
   function render() {
+    evBox.replaceChildren(evOpen ? eventRows() : []);
     root.replaceChildren(
       h("label", { class: "field", style: { maxWidth: "220px" } }, h("span", { class: "label" }, t("academic_year")),
         h("input", { type: "text", value: cal.academic_year, placeholder: "2026-2027", dir: "ltr",
@@ -60,12 +68,9 @@ export function calendarEditor({ calendar, withEvents = false, onChange }) {
       withEvents ? [
         h("div", { class: "sec-row" }, h("h3", {}, `${t("events")} (${cal.events.length})`),
           h("button", { class: "btn small", onClick: () => { cal.events.push({ date: "", name: "" }); evOpen = true; changed(); render(); } }, icon("plus"), t("add_event"))),
-        h("details", { class: "more", open: evOpen, onToggle: (e) => { evOpen = e.target.open; } },
+        h("details", { class: "more", open: evOpen, onToggle: (e) => { evOpen = e.target.open; if (evOpen && !evBox.childElementCount) evBox.replaceChildren(eventRows()); } },
           h("summary", {}, t("show_events")),
-          h("div", { class: "scroll-list" }, cal.events.map((ev, i) => h("div", { class: "list-row two" },
-            dateInput(ev, "date"),
-            h("input", { type: "text", value: ev.name, placeholder: t("event_name"), "aria-label": t("event_name"), onInput: (e) => { ev.name = e.target.value; changed(); } }),
-            h("button", { class: "btn icon ghost", "aria-label": t("remove"), onClick: () => { cal.events.splice(i, 1); changed(); render(); } }, icon("trash"))))))
+          evBox)
       ] : null);
   }
   let evOpen = false;

@@ -17,7 +17,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request(method, path, body) {
+async function send(method, path, body) {
   let res;
   try {
     res = await fetch(path, {
@@ -34,10 +34,39 @@ async function request(method, path, body) {
   return data;
 }
 
+// Reading the same thing twice in a row is wasted time, and every tab click does that (menus, structure, settings...).
+// Slow-changing reads are kept for a few seconds and thrown away the moment anything is saved; the same read asked
+// for twice at once is sent once. Anything that depends on the clock or on a running job is never kept.
+const KEEP = /^\/api\/(structure|overview|calendar|school-calendar|timetable|settings|ai|ai\/prompts|sources|reminders|background|cloud|announcements|week-prep|rooms\/[^/?]+\/students|slides\/topics)(\?|$)/;
+const KEEP_MS = 15000;
+const kept = new Map(), flying = new Map();
+let gen = 0;
+export function forgetReads() { gen++; kept.clear(); flying.clear(); }
+
+function read(path) {
+  const hit = kept.get(path);
+  if (hit && Date.now() - hit.at < KEEP_MS) return Promise.resolve(structuredClone(hit.data));
+  if (flying.has(path)) return flying.get(path).then((d) => structuredClone(d));
+  const mine = gen;
+  const p = send("GET", path).then((data) => {
+    if (mine === gen && KEEP.test(path)) kept.set(path, { at: Date.now(), data });
+    return data;
+  }).finally(() => { if (flying.get(path) === p) flying.delete(path); });
+  flying.set(path, p);
+  return p.then((d) => structuredClone(d));
+}
+
+async function write(method, path, body) {
+  forgetReads();
+  try { return await send(method, path, body); } finally { forgetReads(); }
+}
+
 export const api = {
-  get: (p) => request("GET", p),
-  put: (p, b) => request("PUT", p, b ?? {}),
-  post: (p, b) => request("POST", p, b ?? {}),
+  get: (p) => read(p),
+  put: (p, b) => write("PUT", p, b ?? {}),
+  post: (p, b) => write("POST", p, b ?? {}),
+  // a note to the server that changes nothing the screens show (page-use counter): must not empty the kept reads
+  note: (p, b) => send("POST", p, b ?? {}),
 };
 
 // Run an action and show a friendly message when it fails.

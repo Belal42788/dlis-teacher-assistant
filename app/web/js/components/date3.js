@@ -3,14 +3,26 @@ import { t, getLang } from "../i18n.js";
 
 // A date picked as day / month / year (in that order, whatever the computer's own settings are).
 // It behaves like an <input>: read and write .value as "YYYY-MM-DD" ("" when not complete), and it fires "change".
-export function dateField({ value = "", label = "", onChange } = {}) {
-  const loc = getLang() === "ar" ? "ar-EG-u-nu-latn" : "en-GB";
-  const now = new Date().getFullYear();
-  const pad = (n) => String(n).padStart(2, "0");
+// The three dropdowns are built once per language and copied for every field: a page with dozens of dates
+// (the calendar) used to spend a third of a second creating the same month names and options again and again.
+let tpl = null;
+function templates() {
+  const lang = getLang(), now = new Date().getFullYear();
+  if (tpl && tpl.lang === lang && tpl.now === now) return tpl;
+  const loc = lang === "ar" ? "ar-EG-u-nu-latn" : "en-GB";
+  const fmt = new Intl.DateTimeFormat(loc, { month: "long", timeZone: "UTC" });
   const dd = h("select", { "aria-label": t("date_day") }, h("option", { value: "" }, t("date_day")), Array.from({ length: 31 }, (_, i) => h("option", { value: i + 1 }, i + 1)));
   const mm = h("select", { "aria-label": t("date_month") }, h("option", { value: "" }, t("date_month")),
-    Array.from({ length: 12 }, (_, i) => h("option", { value: i + 1 }, new Intl.DateTimeFormat(loc, { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(2026, i, 1))))));
+    Array.from({ length: 12 }, (_, i) => h("option", { value: i + 1 }, fmt.format(new Date(Date.UTC(2026, i, 1))))));
   const yy = h("select", { "aria-label": t("date_year") }, h("option", { value: "" }, t("date_year")), Array.from({ length: 9 }, (_, i) => h("option", { value: now - 2 + i }, now - 2 + i)));
+  tpl = { lang, now, dd, mm, yy };
+  return tpl;
+}
+
+export function dateField({ value = "", label = "", onChange } = {}) {
+  const pad = (n) => String(n).padStart(2, "0");
+  const T = templates();
+  const dd = T.dd.cloneNode(true), mm = T.mm.cloneNode(true), yy = T.yy.cloneNode(true);
   const el = h("div", { class: "date3", role: "group", "aria-label": label }, dd, mm, yy);
   const get = () => (dd.value && mm.value && yy.value ? `${yy.value}-${pad(mm.value)}-${pad(dd.value)}` : "");
   const set = (v) => {

@@ -294,7 +294,8 @@ details.more > summary { cursor: pointer; color: var(--blue); font-weight: 600; 
 /* ---------- the window never scrolls; each page scrolls inside its own area ---------- */
 .btn, .seg-btn { transition-duration: .05s; }
 #main.busy { cursor: progress; }
-#main.busy > * { opacity: .6; transition: opacity .15s .12s; }
+/* a page that opens quickly never flashes: the old page is only dimmed if loading takes more than a third of a second */
+#main.busy > * { opacity: .6; transition: opacity .15s .35s; }
 .wiz { grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; }
 .wiz-body { overflow-y: auto; min-height: 0; }
 .wiz-foot { position: static; }
@@ -451,11 +452,8 @@ h1, h2, h3, .top .brand b, h1 { letter-spacing: -.01em; }
 
 /* one reveal when the page opens: lessons settle in from the time side, in order */
 @media (prefers-reduced-motion: no-preference) {
-  .ladder .slot { animation: slot-in .38s cubic-bezier(.2,.7,.2,1) both; }
-  .ladder .slot:nth-child(2) { animation-delay: .05s; } .ladder .slot:nth-child(3) { animation-delay: .1s; }
-  .ladder .slot:nth-child(4) { animation-delay: .15s; } .ladder .slot:nth-child(n+5) { animation-delay: .2s; }
-  @keyframes slot-in { from { opacity: 0; transform: translateX(var(--from, -14px)); } }
-  [dir="rtl"] .ladder .slot { --from: 14px; }
+  .ladder .slot { animation: slot-in .16s ease-out both; }
+  @keyframes slot-in { from { opacity: 0; } }
 }
 @media (max-width: 640px) { .slot { grid-template-columns: 3.6rem 1fr; gap: .4rem; }  }
 /* ---------- calmer surfaces ---------- */

@@ -7,7 +7,8 @@ import { tasksTable } from "../components/tasks_table.js";
 import { weeklyPanel } from "./weekly.js";
 
 export async function renderTasks(root) {
-  let data = await api.get("/api/tasks");
+  // fetch what the page needs at the same time, not one after the other
+  let [data, weekly] = await Promise.all([api.get("/api/tasks"), weeklyPanel()]);
   const list = h("div", {});
   const title = h("input", { type: "text", placeholder: t("t_what"), "aria-label": t("t_what"), onKeydown: (e) => e.key === "Enter" && add() });
   const imp = h("select", { "aria-label": t("t_importance") }, ["high", "medium", "low"].map((k) => h("option", { value: k }, t(`imp_${k}`))));
@@ -22,11 +23,11 @@ export async function renderTasks(root) {
     list.replaceChildren(tasksTable(data, { showDone: true, onChange: (r) => { data = r; draw(); } }));
   }
 
+  draw();   // the list is filled before the page is shown, so nothing jumps afterwards
   root.replaceChildren(h("div", { class: "page" }, hubTabs("tasks", "tasks"),
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_tasks")), h("p", {}, t("t_lead")))),
-    await weeklyPanel(),
+    weekly,
     h("h2", { class: "tasks-h" }, t("hub_tasks")),
     h("div", { class: "panel" }, h("div", { class: "task-add" }, title, imp, deadline, h("button", { class: "btn primary", onClick: add }, icon("plus"), t("t_add")))),
     list));
-  draw();
 }
