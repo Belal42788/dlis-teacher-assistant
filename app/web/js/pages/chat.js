@@ -16,7 +16,7 @@ export async function renderChat(root) {
 
   const gradeSel = h("select", { "aria-label": t("chat_grade") }, h("option", { value: "" }, t("chat_any_grade")),
     structure.grades.map((g) => h("option", { value: g.id }, gradeName(g))));
-  const input = h("textarea", { rows: 1, class: "chat-input", onInput: () => grow(), onKeydown: (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } } });
+  const input = h("textarea", { rows: 1, class: "chat-input", "aria-label": t("nav_chat"), onInput: () => grow(), onKeydown: (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } } });
   const grow = () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight + 2, window.innerHeight * 0.4) + "px"; };
   const log = h("div", { class: "chat-log", "aria-live": "polite" });
   const sendBtn = h("button", { class: "btn primary", disabled: !ai.ready, onClick: () => send() }, icon("spark"), t("chat_send"));
