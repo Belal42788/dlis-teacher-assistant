@@ -530,11 +530,12 @@ table.wc .dot { display: inline-block; width: .6rem; height: .6rem; border-radiu
 .chat-app { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 1rem; align-items: start; }
 .chat-side { background: #fff; border: 1px solid var(--rule); border-radius: 14px; padding: .6rem; display: grid; gap: .5rem; max-height: calc(100vh - 6rem); position: sticky; top: 0; align-content: start; }
 .chat-new { justify-content: center; }
-.chat-hist { display: grid; gap: 2px; overflow-y: auto; max-height: calc(100vh - 11rem); }
+.chat-hist { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; overflow-y: auto; max-height: calc(100vh - 11rem); }
 .chat-item { display: flex; align-items: center; border-radius: 9px; }
 .chat-item:hover, .chat-item.on { background: var(--blue-wash); }
 .chat-item.on .chat-open { font-weight: 700; color: var(--ink); }
-.chat-open { unicode-bidi: plaintext; flex: 1; min-width: 0; text-align: start; background: none; border: 0; font: inherit; color: var(--ink-2); padding: .5rem .6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.chat-open { flex: 1; min-width: 0; overflow: hidden; display: block; text-align: start; background: none; border: 0; font: inherit; color: var(--ink-2); padding: .5rem .6rem; cursor: pointer; }
+.chat-ttl { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: start; }
 .chat-del { opacity: 0; } .chat-item:hover .chat-del, .chat-del:focus-visible { opacity: 1; }
 .chat-main { display: grid; gap: .6rem; min-width: 0; }
 .chat-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
@@ -705,6 +706,9 @@ html[dir="ltr"] .btn { white-space: normal; }
 .today-cols { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
 .today-side { display: grid; gap: .8rem; min-width: 0; }
 .today-side .banner { margin-bottom: 0 !important; }
+.today-side > div:empty { display: none; }   /* boxes that fill in later take no room until they have something */
+.today-side .panel { margin-top: 0 !important; }
+.today-side h2 { margin-top: .2rem; }
 .nextbar { display: flex; align-items: center; gap: 1.1rem; flex-wrap: wrap; color: #fff; border-radius: 16px; padding: .8rem 1.2rem; margin-bottom: 1rem; background: linear-gradient(90deg, var(--indigo), var(--blue)); box-shadow: var(--shadow); }
 .nb-cd { display: grid; place-items: center; align-content: center; flex: none; width: 82px; height: 82px; border-radius: 50%; background: rgba(255,255,255,.16); border: 4px solid var(--pencil); text-align: center; line-height: 1; }
 .nb-num { font-size: 1.9rem; font-weight: 800; font-variant-numeric: tabular-nums; }

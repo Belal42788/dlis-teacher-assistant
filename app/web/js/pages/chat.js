@@ -111,7 +111,7 @@ export async function renderChat(root) {
   async function loadChats() { const r = await guarded(() => api.get("/api/chats")); chats = r ? r.items : []; drawHist(); }
   function drawHist() {
     histBox.replaceChildren(...chats.map((c) => h("div", { class: `chat-item${c.id === chat.id ? " on" : ""}` },
-      h("button", { class: "chat-open", dir: "auto", title: c.title, onClick: () => openChat(c.id) }, c.title || t("chat_untitled")),
+      h("button", { class: "chat-open", title: c.title, onClick: () => openChat(c.id) }, h("span", { class: "chat-ttl", dir: "auto" }, c.title || t("chat_untitled"))),
       h("button", { class: "btn icon ghost chat-del", "aria-label": t("remove"), onClick: async () => {
         if (!(await confirmBox(t("chat_del_confirm")))) return;
         const r = await guarded(() => api.post(`/api/chats/${c.id}/delete`, {})); if (!r) return;
