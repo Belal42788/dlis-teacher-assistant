@@ -243,6 +243,7 @@ export async function renderDocs(root) {
   async function fillWeekTopics() {
     const key = `${sel.tri}|${sel.week}`; if (key === topicsKey) return; topicsKey = key;
     for (const row of wk) {
+      if (!root.isConnected) return;   // the teacher already left this page
       const r = await guarded(() => api.get(`/api/slides/topics?grade=${row.g.id}&tri=${sel.tri}`));
       const w = r && r.weeks.find((x) => x.week === sel.week);
       if (!row.topic.value.trim() || !row.topic.dataset.typed) row.topic.value = w && w.topic ? w.topic : "";
