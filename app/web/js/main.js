@@ -89,11 +89,13 @@ async function boot(forceWizardStep) {
   if (!state.boot.language) return startWizard(root, () => boot(), "language");
   if (state.boot.folder_missing && !forceWizardStep) return folderMissingScreen(state.boot.folder_missing);
   if (!state.boot.data_folder) return startWizard(root, () => boot(), "folder");
+  if (state.boot.data_locked && !forceWizardStep) return dataLockedScreen(state.boot.data_locked, state.boot.data_folder);
   if (!state.boot.setup_done || forceWizardStep) return startWizard(root, () => boot(), forceWizardStep || "about");
   state.settings = state.boot.settings;
   mode = "app";
   drawShell();
   showProblems(state.boot.problems || []);
+  if (state.boot.upgraded_from) { const n = h("div", { class: "notice", role: "status" }, icon("info"), h("div", { class: "grow" }, t("upgraded_note")), h("button", { class: "btn small", onClick: () => n.remove() }, t("ok"))); document.body.append(n); }
   api.get("/api/cloud").then((c) => {
     document.querySelectorAll(".nav a[data-need]").forEach((a) => { a.hidden = a.dataset.need === "admin" ? !(c.signed_in && c.role === "admin") : !(c.signed_in && c.role); });
     const today = new Date().toISOString().slice(0, 10);
@@ -101,6 +103,7 @@ async function boot(forceWizardStep) {
     const el = document.getElementById("net-chip"); if (!el) return; el.hidden = false;
     el.textContent = c.signed_in ? `● ${t("net_online")}` : `○ ${t("net_offline")}`; el.classList.toggle("on", !!c.signed_in); }).catch(() => {});
   startReminders();
+  checkForUpdate();
   await route();
 }
 
@@ -109,6 +112,28 @@ function folderMissingScreen(path) {
   mode = "";
   root.replaceChildren(h("div", { class: "wiz" }, h("div", { class: "wiz-body" }, h("div", { class: "page narrow" },
     h("div", { class: "banner warn" }, icon("warn"), h("div", {}, h("b", {}, t("folder_missing_title")), h("div", { class: "dir-ltr small" }, path), h("p", {}, t("folder_missing_lead")))),
+    h("div", { class: "row" },
+      h("button", { class: "btn primary", onClick: () => location.reload() }, t("folder_missing_retry")),
+      h("button", { class: "btn", onClick: () => boot("folder") }, t("folder_missing_other")))))));
+}
+
+// "A newer version is out": one quiet notice, never blocks anything, and "Later" hides it for that version.
+function checkForUpdate() {
+  api.get("/api/update").then((u) => {
+    if (!u.available) return;
+    const box = h("div", { class: "notice", role: "status" }, icon("info"),
+      h("div", { class: "grow" }, h("b", {}, t("upd_title", { v: u.version })), u.notes ? h("div", { class: "small" }, u.notes) : null),
+      h("button", { class: "btn small primary", onClick: () => guarded(() => api.post("/api/open-url", { url: u.url })) }, t("upd_get")),
+      h("button", { class: "btn small", onClick: () => { api.post("/api/update/dismiss", { version: u.version }).catch(() => {}); box.remove(); } }, t("upd_later")));
+    document.body.append(box);
+  }).catch(() => {});
+}
+
+// The folder was made by a newer app, or its upgrade stopped: nothing is saved, so nothing can be damaged.
+function dataLockedScreen(why, path) {
+  mode = "";
+  root.replaceChildren(h("div", { class: "wiz" }, h("div", { class: "wiz-body" }, h("div", { class: "page narrow" },
+    h("div", { class: "banner warn" }, icon("warn"), h("div", {}, h("b", {}, t(why === "newer" ? "locked_newer_title" : "locked_failed_title")), h("div", { class: "dir-ltr small" }, path), h("p", {}, t(why === "newer" ? "locked_newer_lead" : "locked_failed_lead")))),
     h("div", { class: "row" },
       h("button", { class: "btn primary", onClick: () => location.reload() }, t("folder_missing_retry")),
       h("button", { class: "btn", onClick: () => boot("folder") }, t("folder_missing_other")))))));

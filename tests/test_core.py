@@ -1695,5 +1695,131 @@ class TestAutoBackup(unittest.TestCase):
             self.assertEqual(len(list(folder.glob("DLIS_auto_*.zip"))), 5)
 
 
+
+class TestDataVersion(unittest.TestCase):
+    def setUp(self):
+        from unittest import mock
+        import app.core.store as store_mod
+        self.mod, self.mock = store_mod, mock
+
+    def test_fresh_folder_is_stamped_on_first_save_only(self):
+        d = Path(tmp())
+        s = DataStore(d)
+        self.assertFalse((d / "data_version.json").exists())   # opening an empty folder writes nothing
+        s.save_settings(Settings())
+        self.assertEqual(json.loads((d / "data_version.json").read_text())["data_version"], self.mod.DATA_VERSION)
+
+    def test_old_folder_without_a_version_file_counts_as_version_1(self):
+        d = Path(tmp())
+        (d / "config.json").write_text(json.dumps({"teacher_name": "x"}), encoding="utf-8")
+        s = DataStore(d)
+        self.assertEqual(s.locked, "")
+        self.assertEqual(json.loads((d / "data_version.json").read_text())["data_version"], 1)
+
+    def test_newer_folder_is_never_changed(self):
+        d = Path(tmp())
+        (d / "config.json").write_text(json.dumps({"teacher_name": "x"}), encoding="utf-8")
+        (d / "data_version.json").write_text(json.dumps({"data_version": 99}), encoding="utf-8")
+        before = (d / "config.json").read_text(encoding="utf-8")
+        s = DataStore(d)
+        self.assertEqual(s.locked, "newer")
+        with self.assertRaises(AppError) as cm:
+            s.save_settings(Settings(teacher_name="changed"))
+        self.assertEqual(cm.exception.code, "data_locked")
+        self.assertEqual((d / "config.json").read_text(encoding="utf-8"), before)
+        self.assertEqual(s.load_settings().teacher_name, "x")   # reading still works
+
+    def test_upgrade_copies_first_then_runs_each_step_in_order(self):
+        d = Path(tmp())
+        (d / "config.json").write_text(json.dumps({"teacher_name": "x"}), encoding="utf-8")
+        ran = []
+
+        def to2(store):
+            ran.append(2)
+            self.assertTrue(list((store.backup_root() / "before_upgrade").glob("DLIS_before_v1_*.zip")))   # the copy exists BEFORE any change
+            store.write_json(store.tasks_path(), {"tasks": ["moved"]})
+
+        def to3(store): ran.append(3)
+        with self.mock.patch.object(self.mod, "DATA_VERSION", 3), self.mock.patch.object(self.mod, "MIGRATIONS", {1: to2, 2: to3}):
+            s = DataStore(d)
+            self.assertEqual((s.locked, s.upgraded_from, ran), ("", 1, [2, 3]))
+            self.assertEqual(json.loads((d / "data_version.json").read_text())["data_version"], 3)
+            DataStore(d)   # opened again: nothing runs twice
+            self.assertEqual(ran, [2, 3])
+        import zipfile
+        z = next((d / "_backup" / "before_upgrade").glob("*.zip"))
+        self.assertIn("config.json", zipfile.ZipFile(z).namelist())
+
+    def test_failed_upgrade_locks_the_folder_and_keeps_the_copy(self):
+        d = Path(tmp())
+        (d / "config.json").write_text(json.dumps({"teacher_name": "x"}), encoding="utf-8")
+
+        def boom(store): raise RuntimeError("bad step")
+        with self.mock.patch.object(self.mod, "DATA_VERSION", 2), self.mock.patch.object(self.mod, "MIGRATIONS", {1: boom}):
+            s = DataStore(d)
+            self.assertEqual(s.locked, "failed")
+            self.assertTrue(list((d / "_backup" / "before_upgrade").glob("*.zip")))
+            self.assertFalse((d / "data_version.json").exists())   # still version 1: the next start tries again
+            with self.assertRaises(AppError):
+                s.save_settings(Settings())
+
+
+class TestUpdateNotice(unittest.TestCase):
+    def setUp(self):
+        from unittest import mock
+        from app.core import paths
+        from app.server.update_service import UpdateMixin
+        self.paths, self.mock = paths, mock
+        env = mock.patch.dict(os.environ, {"DLIS_APP_HOME": tmp()})
+        env.start(); self.addCleanup(env.stop)
+
+        class Svc(UpdateMixin):
+            calls = 0
+            src = {"update_url": "https://example.org/latest.json"}
+            answer = {"version": "9.9.9", "url": "https://example.org/get", "notes": "n"}
+
+            def _update_sources(self): return self.src
+
+            def _fetch_update(self, src):
+                Svc.calls += 1
+                if isinstance(self.answer, Exception): raise self.answer
+                return self.answer
+        self.Svc = Svc
+        self.svc = Svc()
+
+    def test_version_compare(self):
+        from app.server.update_service import is_newer
+        self.assertTrue(is_newer("1.0.1", "1.0.0")); self.assertTrue(is_newer("v1.10.0", "1.9.9"))
+        self.assertFalse(is_newer("1.0.0", "1.0.0")); self.assertFalse(is_newer("0.9", "1.0.0")); self.assertFalse(is_newer("", "1.0.0"))
+
+    def test_shows_once_checked_daily_and_can_be_dismissed(self):
+        r = self.svc.check_update()
+        self.assertEqual((r["available"], r["version"], r["url"]), (True, "9.9.9", "https://example.org/get"))
+        self.svc.check_update()
+        self.assertEqual(self.Svc.calls, 1)   # asked once, then the saved answer is used for a day
+        self.svc.dismiss_update("9.9.9")
+        self.assertFalse(self.svc.check_update()["available"])
+
+    def test_silent_when_off_unset_failing_or_not_newer(self):
+        self.svc.set_update_check(False)
+        self.assertEqual(self.svc.check_update(), {"available": False, "enabled": False})
+        self.assertEqual(self.Svc.calls, 0)
+        self.svc.set_update_check(True)
+        self.Svc.src = {}
+        self.assertFalse(self.svc.check_update()["available"])
+        self.Svc.src = {"update_url": "https://example.org/latest.json"}
+        self.Svc.answer = OSError("offline")
+        self.assertFalse(self.svc.check_update()["available"])   # a failure is silent, and is not retried at once
+        self.paths.write_prefs(update={})
+        self.Svc.answer = {"version": self.paths.VERSION, "url": "https://example.org/get", "notes": ""}
+        self.assertFalse(self.svc.check_update()["available"])
+
+    def test_only_https_and_known_shapes_are_read(self):
+        from app.server.update_service import UpdateMixin
+        class Raw(UpdateMixin): pass
+        self.assertIsNone(Raw()._fetch_update({"update_url": "http://example.org/x.json"}))
+        self.assertIsNone(Raw()._fetch_update({"update_repo": "not a repo"}))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -10,13 +10,19 @@ import time
 import zipfile
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from .errors import AppError
 from .models import (Calendar, Settings, Structure, Timetable, SCHEMA_VERSION, is_safe_id)
 
 KEEP_BACKUPS = 5
 CONFLICT_MARKERS = ("(conflict)", "conflicted copy", "copy of ")
+
+# The version of the whole data folder (one small file, data_version.json). Raise it ONLY when a new app version changes how the
+# files look, and add the step that brings an old folder along:  MIGRATIONS[old_version] = function(store)  -> folder is now old_version + 1.
+# The app copies the whole folder to _backup/before_upgrade first, and a folder written by a NEWER app is opened read-only.
+DATA_VERSION = 1
+MIGRATIONS: dict[int, Callable[["DataStore"], None]] = {}
 
 
 # ---------------------------------------------------------------- migrations
@@ -75,6 +81,10 @@ class DataStore:
         self.root.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
         self.problems: list[dict] = []   # files that were damaged: {"file", "restored"} (shown to the teacher once)
+        self.locked = ""                 # "" | "newer" (made by a newer app) | "failed" (the upgrade stopped): nothing is saved then
+        self.upgraded_from = 0           # the old data version, when this start upgraded the folder
+        self._stamped = False
+        self._upgrade()
 
     # ------------------------------------------------------------ paths
     def config_path(self) -> Path: return self.root / "config.json"
@@ -83,6 +93,7 @@ class DataStore:
     def calendar_path(self) -> Path: return self.root / "calendar.json"
     def tasks_path(self) -> Path: return self.root / "tasks.json"
     def backup_root(self) -> Path: return self.root / "_backup"
+    def version_path(self) -> Path: return self.root / "data_version.json"
     def exports_dir(self) -> Path: return self.root / "Exports"
 
     def room_dir(self, room_id: str) -> Path:
@@ -97,6 +108,62 @@ class DataStore:
         if not is_safe_id(grade_id):
             raise AppError("bad_id", f"Unsafe grade id: {grade_id!r}")
         return self.root / "grades" / grade_id
+
+    # ------------------------------------------------------------ data version
+    def _stored_version(self) -> int:
+        try:
+            v = json.loads(self.version_path().read_text(encoding="utf-8-sig")).get("data_version")
+            return v if isinstance(v, int) and v >= 1 else 0
+        except (OSError, ValueError, AttributeError):
+            return 0
+
+    def _stamp(self, version: int | None = None) -> None:
+        self._stamped = True
+        from .paths import VERSION
+        self._write_bytes(self.version_path(), json.dumps({"data_version": version or DATA_VERSION, "app_version": VERSION}, indent=2).encode("utf-8"))
+
+    def _upgrade(self) -> None:
+        """Bring an older folder up to date (after a copy of it), and refuse to touch a folder from a newer app."""
+        found = self._stored_version()
+        if not found:
+            found = 1 if self.has_data() else DATA_VERSION   # a folder from before data_version existed is version 1
+        if found > DATA_VERSION:
+            self.locked = "newer"
+            self._stamped = True
+            return
+        if found < DATA_VERSION:
+            try:
+                dest = self.backup_root() / "before_upgrade" / f"DLIS_before_v{found}_{datetime.now():%Y%m%d_%H%M%S}.zip"
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                self._zip_to(dest)
+                for v in range(found, DATA_VERSION):
+                    step = MIGRATIONS.get(v)
+                    if step:
+                        step(self)
+                self.upgraded_from = found
+            except Exception as e:
+                from . import paths
+                paths.log_error(f"data upgrade from v{found} failed: {e}")
+                self.locked = "failed"
+                self._stamped = True
+                return
+            self._stamp()
+        elif self.has_data() and not self.version_path().exists():
+            self._stamp()
+
+    def _zip_to(self, dest: Path) -> None:
+        tmp = dest.with_suffix(".tmp")
+        with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
+            for p in self.root.rglob("*"):
+                if not p.is_file() or self.backup_root() in p.parents or self.exports_dir() in p.parents or p.name.endswith(".tmp"):
+                    continue
+                try:
+                    if p.stat().st_size > 100 * 1024 * 1024:
+                        continue   # a huge file (a video, say) is not worth filling the disk for
+                    z.write(p, p.relative_to(self.root).as_posix())
+                except OSError:
+                    continue   # a file that changes or is locked right now must not stop the copy
+        tmp.replace(dest)
 
     # ------------------------------------------------------------ safe writing
     def _backup(self, path: Path) -> None:
@@ -123,7 +190,11 @@ class DataStore:
                 time.sleep(0.25 * (attempt + 1))
 
     def _write_bytes(self, path: Path, content: bytes) -> None:
+        if self.locked:
+            raise AppError("data_locked", "This data folder cannot be changed by this version of the app.", status=409, why=self.locked)
         with self._lock:
+            if not self._stamped and path != self.version_path():
+                self._stamp()
             path.parent.mkdir(parents=True, exist_ok=True)
             tmp = path.with_name(path.name + ".tmp")
             with open(tmp, "wb") as f:
@@ -296,18 +367,7 @@ class DataStore:
             except ValueError:
                 pass
         dest = folder / f"DLIS_auto_{date.today():%Y-%m-%d}.zip"
-        tmp = dest.with_suffix(".tmp")
-        with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
-            for p in self.root.rglob("*"):
-                if not p.is_file() or self.backup_root() in p.parents or self.exports_dir() in p.parents or p.name.endswith(".tmp"):
-                    continue
-                try:
-                    if p.stat().st_size > 100 * 1024 * 1024:
-                        continue   # a huge file (a video, say) is not worth filling the disk for
-                    z.write(p, p.relative_to(self.root).as_posix())
-                except OSError:
-                    continue   # a file that changes or is locked right now must not stop the copy
-        tmp.replace(dest)
+        self._zip_to(dest)
         for extra in sorted(folder.glob("DLIS_auto_*.zip"))[:-keep]:
             try:
                 extra.unlink()
