@@ -28,6 +28,7 @@ from .alarms_service import AlarmsMixin
 from .chats_service import ChatsMixin
 from .parent_week_service import ParentWeekMixin
 from .coverage_service import CoverageMixin
+from .update_service import UpdateMixin
 from .cloud_service import CloudMixin
 from .changes_service import ChangesMixin
 from .docs_service import DocsMixin
@@ -55,7 +56,7 @@ def _validate(model, data):
         raise AppError("invalid_data", f"{where}: {first.get('msg', 'invalid')}", field=where) from e
 
 
-class Service(InsightsMixin, GradesMixin, ToolsMixin, SchemeMixin, LibraryMixin, ParentWeekMixin, CoverageMixin, CloudMixin, DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesMixin, LogMixin, SlidesMixin, RevisionMixin, MapMixin, SourceMixin, WeekMixin, WeeklyMixin):
+class Service(UpdateMixin, InsightsMixin, GradesMixin, ToolsMixin, SchemeMixin, LibraryMixin, ParentWeekMixin, CoverageMixin, CloudMixin, DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesMixin, LogMixin, SlidesMixin, RevisionMixin, MapMixin, SourceMixin, WeekMixin, WeeklyMixin):
     def __init__(self):
         self.store: Optional[DataStore] = None
         folder = paths.read_prefs().get("data_folder")
@@ -83,12 +84,14 @@ class Service(InsightsMixin, GradesMixin, ToolsMixin, SchemeMixin, LibraryMixin,
             "data_folder": str(self.store.root) if self.store else "",
             "suggested_folder": str(paths.default_data_folder()),
             "folder_missing": "" if self.store else (prefs.get("data_folder") or ""),
-            "has_data": False, "setup_done": False, "settings": None, "conflicts": [],
+            "has_data": False, "setup_done": False, "settings": None, "conflicts": [], "data_locked": "", "upgraded_from": 0,
             "subjects": [{"en": e, "ar": a} for e, a in COMMON_SUBJECTS],
         }
         if self.store:
             settings = self.store.load_settings()
             out["problems"] = list(self.store.problems)
+            out["data_locked"] = self.store.locked
+            out["upgraded_from"] = self.store.upgraded_from
             out.update(has_data=self.store.has_data(), setup_done=settings.setup_done,
                        settings=settings.model_dump(mode="json"), conflicts=self.store.detect_conflicts())
             self._start_auto_backup()

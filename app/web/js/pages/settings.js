@@ -75,7 +75,11 @@ export async function renderSettings(root, { reloadApp }) {
         } }, label)))),
     h("div", { class: "panel" }, h("h3", {}, t("fs_title")), h("p", { class: "muted small" }, t("fs_hint")),
       (() => { const row = h("div", { class: "row" }); const draw = () => row.replaceChildren(...[["s", "fs_s"], ["m", "fs_m"], ["l", "fs_l"]].map(([v, k]) =>
-        h("button", { class: `chip${getFontSize() === v ? " on" : ""}`, "aria-pressed": String(getFontSize() === v), onClick: () => { setFontSize(v); draw(); } }, t(k)))); draw(); return row; })()))],
+        h("button", { class: `chip${getFontSize() === v ? " on" : ""}`, "aria-pressed": String(getFontSize() === v), onClick: () => { setFontSize(v); draw(); } }, t(k)))); draw(); return row; })()),
+    h("div", { class: "panel" }, h("h3", {}, t("upd_set_title")), h("p", { class: "muted small" }, t("upd_set_hint")),
+      (() => { const row = h("div", { class: "row" }); const draw = (on) => row.replaceChildren(...[[true, "upd_on"], [false, "upd_off"]].map(([v, k]) =>
+        h("button", { class: `chip${on === v ? " on" : ""}`, "aria-pressed": String(on === v), onClick: async () => { const r = await guarded(() => api.post("/api/update/setting", { enabled: v })); if (r) draw(r.enabled); } }, t(k))));
+        api.get("/api/update").then((u) => draw(u.enabled)).catch(() => draw(true)); return row; })()))],
 
     ["data", t("data_folder"), h("div", { class: "panel" }, h("h3", {}, t("data_folder")),
       h("p", { class: "muted" }, t("data_folder_hint")),
