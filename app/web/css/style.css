@@ -758,3 +758,10 @@ html[dir="ltr"] .btn { white-space: normal; }
 .foot { display: flex; gap: .6rem; margin-top: 1rem; } .foot .grow { flex: 1; }
 .dz-sum { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin-bottom: .8rem; color: var(--ink-2); font-weight: 600; }
 @media (max-width: 760px) { .opts { grid-template-columns: repeat(2, 1fr); } .steps .st { padding: .4rem; font-size: .85rem; } }
+
+/* progress line under the menu bars while a page takes longer than a blink to appear */
+.sub { position: relative; }
+.sub::after { content: ""; position: absolute; inset-inline: 0; bottom: 0; height: 3px; background: linear-gradient(90deg, transparent, var(--blue), var(--pencil), transparent); background-size: 40% 100%; background-repeat: no-repeat; opacity: 0; }
+.slow-nav .sub::after { opacity: 1; animation: navbar 1s linear infinite; }
+@keyframes navbar { from { background-position: -40% 0; } to { background-position: 140% 0; } }
+@media (prefers-reduced-motion: reduce) { .slow-nav .sub::after { animation: none; background-size: 100% 100%; } }

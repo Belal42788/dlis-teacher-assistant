@@ -24,10 +24,16 @@ export function roomLabel(room, structure) {
 
 const locale = () => (getLang() === "ar" ? "ar-EG-u-nu-latn" : "en-GB");
 
+// Creating a date formatter is slow (a tenth of a millisecond or much more on a school PC) and lists show dozens of dates,
+// so each kind of formatter is made once and reused.
+const formatters = new Map();
 export function fmtDate(iso, opts = { weekday: "long", day: "numeric", month: "long" }) {
   if (!iso) return "";
   const [y, m, d] = iso.split("-").map(Number);
-  return new Intl.DateTimeFormat(locale(), { ...opts, timeZone: "UTC" }).format(new Date(Date.UTC(y, m - 1, d)));
+  const key = locale() + JSON.stringify(opts);
+  let f = formatters.get(key);
+  if (!f) { f = new Intl.DateTimeFormat(locale(), { ...opts, timeZone: "UTC" }); formatters.set(key, f); }
+  return f.format(new Date(Date.UTC(y, m - 1, d)));
 }
 export const fmtDay = (iso) => fmtDate(iso, { weekday: "long", day: "numeric", month: "short" });
 export const fmtShort = (iso) => fmtDate(iso, { day: "numeric", month: "short" });
