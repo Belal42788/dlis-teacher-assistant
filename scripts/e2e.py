@@ -17,6 +17,15 @@ url = proc.stdout.readline().strip()
 print("server", url)
 errors = []
 
+def pick_kind(page, kind):
+    """Create page is three steps: go to step 2 if needed, then press the card of the file kind."""
+    if page.is_visible("[data-step-next]"):
+        page.click("[data-step-next]")
+    elif not page.is_visible(".opt[data-kind-opt]"):
+        page.click(".steps .st:nth-child(2)")   # already on step 3 from last time: go back to the choice
+    page.click(f".opt[data-kind-opt={kind}]")
+
+
 def _open_group(page_):
     """The menu shows the pages of one group at a time: open the group of a page before clicking its link."""
     orig = page_.click
@@ -131,7 +140,7 @@ try:
         # documents + tasks
         os.environ["DLIS_NO_OPEN"] = "1"
         page.click(".nav a[data-page=docs]"); page.wait_for_selector(".pick-row"); page.wait_for_timeout(300)
-        tab = lambda n: page.select_option("select[data-kind]", n)
+        tab = lambda n: pick_kind(page, n)
         P = ".panel:not(.sticky-pick):visible"
         tab("wk"); page.wait_for_selector(".wk-grid")
         for el in page.locator(".wk-grid input[type=text]").all(): el.fill("Hardware")
@@ -139,12 +148,12 @@ try:
         assert page.locator(".wk-line.err").count() == 0, page.inner_text(".wk-out")
         tab("lp"); page.fill(f"{P} input[type=text] >> nth=0", "Hardware")
         page.click(f"{P} >> text=اكتب بالذكاء الاصطناعي"); page.wait_for_function("document.querySelector('textarea').value.includes('Name parts')")
-        page.click(f"{P} >> text=إنشاء خطة الدرس"); page.wait_for_selector(".banner.ok"); shot("15_docs_lp")
+        page.click(f"{P} >> text=إنشاء خطة الدرس"); page.wait_for_selector(".banner.ok:visible"); shot("15_docs_lp")
         tab("quiz"); page.fill(f"{P} .ai-bar input[type=text] >> nth=0", "Computers"); page.click(f"{P} >> text=اكتب بالذكاء الاصطناعي")
         page.wait_for_function("document.querySelector(\"textarea[rows='9']\").value.includes('CPU')"); shot("15b_ai_docs")
         page.fill("textarea[rows='9']", "1. What is a CPU?\na) Brain\nb) Screen\nAnswer: a")
         page.click("text=إنشاء الاختبار"); page.wait_for_selector("text=الملف جاهز"); shot("16_docs_quiz")
-        page.click("button:has-text('ملف Moodle')"); page.wait_for_selector(".banner.ok:has-text('Moodle.txt')"); page.click("button:has-text('Google Forms')"); page.wait_for_selector(".banner.ok:has-text('GoogleForms.txt')")
+        page.click("button:has-text('ملف Moodle')"); page.wait_for_selector(".banner.ok:visible:has-text('Moodle.txt')"); page.click("button:has-text('Google Forms')"); page.wait_for_selector(".banner.ok:visible:has-text('GoogleForms.txt')")
         tab("rv"); page.fill("input[placeholder='موضوع (أو مواضيع) المراجعة']", "Hardware"); page.click(f"{P} .ai-bar .btn")
         page.wait_for_function("[...document.querySelectorAll('textarea')].some(t => t.value === 'CPU: the brain')")
         page.click("text=اعمل ملف المراجعة"); page.wait_for_selector("text=Revision_Sheet"); shot("16b_docs_revision")
@@ -180,10 +189,10 @@ try:
         page.click("text=رجّع الجدول العادي"); page.wait_for_function("!document.querySelector('.kind.cover')")
         assert page.locator(".lesson:not(.cancelled)").count() == n0
         # what was typed survives switching tabs
-        page.click(".nav a[data-page=docs]"); page.wait_for_selector("#main:not(.busy) select[data-kind]"); page.select_option("select[data-kind]", "lp"); page.wait_for_selector(".main .panel textarea >> visible=true")
+        page.click(".nav a[data-page=docs]"); page.wait_for_selector("#main:not(.busy) .steps"); pick_kind(page, "lp"); page.wait_for_selector(".main .panel textarea >> visible=true")
         page.fill(".main .panel textarea >> visible=true >> nth=0", "مسودة مهمة"); page.fill(".panel:not(.sticky-pick):visible input[type=text] >> nth=0", "Topic X")
         page.click(".nav a[data-page=today]"); page.wait_for_selector(".today-tasks")
-        page.click(".nav a[data-page=docs]"); page.wait_for_selector("#main:not(.busy) select[data-kind]"); page.select_option("select[data-kind]", "lp"); page.wait_for_selector(".main .panel textarea >> visible=true")
+        page.click(".nav a[data-page=docs]"); page.wait_for_selector("#main:not(.busy) .steps"); pick_kind(page, "lp"); page.wait_for_selector(".main .panel textarea >> visible=true")
         page.wait_for_function("[...document.querySelectorAll('.main .panel textarea')].some((x) => x.offsetParent && x.value === 'مسودة مهمة')")
         assert page.input_value(".main .panel textarea >> visible=true >> nth=0") == "مسودة مهمة" and page.input_value(".panel:not(.sticky-pick):visible input[type=text] >> nth=0") == "Topic X"
         # AI chat: prompt helper fills the box, send, answer shows, history survives a tab change; prompts editable
@@ -208,7 +217,7 @@ try:
         page.click(".nav a[data-page=settings]"); page.click(".seg-btn[data-tab=ai]"); page.fill(".panel:visible textarea >> nth=0", "You are a pirate."); page.click("text=احفظ نسختي"); page.wait_for_selector("text=بتستخدم نسختك")
         page.click("text=ارجع للافتراضي"); page.wait_for_selector("text=بتستخدم الافتراضي")
         # slides: NotebookLM prompt from a typed topic, then the AI source text
-        page.click(".nav a[data-page=docs]"); page.wait_for_selector("#main:not(.busy) select[data-kind]"); page.select_option("select[data-kind]", "sl"); page.wait_for_selector("details.fold summary >> visible=true")
+        page.click(".nav a[data-page=docs]"); page.wait_for_selector("#main:not(.busy) .steps"); pick_kind(page, "sl"); page.wait_for_selector("details.fold summary >> visible=true")
         page.fill("input[placeholder='موضوع الدرس']", "Input devices"); page.click("details.fold summary >> visible=true"); page.click(".btn.primary >> text=اكتب البرومبت")
         page.wait_for_function("[...document.querySelectorAll('details.fold textarea[dir=ltr]')].some((x) => x.value.includes('Input devices'))"); shot("17j_slides")
         assert "10 slides" in page.input_value("details.fold textarea[dir=ltr] >> nth=0")
@@ -227,7 +236,7 @@ try:
         _I.new("RGB", (800, 450), (240, 240, 250)).save("/tmp/nlm.pdf", "PDF")
         page.click(".nav a[data-page=library]"); page.click("a.seg-btn[href='#/sources']"); page.wait_for_selector("text=أضف مصدر")
         page.set_input_files("input[type=file]", "/tmp/nlm.pdf"); page.wait_for_selector(".src-card:has-text('nlm'):has-text('Input devices')", timeout=20000); shot("17m_sources")
-        page.click(".nav a[data-page=docs]"); page.wait_for_selector("#main:not(.busy) select[data-kind]"); page.select_option("select[data-kind]", "rv"); page.wait_for_selector(".src-pick select >> visible=true")
+        page.click(".nav a[data-page=docs]"); page.wait_for_selector("#main:not(.busy) .steps"); pick_kind(page, "rv"); page.wait_for_selector(".src-pick select >> visible=true")
         page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", label=re.compile(r'nlm')) if False else page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", value=page.eval_on_selector(".panel:has(h3:text('ملف المراجعة')) .src-pick select", "s => [...s.options].find(o => o.textContent.includes('nlm')).value")); page.click("text=املا من سلايداتي")
         page.wait_for_function("[...document.querySelectorAll('textarea')].some(t => t.value === 'Mouse: points and clicks')")
         # teacher tools: pick a tool, fill its form, the (fake) AI writes, save as Word; a student tool offers the name picker
@@ -241,7 +250,7 @@ try:
         for el in page.locator(".tl-form input, .tl-form textarea").all(): el.fill("4" if el.get_attribute("type") == "number" else "Works hard")
         page.click("button:has-text('اكتبها')"); page.wait_for_function("document.querySelector('.tl-out').value.includes('[student]')", timeout=20000)
         page.wait_for_selector("button:has-text('حط الاسم')"); page.wait_for_selector(".tl-form ~ * .banner.ok, .main .banner.ok", state="detached"); assert page.locator(".main a:has-text('شارك')").count() == 0, page.locator("a:has-text('شارك')").all_inner_texts()
-        page.click(".nav a[data-page=docs]"); page.wait_for_selector("#main:not(.busy) select[data-kind]"); page.click(".nav a[data-page=tools]"); page.wait_for_selector(".tl-form")
+        page.click(".nav a[data-page=docs]"); page.wait_for_selector("#main:not(.busy) .steps"); page.click(".nav a[data-page=tools]"); page.wait_for_selector(".tl-form")
         assert "[student]" in page.input_value(".tl-out")      # what was written stays while visiting another page
         # quick search: Ctrl+K lists recent files and pages, finds a tool by its Arabic name and opens it, and finds a saved file
         page.keyboard.press("Control+k"); page.wait_for_selector(".quick-input"); page.wait_for_selector(".quick-item")
@@ -299,7 +308,7 @@ try:
             go("classes"); page.click("a.seg-btn[href='#/log']"); snap("classes_lesson_log")
             go("docs")
             for tab_ in ("wk", "lp", "quiz", "rv", "sl", "gs"):
-                page.select_option("select[data-kind]", tab_); snap(f"files_{tab_}")
+                pick_kind(page, tab_); snap(f"files_{tab_}")
             go("library"); page.click("a.seg-btn[href='#/sources']"); snap("library_sources")
             go("scheme"); page.wait_for_selector(".sw-card"); snap("scheme")
             go("library"); page.wait_for_selector(".banner.info"); snap("library")

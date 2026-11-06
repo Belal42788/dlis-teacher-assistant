@@ -5,7 +5,7 @@ import { renderSlides } from "./slides.js";
 import { sourcePicker } from "../components/source_pick.js";
 import { roomLabel, gradeName, fmtShort, triName } from "../labels.js";
 
-const memoDocs = { tab: "wk" };
+const memoDocs = { tab: "wk", step: 1 };
 const DAY_FIELDS = ["sunday", "monday", "tuesday", "wednesday", "thursday"];
 const QUIZ_EXAMPLE = "1. What is the CPU?\na) The brain of the computer\nb) A screen\nc) A printer\nAnswer: a\n\n2. Which one is an input device?\na) Mouse\nb) Speaker\nAnswer: a";
 
@@ -288,21 +288,40 @@ export async function renderDocs(root) {
   const slidesBox = h("div", {});   // the slide maker lives here as one more thing to make; it opens the first time it is chosen
   // one kind of file at a time: the page stays short and the teacher sees only what they chose
   const panelList = [["wk", wkPanel, "wk_tab"], ["lp", lpPanel, "d_lp_title"], ["quiz", quizPanel, "d_quiz_title"], ["rv", rvPanel, "rv_title"], ["sl", slidesBox, "hub_make_slides"], ["gs", gsPanel, "d_gs_title"]];
-  // a drop-down: the teacher picks what to make and sees only that
-  const kindSel = h("select", { "data-kind": "", "aria-label": t("d_pick_kind"), onChange: (e) => showTab(e.target.value) }, panelList.map(([id, , key]) => h("option", { value: id }, t(key))));
-  const tabs = h("label", { class: "field" }, h("span", { class: "label" }, t("d_pick_kind")), kindSel);
+  // three steps: 1) class and week, 2) what to make, 3) fill it in and make it. Each step shows one thing.
+  const KIND_ICON = { wk: "spark", lp: "file", quiz: "list", rv: "check", sl: "slides", gs: "tasks" };
+  const stepNames = [t("dz_step1"), t("dz_step2"), t("dz_step3")];
+  const stepBar = h("div", { class: "steps", role: "list" });
+  const step1 = h("div", {}, pickPanel, h("div", { class: "foot" }, h("span", { class: "grow" }), h("button", { class: "btn pri", "data-step-next": "", onClick: () => go(2) }, t("dz_next"), " ", icon("chevron"))));
+  const step2 = h("div", { class: "panel" },
+    h("div", { class: "opts" }, panelList.map(([id, , key]) =>
+      h("button", { class: "opt", "data-kind-opt": id, onClick: () => { showTab(id); go(3); } }, icon(KIND_ICON[id] || "file"), h("b", {}, t(key)), h("small", {}, t(`dz_hint_${id}`))))),
+    h("div", { class: "foot" }, h("button", { class: "btn", onClick: () => go(1) }, icon("back"), " ", t("dz_back"))));
+  const summary = h("div", { class: "dz-sum" });
+  const step3 = h("div", {}, summary, ...panelList.map(([, el]) => el), result);
   function showTab(id) {
     memoDocs.tab = id;
-    kindSel.value = id;
     panelList.forEach(([k, el]) => { el.hidden = k !== id; });
-    pickPanel.hidden = id === "sl";   // the slide maker has its own class / week pickers
     if (id === "sl" && !slidesBox.dataset.ready) { slidesBox.dataset.ready = "1"; guarded(() => renderSlides(slidesBox, { embedded: true })); }
+  }
+  function go(n) {
+    memoDocs.step = n;
+    step1.hidden = n !== 1; step2.hidden = n !== 2; step3.hidden = n !== 3;
+    stepBar.replaceChildren(...stepNames.map((name, i) => h("button", { class: `st${i + 1 === n ? " on" : i + 1 < n ? " ok" : ""}`, role: "listitem", disabled: i + 1 > n,
+      onClick: () => go(i + 1) }, h("i", {}, i + 1 < n ? "✓" : String(i + 1)), name)));
+    if (n === 3) {
+      const kind = panelList.find(([k]) => k === memoDocs.tab);
+      summary.replaceChildren(h("span", { class: "chip" }, kind ? t(kind[2]) : ""), " ",
+        memoDocs.tab === "sl" ? "" : `${roomSel.selectedOptions[0]?.textContent || ""} · ${weekSel.selectedOptions[0]?.textContent || ""}`,
+        h("button", { class: "btn sm", onClick: () => go(2) }, t("dz_change")));
+    }
+    window.scrollTo?.(0, 0);
   }
   showTab(panelList.some(([k]) => k === memoDocs.tab) ? memoDocs.tab : "wk");
   drawWeeks();
   root.replaceChildren(h("div", { class: "page" },
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_docs")), h("p", {}, t("docs_lead")))),
-    pickPanel,
-    result, tabs, ...panelList.map(([, el]) => el)));
+    stepBar, step1, step2, step3));
+  go(memoDocs.step || 1);
   await refresh();
 }

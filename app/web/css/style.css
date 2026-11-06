@@ -701,8 +701,9 @@ html[dir="ltr"] .btn { white-space: normal; }
 
 /* ---------- Today: greeting, next-lesson bar with the time left, lessons on the left and everything else on the side ---------- */
 .page.wide { max-width: 1180px; }
-.today-head { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; margin-bottom: .9rem; }
-.today-head h1 { font-size: 2rem; line-height: 1.2; font-weight: 800; }
+.today-head { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; margin-bottom: .9rem; padding: .8rem 1.1rem; border-radius: 16px; border: 1px solid #c3dbea; background: linear-gradient(100deg, #d6eaf6 0%, #e4f1f8 55%, #e8f3d3 100%); box-shadow: 0 1px 2px rgba(28,31,77,.06); }
+.today-head h1 { font-size: 2rem; line-height: 1.2; font-weight: 800; color: var(--indigo); }
+.today-head .today-sub { color: #3a4468; }
 .today-sub { font-weight: 600; }
 .today-cols { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
 .today-side { display: grid; gap: .8rem; min-width: 0; }
@@ -740,3 +741,20 @@ html[dir="ltr"] .btn { white-space: normal; }
 .today-side .tasks-table tr { grid-template-columns: 2.2rem minmax(0, 1fr); }
 .today-side .tasks-table td:nth-child(5) { grid-column: 2; grid-row: 3; justify-content: flex-start; }
 .today-side .tasks-table td:nth-child(4) { grid-row: 2; }
+
+/* Create page in three steps */
+.steps { display: flex; gap: .5rem; margin: 0 0 1rem; }
+.steps .st { flex: 1; display: flex; align-items: center; gap: .55rem; padding: .55rem .8rem; border-radius: 12px; background: #fff; border: 2px solid transparent; color: var(--muted); font: inherit; font-weight: 700; cursor: pointer; text-align: start; }
+.steps .st:disabled { cursor: default; }
+.steps .st i { font-style: normal; flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--rule); color: var(--ink-2); }
+.steps .st.on { border-color: var(--blue); color: var(--ink); }
+.steps .st.on i { background: var(--blue); color: #fff; }
+.steps .st.ok { color: var(--ink-2); } .steps .st.ok i { background: #3f8f52; color: #fff; }
+.opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; }
+.opt { display: grid; gap: .15rem; justify-items: start; text-align: start; background: #fff; border: 2px solid var(--rule2); border-radius: 14px; padding: 1rem; font: inherit; color: var(--ink); cursor: pointer; }
+.opt:hover { border-color: var(--blue); background: var(--wash); }
+.opt svg { width: 1.7rem; height: 1.7rem; color: var(--blue); }
+.opt small { color: var(--muted); }
+.foot { display: flex; gap: .6rem; margin-top: 1rem; } .foot .grow { flex: 1; }
+.dz-sum { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin-bottom: .8rem; color: var(--ink-2); font-weight: 600; }
+@media (max-width: 760px) { .opts { grid-template-columns: repeat(2, 1fr); } .steps .st { padding: .4rem; font-size: .85rem; } }
