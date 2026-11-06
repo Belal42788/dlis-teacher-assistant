@@ -227,6 +227,51 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
 
+def _selftest(server, out_file: str) -> int:
+    """The built program (PyInstaller) can miss a library or a data file without any error at build time. This opens each
+    part the teacher would use, so the build on Windows/Mac shows the problem instead of the teacher."""
+    import importlib
+    import json
+    import urllib.request
+
+    problems: list[str] = []
+    for mod in ("pydantic", "openpyxl", "docx", "pptx", "PIL", "pypdfium2", "certifi"):
+        try:
+            importlib.import_module(mod)
+        except Exception as e:
+            problems.append(f"import {mod}: {e}")
+    if sys.platform == "win32":
+        try:
+            importlib.import_module("pystray._win32")
+        except Exception as e:
+            problems.append(f"import pystray._win32: {e}")
+    if sys.platform in ("win32", "darwin"):   # on Linux the window library is optional
+        try:
+            import webview  # noqa: F401
+        except Exception as e:
+            problems.append(f"import webview: {e}")
+    web = paths.web_dir()
+    for rel in ("index.html", "css/style.css", "js/main.js", "js/i18n.js", "fonts/arabic.ttf"):
+        if not (web / rel).is_file():
+            problems.append(f"missing web file {rel}")
+    res = paths.resources_dir()
+    for name in ("Lesson_Plan_Temp.docx", "Quiz_Template_v2.docx", "Grading_Sheet_Template.docx", "Revision_Cover_Template.docx",
+                 "Trimester_Plan_Template.docx", "ai_providers.json", "ai_prompts.json", "bell_schedule.json"):
+        if not (res / name).is_file():
+            problems.append(f"missing resource {name}")
+    try:
+        with urllib.request.urlopen(server.url, timeout=10) as r:
+            if r.status != 200 or b"<html" not in r.read(4000).lower():
+                problems.append("home page did not load")
+        with urllib.request.urlopen(server.url.rstrip("/") + "/js/main.js", timeout=10) as r:
+            if r.status != 200:
+                problems.append("main.js did not load")
+    except Exception as e:
+        problems.append(f"server: {e}")
+    Path(out_file).write_text(json.dumps({"ok": not problems, "problems": problems, "platform": sys.platform}, indent=1), encoding="utf-8")
+    return 0 if not problems else 1
+
+
 def _main(argv: list[str] | None = None) -> int:
     for name in ("stdout", "stderr"):  # a windowed .exe has none; anything that prints would crash
         if getattr(sys, name) is None:
@@ -238,10 +283,13 @@ def _main(argv: list[str] | None = None) -> int:
     ap.add_argument("--custom-titlebar", action="store_true", help="use our own slim title bar (Windows snap layouts do not work with it)")
     ap.add_argument("--background", action="store_true", help="start hidden near the clock (used when Windows starts)")
     ap.add_argument("--port", type=int, default=0)
+    ap.add_argument("--selftest", metavar="FILE", help="check that the packaged program is complete, write the result to FILE and quit (used by the build)")
     args = ap.parse_args(argv)
 
     server = AppServer(port=args.port)
     server.start_in_thread()
+    if args.selftest:
+        return _selftest(server, args.selftest)
 
     if args.no_window:
         print(server.url, flush=True)

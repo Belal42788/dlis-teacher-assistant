@@ -4,9 +4,9 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
-SHOTS = Path(os.environ.get("SHOTS", "/tmp/shots")); SHOTS.mkdir(exist_ok=True, parents=True)
+SHOTS = Path(os.environ.get("SHOTS", str(Path(tempfile.gettempdir()) / "shots"))); SHOTS.mkdir(exist_ok=True, parents=True)
 home = tempfile.mkdtemp(); data = Path(tempfile.mkdtemp()) / "My DLIS"
-env = dict(os.environ, DLIS_APP_HOME=home, HOME=home)  # fake HOME so the folder picker is isolated
+env = dict(os.environ, DLIS_APP_HOME=home, HOME=home, USERPROFILE=home, PYTHONUTF8="1")  # fake home so the folder picker is isolated (HOME on Mac/Linux, USERPROFILE on Windows)
 (Path(home) / "Documents").mkdir()
 # the server thinks it is a school day (Wed 28 Oct 2026), so the screens do not depend on the weekday the test runs on
 _fake = Path(tempfile.mkdtemp()); (_fake / "sitecustomize.py").write_text(
@@ -233,9 +233,9 @@ try:
         page.click("table.wc .wc-cell >> nth=0"); page.wait_for_selector("table.wc .wc-cell.done"); shot("17n_weekly")
         # my slides: import an image-only PDF, the app reads it with the (fake) vision AI, then the revision page can use it
         from PIL import Image as _I
-        _I.new("RGB", (800, 450), (240, 240, 250)).save("/tmp/nlm.pdf", "PDF")
+        _I.new("RGB", (800, 450), (240, 240, 250)).save(str(Path(tempfile.gettempdir()) / "nlm.pdf"), "PDF")
         page.click(".nav a[data-page=library]"); page.click("a.seg-btn[href='#/sources']"); page.wait_for_selector("text=أضف مصدر")
-        page.set_input_files("input[type=file]", "/tmp/nlm.pdf"); page.wait_for_selector(".src-card:has-text('nlm'):has-text('Input devices')", timeout=20000); shot("17m_sources")
+        page.set_input_files("input[type=file]", str(Path(tempfile.gettempdir()) / "nlm.pdf")); page.wait_for_selector(".src-card:has-text('nlm'):has-text('Input devices')", timeout=20000); shot("17m_sources")
         page.click(".nav a[data-page=docs]"); page.wait_for_selector("#main:not(.busy) .steps"); pick_kind(page, "rv"); page.wait_for_selector(".src-pick select >> visible=true")
         page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", label=re.compile(r'nlm')) if False else page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", value=page.eval_on_selector(".panel:has(h3:text('ملف المراجعة')) .src-pick select", "s => [...s.options].find(o => o.textContent.includes('nlm')).value")); page.click("text=املا من سلايداتي")
         page.wait_for_function("[...document.querySelectorAll('textarea')].some(t => t.value === 'Mouse: points and clicks')")
@@ -371,11 +371,11 @@ try:
             pg = _open_group(ctx.new_page()); pg.clock.install(time=_dt.datetime(day.year, day.month, day.day, h, m, 0)); pg.goto(url)
             pg.wait_for_selector(".shell"); pg.clock.run_for(5000); pg.wait_for_timeout(1500); pg.clock.run_for(25000); pg.wait_for_timeout(1500); return pg
         pg = at(13, 31); assert pg.locator(".reminder").count() >= 1, "expected a reminder before the 13:40 lesson"; assert pg.locator(".reminder:has-text('Prayer')").count() == 1, "expected the prayer-break reminder"; pg.close()
-        pg = at(13, 45); pg.click(".nav a[data-page=today]"); pg.wait_for_selector(".slot[data-state=now]"); pg.screenshot(path="/tmp/shots/08b_today_now.png"); pg.close()
+        pg = at(13, 45); pg.click(".nav a[data-page=today]"); pg.wait_for_selector(".slot[data-state=now]"); pg.screenshot(path=str(SHOTS / "08b_today_now.png")); pg.close()
         pg = at(8, 1, _dt.date(2026, 10, 28)); assert pg.locator(".reminder:has-text('اطبع الكويز')").count() == 1, "own reminder should pop up"; pg.close()
         pg = at(13, 5, _dt.date(2026, 11, 1)); assert pg.locator(".reminder:has-text('Cultural Diversity')").count() == 1, "the day before an event a reminder should pop up"; pg.close()
         pg = at(11, 0, _dt.date(2026, 11, 1)); assert pg.locator(".reminder:has-text('Cultural Diversity')").count() == 0, "not before the chosen time"; pg.close()
-        pg = at(19, 5, _dt.date(2026, 11, 1)); assert pg.locator(".reminder:has-text('Tomorrow you have')").count() == 1, ("the evening before a school day: prepare-tomorrow alert", pg.evaluate("fetch('/api/tomorrow?date=2026-11-01').then(r => r.text())"), pg.locator(".reminder").all_inner_texts()); shot_ = pg.screenshot(path="/tmp/shots/08c_tomorrow.png"); pg.close()
+        pg = at(19, 5, _dt.date(2026, 11, 1)); assert pg.locator(".reminder:has-text('Tomorrow you have')").count() == 1, ("the evening before a school day: prepare-tomorrow alert", pg.evaluate("fetch('/api/tomorrow?date=2026-11-01').then(r => r.text())"), pg.locator(".reminder").all_inner_texts()); shot_ = pg.screenshot(path=str(SHOTS / "08c_tomorrow.png")); pg.close()
         pg = at(18, 0, _dt.date(2026, 11, 1)); assert pg.locator(".reminder:has-text('Tomorrow you have')").count() == 0, "not before the evening time"; pg.close()
         pg = at(11, 27); assert pg.locator(".reminder").count() == 0, "no reminder when coming straight from another duty"; pg.close()
         # phone width
