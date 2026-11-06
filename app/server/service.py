@@ -90,6 +90,10 @@ class Service(InsightsMixin, GradesMixin, ToolsMixin, SchemeMixin, LibraryMixin,
             out["problems"] = list(self.store.problems)
             out.update(has_data=self.store.has_data(), setup_done=settings.setup_done,
                        settings=settings.model_dump(mode="json"), conflicts=self.store.detect_conflicts())
+            from ..core.translit import to_arabic, to_english
+            # the greeting uses the language of the app: Arabic letters in Arabic, Latin letters in English
+            out["teacher_name_ar"] = to_arabic(settings.teacher_name or "")
+            out["teacher_name_en"] = to_english(settings.teacher_name or "")
         return out
 
     def set_language(self, lang: str) -> dict:

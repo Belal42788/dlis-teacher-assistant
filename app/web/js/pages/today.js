@@ -2,7 +2,7 @@ import { h, icon, modal } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { logDialog, lastLine } from "../components/log_dialog.js";
 import { forgetDay } from "../reminders.js";
-import { t } from "../i18n.js";
+import { t, getLang } from "../i18n.js";
 import { state } from "../state.js";
 import { announceCard } from "../components/announce_list.js";
 import { tasksTable } from "../components/tasks_table.js";
@@ -44,7 +44,8 @@ export async function renderToday(root) {
           admin ? h("a", { class: "btn small primary", href: "#/announcements" }, icon("plus"), t("an_add_short")) : null),
         ...live.map((x) => announceCard(x)))); }).catch(() => {});
     const pos = d.position;
-    const first = String(state.settings?.teacher_name || "").trim().split(/\s+/)[0] || "";
+    const nameNow = (getLang() === "ar" ? state.boot?.teacher_name_ar : state.boot?.teacher_name_en) || state.settings?.teacher_name;   // Arabic letters in the Arabic app
+    const first = String(nameNow || "").trim().split(/\s+/)[0] || "";
     const nextBox = h("div", {});   // the next lesson with the time left (only today)
     root.replaceChildren(h("div", { class: "page wide" },
       h("div", { class: "today-head" },
