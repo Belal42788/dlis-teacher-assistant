@@ -1,5 +1,5 @@
 import { h, icon, confirmBox, modal, toast } from "./dom.js";
-import { api, guarded } from "./api.js";
+import { api, guarded, inPage, readsFor, warm } from "./api.js";
 import { t, setLang, hasKey } from "./i18n.js";
 import { applyFontSize } from "./fontsize.js";
 import { state } from "./state.js";
@@ -199,6 +199,27 @@ function restoreDraft(pageId) {
 applyFontSize();
 let shownPage = null;
 
+// What each page reads first, so the very first visit can also be prepared. After a page has been opened once, what it
+// really read is remembered and used instead.
+const SEED = {
+  today: ["/api/tasks", "/api/log/last", "/api/log"], tasks: ["/api/tasks", "/api/weekly"],
+  tools: ["/api/tools"], library: ["/api/library", "/api/publications"], chat: ["/api/chats"],
+  announcements: ["/api/announcements"], followup: ["/api/cloud"], map: ["/api/map", "/api/structure"],
+  timetable: ["/api/timetable", "/api/structure"], calendar: ["/api/calendar", "/api/school-calendar", "/api/overview"], classes: ["/api/structure"],
+};
+const prepare = (id) => { const own = readsFor(id); warm(own.length ? own : (SEED[id] || [])); };
+function listenForTabs() {
+  // pointing at, pressing or focusing a menu entry starts its reads, so by the time the click lands they are on their way
+  const go = (e) => { const a = e.target.closest?.(".nav a[data-page]"); if (a) prepare(a.dataset.page); };
+  ["pointerover", "pointerdown", "focusin"].forEach((ev) => document.addEventListener(ev, go, { passive: true }));
+}
+listenForTabs();
+// when a page has appeared, the pages next to it in the same bar get ready while the computer is idle
+function prepareNeighbours(page) {
+  const idle = window.requestIdleCallback || ((f) => setTimeout(f, 400));
+  idle(() => { [...document.querySelectorAll(`.sub a[data-group="${page.group}"]`)].forEach((a, i) => setTimeout(() => prepare(a.dataset.page), i * 150)); });
+}
+
 // Safety net for screen readers: a box with no label of its own is named after the text on its row, so it is never read as just "checkbox".
 function nameLooseControls(root) {
   root.querySelectorAll("input:not([type=hidden]):not([aria-label]), select:not([aria-label]), textarea:not([aria-label])").forEach((el) => {
@@ -227,10 +248,13 @@ async function route() {
     const mark = (e) => { if (e.isTrusted) typed = true; };
     main.addEventListener("input", mark, true); main.addEventListener("change", mark, true);
     main.classList.add("busy");
-    try { await page.render(main, { reloadApp }); } finally { main.classList.remove("busy"); main.removeEventListener("input", mark, true); main.removeEventListener("change", mark, true); }
+    inPage(page.id);
+    const slow = setTimeout(() => document.body.classList.add("slow-nav"), 150);   // a thin progress line, only if loading is not instant
+    try { await page.render(main, { reloadApp }); } finally { clearTimeout(slow); document.body.classList.remove("slow-nav"); main.classList.remove("busy"); main.removeEventListener("input", mark, true); main.removeEventListener("change", mark, true); }
     if (shownPage !== page.id) main.scrollTop = 0; // a new tab starts at the top, not where the last one was scrolled to
     shownPage = page.id;
     nameLooseControls(main);
+    prepareNeighbours(page);
     api.note("/api/usage", { page: page.id }).catch(() => {});
     if (!typed) restoreDraft(page.id);
   } catch (e) {
