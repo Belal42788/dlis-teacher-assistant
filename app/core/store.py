@@ -8,7 +8,7 @@ import os
 import threading
 import time
 import zipfile
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -281,6 +281,38 @@ class DataStore:
                 if p.is_file() and self.backup_root() not in p.parents and self.exports_dir() not in p.parents \
                         and not p.name.endswith(".tmp"):
                     z.write(p, p.relative_to(self.root).as_posix())
+        return dest
+
+    def auto_backup(self, every_days: int = 7, keep: int = 5) -> Path | None:
+        """A quiet copy of the teacher's folder once a week, kept in the hidden _backup/auto folder (last `keep` copies).
+        Returns the new file, or None when the last copy is still recent."""
+        folder = self.backup_root() / "auto"
+        folder.mkdir(parents=True, exist_ok=True)
+        old = sorted(folder.glob("DLIS_auto_*.zip"))
+        if old:
+            try:
+                if (date.today() - date.fromisoformat(old[-1].stem[-10:])).days < every_days:
+                    return None
+            except ValueError:
+                pass
+        dest = folder / f"DLIS_auto_{date.today():%Y-%m-%d}.zip"
+        tmp = dest.with_suffix(".tmp")
+        with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
+            for p in self.root.rglob("*"):
+                if not p.is_file() or self.backup_root() in p.parents or self.exports_dir() in p.parents or p.name.endswith(".tmp"):
+                    continue
+                try:
+                    if p.stat().st_size > 100 * 1024 * 1024:
+                        continue   # a huge file (a video, say) is not worth filling the disk for
+                    z.write(p, p.relative_to(self.root).as_posix())
+                except OSError:
+                    continue   # a file that changes or is locked right now must not stop the copy
+        tmp.replace(dest)
+        for extra in sorted(folder.glob("DLIS_auto_*.zip"))[:-keep]:
+            try:
+                extra.unlink()
+            except OSError:
+                pass
         return dest
 
 

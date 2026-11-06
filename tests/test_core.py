@@ -224,9 +224,6 @@ class LegacyImportTests(unittest.TestCase):
             import_legacy(tmp(), DataStore(tmp()))
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class TestSortAndPaste(unittest.TestCase):
     def test_grades_sorted_youngest_first_numerically(self):
@@ -1671,3 +1668,32 @@ class TestServerBackup(TestAi):
         with mock.patch.object(self.svc, "_cloud_cfg", return_value={"role": "teacher"}):
             with self.assertRaises(AppError):
                 self.svc.cloud_backup()
+
+
+class TestAutoBackup(unittest.TestCase):
+    def test_weekly_copy_keeps_last_five_and_skips_exports(self):
+        import zipfile
+        with tempfile.TemporaryDirectory() as d:
+            s = DataStore(d)
+            (Path(d) / "Documents").mkdir()
+            (Path(d) / "Documents" / "plan.docx").write_text("x")
+            s.exports_dir().mkdir(parents=True, exist_ok=True)
+            (s.exports_dir() / "big.zip").write_text("y")
+            first = s.auto_backup()
+            self.assertTrue(first and first.exists())
+            with zipfile.ZipFile(first) as z:
+                names = z.namelist()
+            self.assertIn("Documents/plan.docx", names)
+            self.assertFalse([n for n in names if n.startswith(("Exports", "_backup"))])
+            self.assertIsNone(s.auto_backup())   # still recent: nothing new
+            folder = s.backup_root() / "auto"
+            for i in range(1, 8):   # seven older copies exist; only the newest five remain
+                (folder / f"DLIS_auto_2026-01-0{i}.zip").write_bytes(b"")
+            (folder / first.name).rename(folder / "DLIS_auto_2026-02-01.zip")
+            made = s.auto_backup(every_days=7)
+            self.assertIsNotNone(made)
+            self.assertEqual(len(list(folder.glob("DLIS_auto_*.zip"))), 5)
+
+
+if __name__ == "__main__":
+    unittest.main()

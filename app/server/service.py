@@ -5,6 +5,7 @@ import re
 import base64
 import os
 import sys
+import threading
 from datetime import date
 from pathlib import Path
 from typing import Optional
@@ -90,11 +91,26 @@ class Service(InsightsMixin, GradesMixin, ToolsMixin, SchemeMixin, LibraryMixin,
             out["problems"] = list(self.store.problems)
             out.update(has_data=self.store.has_data(), setup_done=settings.setup_done,
                        settings=settings.model_dump(mode="json"), conflicts=self.store.detect_conflicts())
+            self._start_auto_backup()
             from ..core.translit import to_arabic, to_english
             # the greeting uses the language of the app: Arabic letters in Arabic, Latin letters in English
             out["teacher_name_ar"] = to_arabic(settings.teacher_name or "")
             out["teacher_name_en"] = to_english(settings.teacher_name or "")
         return out
+
+    def _start_auto_backup(self) -> None:
+        """Once per run, in the background: a weekly copy of the data folder (see DataStore.auto_backup)."""
+        if getattr(self, "_auto_backup_started", False) or not self.store:
+            return
+        self._auto_backup_started = True
+        store = self.store
+
+        def run() -> None:
+            try:
+                store.auto_backup()
+            except Exception as e:   # a failed copy must never disturb the teacher
+                paths.log_error(f"auto backup failed: {e}")
+        threading.Thread(target=run, daemon=True).start()
 
     def set_language(self, lang: str) -> dict:
         if lang not in LANGS:
@@ -126,9 +142,15 @@ class Service(InsightsMixin, GradesMixin, ToolsMixin, SchemeMixin, LibraryMixin,
     def export_feedback(self) -> dict:
         prefs = paths.read_prefs()
         u = prefs.get("usage") or {}
-        lines = [f"DLIS Teacher Assistant v{paths.VERSION}", f"Usage since {u.get('since', '-')}", "", "Page opens:"]
+        lines = [f"DLIS Teacher Assistant v{paths.VERSION}", f"System: {sys.platform}", f"Usage since {u.get('since', '-')}", "", "Page opens:"]
         lines += [f"  {k}: {v}" for k, v in sorted((u.get("pages") or {}).items(), key=lambda kv: -kv[1])]
         lines += ["", "Notes:"] + [f"  [{n['date']}] ({n['page']}) {n['text']}" for n in (prefs.get("feedback") or [])]
+        try:   # the last lines of the error log help to find a problem without guessing
+            log = paths.app_support_dir() / "error.log"
+            if log.exists():
+                lines += ["", "Last errors:"] + ["  " + x for x in log.read_text(encoding="utf-8", errors="replace").splitlines()[-60:]]
+        except OSError:
+            pass
         out = self._need_store().root / "Documents" / "DLIS_Feedback.txt"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text("\n".join(lines) + "\n", encoding="utf-8")
