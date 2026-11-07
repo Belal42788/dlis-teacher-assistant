@@ -1,11 +1,10 @@
 # Builds the Windows installer and the Mac disk image in the cloud, so nobody needs Python on their own computer.
-# How to use: upload this project to a (private) GitHub repository, open the "Actions" tab,
-# choose "Build apps" and press "Run workflow". When it finishes, download the files from "Artifacts".
+# To try a build: open the "Actions" tab, choose "Build apps" and press "Run workflow". When it finishes, download the files from "Artifacts".
+# To publish a version to teachers: do not use this one, make a "Release" on GitHub (see "Release" workflow, it calls this one).
 name: Build apps
 on:
   workflow_dispatch:
-  push:
-    tags: ["v*"]
+  workflow_call:
 jobs:
   windows:
     runs-on: windows-latest

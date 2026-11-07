@@ -76,6 +76,7 @@ class Service(SeatingMixin, BehaviorMixin, UpdateMixin, InsightsMixin, GradesMix
 
     # ------------------------------------------------------------ start up
     def bootstrap(self) -> dict:
+        self.stamp_first_run()
         prefs = paths.read_prefs()
         out = {
             "version": paths.VERSION,
@@ -86,7 +87,7 @@ class Service(SeatingMixin, BehaviorMixin, UpdateMixin, InsightsMixin, GradesMix
             "data_folder": str(self.store.root) if self.store else "",
             "suggested_folder": str(paths.default_data_folder()),
             "folder_missing": "" if self.store else (prefs.get("data_folder") or ""),
-            "has_data": False, "setup_done": False, "settings": None, "conflicts": [], "data_locked": "", "upgraded_from": 0,
+            "has_data": False, "setup_done": False, "settings": None, "conflicts": [], "data_locked": "", "upgraded_from": 0, "whats_new": [],
             "subjects": [{"en": e, "ar": a} for e, a in COMMON_SUBJECTS],
         }
         if self.store:
@@ -94,6 +95,8 @@ class Service(SeatingMixin, BehaviorMixin, UpdateMixin, InsightsMixin, GradesMix
             out["problems"] = list(self.store.problems)
             out["data_locked"] = self.store.locked
             out["upgraded_from"] = self.store.upgraded_from
+            if settings.setup_done and not self.store.locked:
+                out["whats_new"] = self.whats_new()["entries"]
             out.update(has_data=self.store.has_data(), setup_done=settings.setup_done,
                        settings=settings.model_dump(mode="json"), conflicts=self.store.detect_conflicts())
             self._start_auto_backup()

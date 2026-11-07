@@ -552,6 +552,11 @@ table.wc .dot { display: inline-block; width: .6rem; height: .6rem; border-radiu
 .chat-main .bubble.user { max-width: 80%; }
 
 .tag-model { font-size: .75rem; padding: .1rem .55rem; border-radius: 99px; background: var(--blue-wash); color: var(--blue-dark); font-weight: 600; }
+.whatsnew section + section { margin-top: 1rem; }
+.whatsnew h4 { margin: 0 0 .5rem; color: var(--blue-dark); }
+.whatsnew ul { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
+.whatsnew li { display: flex; gap: .6rem; align-items: flex-start; padding: .55rem .8rem; background: var(--blue-wash); border-radius: 10px; line-height: 1.6; }
+.whatsnew li .i { flex: none; margin-top: .25rem; color: var(--blue-dark); }
 .df-list { list-style: none; padding: 0; margin: 0 0 .8rem; display: grid; gap: .5rem; }
 .df-list li { padding: .5rem .8rem; background: var(--blue-wash); border-radius: 10px; }
 .df-list b { direction: ltr; unicode-bidi: plaintext; }

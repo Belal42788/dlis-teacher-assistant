@@ -1,0 +1,18 @@
+# GitHub itself opens a small "pull request" when a library or a workflow tool we use has a newer version.
+# Nothing changes until you press Merge, and the Check workflow runs on each one, so a green tick means it is safe.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 3
+    groups:
+      python-libraries:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 3
+    groups:
+      workflow-tools:
+        patterns: ["*"]

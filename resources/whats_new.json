@@ -1,0 +1,20 @@
+{
+  "1.0.0": {
+    "ar": [
+      "الجدول والتقويم بقوا في صفحة واحدة في القائمة الرئيسية، وكل حصة بتظهر في اليوم بتاعها.",
+      "شهادات وكروت شكر بشعار المدرسة بتتعمل بضغطة واحدة كملف Word، والخط العربي هو نفس خط البرنامج.",
+      "ملاحظات سلوك الطالب بتتسجل في ثواني، ويطلع منها رسالة جاهزة لولي الأمر.",
+      "خريطة جلوس الفصل: رتّب الطلاب بالسحب واطبعها.",
+      "لو فيه نسخة أحدث من البرنامج هيظهر لك إشعار هادي، وبياناتك بتتحفظ نسخة منها قبل أي ترقية.",
+      "الصفحات الفاضية بتشرح لك تبدأ منين، والبرنامج بيتحرك أسرع مع الفصول الكتير."
+    ],
+    "en": [
+      "Timetable and Calendar now sit together in the main menu, and every lesson shows on its own day.",
+      "Certificates and thank-you cards with the school logo come out as a Word file in one click, in the same Arabic font as the app.",
+      "Behaviour notes take seconds to record and turn into a ready message for the parent.",
+      "Seating chart: arrange the students by dragging them, then print it.",
+      "If a newer version is out you see one quiet notice, and your data is copied before any upgrade.",
+      "Empty pages tell you where to start, and the app stays quick even with many classes."
+    ]
+  }
+}

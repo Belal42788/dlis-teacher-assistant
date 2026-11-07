@@ -21,6 +21,7 @@ import { renderTools } from "./pages/tools.js";
 import { renderGrades } from "./pages/grades.js";
 import { renderInsights } from "./pages/insights.js";
 import { openQuick } from "./components/quick.js";
+import { showWhatsNew } from "./components/whatsnew.js";
 import { renderMap } from "./pages/map.js";
 import { renderAnnouncements } from "./pages/announcements.js";
 import { renderPublish } from "./pages/publish.js";
@@ -108,6 +109,7 @@ async function boot(forceWizardStep) {
     el.textContent = c.signed_in ? `● ${t("net_online")}` : `○ ${t("net_offline")}`; el.classList.toggle("on", !!c.signed_in); }).catch(() => {});
   startReminders();
   checkForUpdate();
+  if ((state.boot.whats_new || []).length) showWhatsNew(state.boot.whats_new);
   await route();
 }
 

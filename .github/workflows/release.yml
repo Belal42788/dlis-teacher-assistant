@@ -1,0 +1,61 @@
+# One click to publish a new version to the teachers:
+#   1. Change the version number (app/core/paths.py, installer/dlis.iss) and write the "What is new" lines (resources/whats_new.json). Upload.
+#   2. GitHub -> Releases -> "Draft a new release" -> type a new tag like v1.0.1 -> Publish release.
+# This then checks the numbers agree, builds the Windows and Mac installers, attaches them to the release,
+# and updates portal/latest.json so every installed app shows the "newer version" notice.
+name: Release
+on:
+  release:
+    types: [published]
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - name: The version numbers must all agree with the release name
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: python scripts/check_release.py "$TAG"
+  build:
+    needs: verify
+    uses: ./.github/workflows/build.yml
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.event.release.tag_name }}
+      RELEASE_URL: ${{ github.event.release.html_url }}
+      BRANCH: ${{ github.event.repository.default_branch }}
+      REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ github.event.repository.default_branch }}" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - uses: actions/download-artifact@v4
+        with: { path: dist }
+      - name: Attach the installers to the release
+        run: |
+          ls -R dist
+          gh release upload "$TAG" dist/DLIS-Windows-Setup/DLIS_Teacher_Assistant_Setup.exe dist/DLIS-Mac/DLIS_Teacher_Assistant.dmg --clobber --repo "$REPO"
+      - name: Tell every installed app that this version exists
+        env:
+          NOTES: ${{ github.event.release.body }}
+        run: |
+          printf '%s' "$NOTES" > notes.txt
+          python scripts/write_latest.py "$TAG" "$RELEASE_URL" --notes-file notes.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add portal/latest.json
+          git diff --cached --quiet || git commit -m "Release $TAG: update portal/latest.json"
+          git push
+          gh workflow run pages.yml --ref "$BRANCH" --repo "$REPO"
