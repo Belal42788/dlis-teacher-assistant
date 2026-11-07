@@ -10,6 +10,7 @@ import { aiPanel } from "../components/ai_panel.js";
 import { promptEditor } from "../components/prompt_editor.js";
 import { cloudPanel } from "../components/cloud_panel.js";
 import { reminderPanel } from "../components/reminder_panel.js";
+import { openWhatsNew } from "../components/whatsnew.js";
 
 // Shared with the first-run guide.
 export async function importOldDialog(done) {
@@ -82,7 +83,8 @@ export async function renderSettings(root, { reloadApp }) {
     h("div", { class: "panel" }, h("h3", {}, t("upd_set_title")), h("p", { class: "muted small" }, t("upd_set_hint")),
       (() => { const row = h("div", { class: "row" }); const draw = (on) => row.replaceChildren(...[[true, "upd_on"], [false, "upd_off"]].map(([v, k]) =>
         h("button", { class: `chip${on === v ? " on" : ""}`, "aria-pressed": String(on === v), onClick: async () => { const r = await guarded(() => api.post("/api/update/setting", { enabled: v })); if (r) draw(r.enabled); } }, t(k))));
-        api.get("/api/update").then((u) => draw(u.enabled)).catch(() => draw(true)); return row; })()))],
+        api.get("/api/update").then((u) => draw(u.enabled)).catch(() => draw(true)); return row; })(),
+      h("div", { class: "row", style: { marginTop: ".6rem" } }, h("button", { class: "btn small", onClick: () => guarded(() => openWhatsNew()) }, icon("spark"), t("wn_open")))))],
 
     ["data", t("data_folder"), h("div", { class: "panel" }, h("h3", {}, t("data_folder")),
       h("p", { class: "muted" }, t("data_folder_hint")),

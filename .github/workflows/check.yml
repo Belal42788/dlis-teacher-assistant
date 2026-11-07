@@ -22,12 +22,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.13" }
-      - run: python -m pip install -r requirements.txt playwright
+      - run: python -m pip install -r requirements.txt playwright pyyaml
       - name: Browser for the screen tests
         run: python -m playwright install --with-deps chromium
       - name: Code checker (unused names, hidden errors)
         if: runner.os == 'Linux'
         run: python -m pip install ruff && ruff check app scripts tests
+      - name: Workflow files (GitHub's own rules)
+        if: runner.os == 'Linux'
+        run: |
+          bash <(curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7
+          ./actionlint -shellcheck= -pyflakes=
       - name: Translations (every text in English and Arabic)
         if: runner.os == 'Linux'
         run: sh scripts/check_i18n.sh

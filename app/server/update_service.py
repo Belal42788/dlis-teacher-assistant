@@ -76,3 +76,36 @@ class UpdateMixin:
     def set_update_check(self, enabled: bool) -> dict:
         paths.write_prefs(update_check=bool(enabled))
         return {"enabled": bool(enabled)}
+
+    # ---------------------------------------------------------------- "What is new" after an update
+    def _whats_new_all(self) -> list[dict]:
+        """Every written release note up to this version, newest first: [{"version", "ar": [...], "en": [...]}]."""
+        f = paths.resources_dir() / "whats_new.json"
+        try:
+            notes = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return []
+        if not isinstance(notes, dict):
+            return []
+        mine = _parts(paths.VERSION)
+        rows = [(_parts(v), v, e) for v, e in notes.items() if isinstance(e, dict) and _parts(v) and _parts(v) <= mine]
+        rows.sort(reverse=True)
+        return [{"version": v, "ar": list(e.get("ar") or []), "en": list(e.get("en") or [])} for _, v, e in rows]
+
+    def whats_new(self, everything: bool = False) -> dict:
+        """`everything`: the last three releases (the "What is new" button in Settings). Otherwise only what the teacher has not seen yet."""
+        rows = self._whats_new_all()
+        if everything:
+            return {"entries": rows[:3]}
+        seen = _parts(paths.read_prefs().get("seen_version") or "")
+        return {"entries": [r for r in rows if _parts(r["version"]) > seen][:3]}
+
+    def stamp_first_run(self) -> None:
+        """A brand-new install has nothing "new" to show: remember this version before any folder is chosen."""
+        prefs = paths.read_prefs()
+        if not prefs.get("seen_version") and not prefs.get("data_folder"):
+            paths.write_prefs(seen_version=paths.VERSION)
+
+    def mark_whats_new_seen(self) -> dict:
+        paths.write_prefs(seen_version=paths.VERSION)
+        return {"ok": True}

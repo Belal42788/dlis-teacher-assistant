@@ -44,7 +44,7 @@ Feature files (each is a mixin of `Service`):
 |---|---|---|
 | `SeatingMixin` | `app/server/seating_service.py` | 56 |
 | `BehaviorMixin` | `app/server/behavior_service.py` | 89 |
-| `UpdateMixin` | `app/server/update_service.py` | 78 |
+| `UpdateMixin` | `app/server/update_service.py` | 111 |
 | `InsightsMixin` | `app/server/grades_service.py` | 264 |
 | `GradesMixin` | `app/server/grades_service.py` | 264 |
 | `ToolsMixin` | `app/server/tools_service.py` | 65 |
@@ -100,7 +100,15 @@ Habits that keep it simple: one feature = one `*_service.py` + one page + its ke
 * **A page:** `js/pages/x.js` with `export async function renderX(root)`, an entry in `PAGES` in `js/main.js`, keys in `i18n.js` (both languages), a route in `http.py`, a Service method, a test.
 * **A provider:** one entry in `ai_providers.json`.
 * **A language:** add a dictionary in `i18n.js` and set `dir` in `setLang`.
-* **Version:** `app/core/paths.py` and `installer/dlis.iss` (a test checks they match).
+* **Version:** `app/core/paths.py`, `installer/dlis.iss` and a new entry in `resources/whats_new.json` (`{"1.0.1": {"ar": [...], "en": [...]}}`, the "What is new" window teachers see once after updating). `python scripts/check_release.py v1.0.1` says what is still missing; tests enforce the same.
+
+## Making a release (one click)
+1. Change the three things above, upload to GitHub, wait for the green Check.
+2. GitHub, "Releases", "Draft a new release", new tag `v1.0.1` (same number), write a few plain lines in the description, "Publish release".
+3. The **Release** workflow checks the numbers (`scripts/check_release.py`), builds Windows and Mac (`build.yml`, called as a reusable workflow), attaches both installers to the release, writes `portal/latest.json` (`scripts/write_latest.py`) and starts the Pages deploy, so every installed app shows "a newer version is ready" within a day.
+4. If the robot cannot push (a protected main branch), allow "GitHub Actions" to bypass it, or edit `portal/latest.json` by hand.
+
+Other robots: **Dependabot** (`.github/dependabot.yml`) opens a weekly pull request for newer libraries and workflow tools; **Security check** (`security.yml`, every Monday) runs `pip-audit` on `requirements.txt`; **Check** also runs `actionlint` so a mistake in a workflow file is caught before it is ever used.
 
 ## Rules we keep
 * Simple for teachers who are not technical; Arabic (right to left) and English; 12-hour times.
@@ -254,6 +262,8 @@ The server listens on 127.0.0.1 only and every request carries the secret token 
 | PUT | `/api/seating` | `seating_save` |
 | GET | `/api/update` | `check_update` |
 | POST | `/api/update/dismiss` | `dismiss_update` |
+| GET | `/api/whats-new` | `whats_new` |
+| POST | `/api/whats-new/seen` | `mark_whats_new_seen` |
 | POST | `/api/update/setting` | `set_update_check` |
 | POST | `/api/open-url` | `open_url` |
 | GET | `/api/tasks` | `list_tasks` |
