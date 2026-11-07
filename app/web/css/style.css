@@ -319,7 +319,7 @@ details.more textarea { margin-bottom: .2rem; }
 .due.soon { color: #a8741a; font-weight: 600; }
 .due.late { color: var(--margin); font-weight: 700; }
 h3.sec.late-h { color: var(--margin); }
-.task-add { display: grid; grid-template-columns: 1fr 120px 150px auto; gap: .5rem; }
+.task-add { display: grid; grid-template-columns: minmax(160px, 1fr) 120px auto auto; gap: .5rem; align-items: center; }
 .tasks-note { display: flex; align-items: center; gap: .6rem; }
 .lesson .go { display: inline-flex; }
 @media (max-width: 900px) { .pick-row, .task-add { grid-template-columns: 1fr; } }
@@ -765,3 +765,24 @@ html[dir="ltr"] .btn { white-space: normal; }
 .slow-nav .sub::after { opacity: 1; animation: navbar 1s linear infinite; }
 @keyframes navbar { from { background-position: -40% 0; } to { background-position: 140% 0; } }
 @media (prefers-reduced-motion: reduce) { .slow-nav .sub::after { animation: none; background-size: 100% 100%; } }
+
+/* a page with nothing in it yet */
+.empty-state { display: grid; justify-items: center; gap: .5rem; text-align: center; padding: 2rem 1rem; border: 1px dashed var(--rule); border-radius: 12px; background: var(--sheet); }
+.empty-state h3 { margin: 0; }
+.empty-state p { margin: 0 0 .4rem; max-width: 34rem; }
+.es-ico { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--blue-wash); color: var(--blue-dark); }
+.es-ico .i { width: 26px; height: 26px; }
+
+/* grey blocks while a slow page loads */
+.skel-bar { background: linear-gradient(90deg, #e6eef5 25%, #f3f8fc 50%, #e6eef5 75%); background-size: 200% 100%; border-radius: 8px; margin-bottom: .6rem; animation: skel 1.3s linear infinite; }
+.skel-card { background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; padding: 1rem; margin-top: 1rem; }
+@keyframes skel { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skel-bar { animation: none; } }
+
+/* compact screen: tighter rows and panels, same text size */
+.compact .panel { padding: .7rem .85rem; }
+.compact .tasks-table td { padding: .3rem .6rem; }
+.compact .tasks-table th { padding: .3rem .6rem; }
+.compact .page-head { margin-bottom: .5rem; }
+.compact .btn { min-height: 30px; }
+.compact .banner { padding: .45rem .7rem; margin-bottom: .6rem; }

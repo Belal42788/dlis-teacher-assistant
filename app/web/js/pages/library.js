@@ -2,6 +2,7 @@ import { h, icon, confirmBox, toast } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { hubTabs } from "../components/hubtabs.js";
 import { t } from "../i18n.js";
+import { emptyState } from "../components/empty.js";
 import { roomLabel, fmtDate } from "../labels.js";
 import { dateField } from "../components/date3.js";
 
@@ -51,7 +52,7 @@ export async function renderLibrary(root) {
       h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_library")), h("p", {}, t("lb_lead")))),
       online ? null : h("div", { class: "banner info" }, icon("info"), h("div", {}, t("lb_offline"))),
       h("div", { class: "row" }, h("span", { class: "label" }, t("pb_kind")), sel),
-      list.length ? list.map(row) : h("p", { class: "muted" }, t("lb_none"))));
+      list.length ? list.map(row) : emptyState({ icon: "folder", title: t("lb_none_title"), text: t("lb_none"), action: { label: t("nav_docs"), icon: "file", onClick: () => { location.hash = "#/docs"; } } })));
     if (wanted && openForm === wanted) document.querySelector(".pub-row .panel")?.scrollIntoView({ block: "center" });
   }
   await load();

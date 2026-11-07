@@ -2,6 +2,7 @@ import { hubTabs } from "../components/hubtabs.js";
 import { h, icon, confirmBox } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { t } from "../i18n.js";
+import { emptyState } from "../components/empty.js";
 import { roomLabel, fmtDate } from "../labels.js";
 import { logDialog, lastLine } from "../components/log_dialog.js";
 
@@ -24,7 +25,7 @@ export async function renderLog(root) {
     const { entries } = await guarded(() => api.get(`/api/log?room=${room}`)) || { entries: [] };
     body.replaceChildren(
       entries.length ? lastLine(entries[0]) : null,
-      h("div", { class: "row", style: { margin: ".6rem 0" } },
+      !entries.length ? null : h("div", { class: "row", style: { margin: ".6rem 0" } },
         h("button", { class: "btn small", onClick: () => logDialog({ room_id: room, date: new Date().toISOString().slice(0, 10), period: "", last: entries[0], onSaved: draw }) }, icon("plus"), t("log_add"))),
       entries.length ? h("div", { class: "paper" }, h("table", { class: "tasks-table" },
         h("thead", {}, h("tr", {}, h("th", {}, t("log_date")), h("th", {}, t("log_topic")), h("th", {}, t("log_reached")), h("th", {}, t("log_note")), h("th", { class: "c-act" }, ""))),
@@ -36,7 +37,7 @@ export async function renderLog(root) {
           h("td", { class: "c-act" },
             h("button", { class: "btn small ghost", onClick: () => logDialog({ room_id: room, date: e.date, period: e.period, entry: e, onSaved: draw }) }, t("edit")),
             h("button", { class: "btn icon ghost", "aria-label": t("remove"), onClick: async () => { if (await confirmBox(t("log_delete_confirm"), { okLabel: t("remove") })) { await guarded(() => api.post(`/api/log/${e.id}/delete`, {})); draw(); } } }, icon("trash")))))))) :
-        h("div", { class: "paper empty" }, h("h3", {}, t("log_none"))));
+        emptyState({ icon: "list", title: t("log_none"), text: t("es_log_text"), action: { label: t("log_add"), icon: "plus", onClick: () => logDialog({ room_id: room, date: new Date().toISOString().slice(0, 10), period: "", last: null, onSaved: draw }) } }));
   }
   root.replaceChildren(h("div", { class: "page" }, hubTabs("classes", "log"),
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_log")), h("p", {}, t("log_lead")))),
