@@ -7,6 +7,9 @@ from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import nonet   # the tests never reach the real internet (same answer here, on GitHub, anywhere)
+nonet.install()
 
 from app.core.academic import AcademicCalendar
 from app.core.errors import AppError
@@ -922,9 +925,11 @@ class TestAi(unittest.TestCase):
         self.assertEqual((len(plan["slides"]), plan["stage"]), (2, "upper"))
         self.assertNotIn("Sara", json.dumps(self.sent[-1][3]))
         self.assertIn("ONE JSON object", self.sent[-1][3]["messages"][0]["content"])
-        # pictures: not set up -> clear error; set up -> file saved, names hidden from the picture prompt
-        with self.assertRaises(AppError):
+        # pictures: Cloudflare not set up -> clear error; set up -> file saved, names hidden from the picture prompt
+        self.svc.image_save({"provider": "cloudflare"})     # (the default service needs no setup, and would really go online)
+        with self.assertRaises(AppError) as e:
             self.svc.slide_image({"prompt": "a keyboard"})
+        self.assertEqual(e.exception.code, "img_not_set")
         with self.assertRaises(AppError):
             self.svc.image_save({"account_id": "bad id", "api_token": "t"})
         st = self.svc.image_save({"account_id": "a" * 32, "api_token": "cf_secret"})
@@ -1250,6 +1255,7 @@ class TestRobustness(unittest.TestCase):
         self.svc.build_structure({"g4": ["A"]}); self.svc.put_calendar(self.svc.school_calendar())
 
     def tearDown(self):
+        self.svc.wait_for_backup()      # the weekly copy runs in the background; Windows cannot delete a folder while it writes
         self.d.cleanup()
 
     def test_damaged_file_is_restored_from_backup_and_kept_aside(self):
