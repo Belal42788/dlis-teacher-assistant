@@ -266,6 +266,7 @@ class Handler(BaseHTTPRequestHandler):
             ("POST", r"/api/docs/quiz-export", lambda m, b: svc.export_quiz(b)),
             ("POST", r"/api/docs/revision", lambda m, b: svc.make_revision(b)),
             ("POST", r"/api/docs/cover-sheet", lambda m, b: svc.make_cover_sheet(b)),
+            ("POST", r"/api/docs/certificates", lambda m, b: svc.make_certificates(b)),
             ("POST", r"/api/docs/grading-sheet", lambda m, b: svc.make_grading_sheet(b)),
             ("POST", r"/api/open", lambda m, b: svc.open_file(b.get("path", ""), bool(b.get("folder")))),
             ("GET", r"/api/ai", lambda m, b: svc.ai_state()),

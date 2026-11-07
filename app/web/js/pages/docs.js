@@ -94,7 +94,7 @@ export async function renderDocs(root) {
       h("div", { class: "row" },
         h("button", { class: "btn small primary", onClick: () => open(r.path, false) }, icon("file"), t("d_open_file")),
         h("button", { class: "btn small", onClick: () => open(r.path, true) }, icon("folder"), t("d_open_folder")),
-        /grading|lesson_plan|trimester_plan|\.txt$/i.test(r.name) ? null : h("a", { class: "btn small", href: `#/library?share=${encodeURIComponent(r.rel.replace(/\\/g, "/"))}` }, icon("send"), t("lb_share")))));
+        /grading|lesson_plan|trimester_plan|Certificates_|Cards_|\.txt$/i.test(r.name) ? null : h("a", { class: "btn small", href: `#/library?share=${encodeURIComponent(r.rel.replace(/\\/g, "/"))}` }, icon("send"), t("lb_share")))));
     result.scrollIntoView({ block: "nearest" });
   }
   const open = (path, folder) => guarded(() => api.post("/api/open", { path, folder }));
@@ -166,6 +166,34 @@ export async function renderDocs(root) {
       h("label", { class: "row" }, withAns, t("d_with_answers")), h("label", { class: "row" }, twoVer, t("d_two_versions")), h("span", { class: "grow" }), quizBtn),
     h("div", { class: "row", style: { marginTop: ".5rem" } }, h("span", { class: "muted small" }, t("qx_title")), exportBtn("gift", t("qx_moodle")), exportBtn("forms", t("qx_forms"))));
 
+  // ---------- certificates and thank-you cards (names go only into the Word file, never to the AI)
+  const ctOcc = h("select", {}, ["excellence", "improvement", "behavior", "participation", "attendance", "thanks", "custom"].map((k) => h("option", { value: k }, t(`ct_o_${k}`))));
+  const ctKind = h("select", {}, h("option", { value: "certificate" }, t("ct_k_cert")), h("option", { value: "card" }, t("ct_k_card")));
+  const ctLang = h("select", {}, h("option", { value: "ar" }, "العربية"), h("option", { value: "en" }, "English"));
+  ctLang.value = getLang();
+  const ctTitle = h("input", { type: "text", placeholder: t("ct_title_ph") });
+  const ctText = h("input", { type: "text", placeholder: t("ct_text_ph"), style: { minWidth: "18rem" } });
+  const ctCustom = h("div", { class: "row", hidden: true }, ctTitle, ctText);
+  ctOcc.addEventListener("change", () => { ctCustom.hidden = ctOcc.value !== "custom"; });
+  const ctNames = h("div", { class: "gs-absent", hidden: true, "data-nodraft": "1" });
+  const ctAll = h("input", { type: "checkbox", checked: true });
+  ctAll.addEventListener("change", () => { ctNames.hidden = ctAll.checked; });
+  const ctExtra = h("textarea", { rows: 3, placeholder: t("ct_extra_ph") });
+  const ctBtn = h("button", { class: "btn primary", onClick: () => run(ctBtn, async () => {
+    const picked = [...ctNames.querySelectorAll("input:checked")].map((x) => x.value);
+    const classPart = ctAll.checked ? { room_id: sel.room } : picked.length ? { room_id: sel.room, students: picked } : { room_id: "" };
+    const r = await api.post("/api/docs/certificates", { ...classPart, occasion: ctOcc.value, kind: ctKind.value, lang: ctLang.value,
+      title: ctTitle.value.trim(), text: ctText.value.trim(), extra_names: ctExtra.value, date: new Date().toISOString().slice(0, 10) });
+    showResult(r, h("div", { class: "small" }, t("ct_count", { n: r.count })));
+  }) }, icon("file"), t("ct_create"));
+  const ctPanel = h("div", { class: "panel" }, h("h3", {}, t("ct_title")), h("p", { class: "muted small" }, t("ct_lead")),
+    h("div", { class: "row" }, h("label", { class: "field" }, h("span", { class: "label" }, t("ct_occasion")), ctOcc),
+      h("label", { class: "field" }, h("span", { class: "label" }, t("ct_kind")), ctKind), h("label", { class: "field" }, h("span", { class: "label" }, t("ct_lang")), ctLang)),
+    ctCustom,
+    h("label", { class: "row", style: { marginTop: ".5rem" } }, ctAll, h("b", {}, t("ct_all"))), ctNames,
+    h("label", { class: "field", style: { marginTop: ".5rem" } }, h("span", { class: "label" }, t("ct_extra")), ctExtra),
+    h("div", { class: "row", style: { marginTop: ".6rem" } }, h("span", { class: "grow" }), ctBtn));
+
   // ---------- grading sheet
   const gsCount = h("span", { class: "muted" });
   // "full mark" for everyone except the absent: the teacher ticks the parts to fill and the students who were absent (left empty)
@@ -178,6 +206,7 @@ export async function renderDocs(root) {
     const r = await guarded(() => api.get(`/api/rooms/${sel.room}/students`));
     gsNames = (r && r.names) || [];
     gsAbsent.replaceChildren(...gsNames.map((n) => h("label", { class: "row small" }, h("input", { type: "checkbox", value: n }), n)));
+    ctNames.replaceChildren(...gsNames.map((n) => h("label", { class: "row small" }, h("input", { type: "checkbox", value: n }), n)));
   }
   const gsExtra = () => gsFull.checked ? { fill: GS_PARTS.filter((k) => gsPart[k].checked), absent: [...gsAbsent.querySelectorAll("input:checked")].map((x) => x.value) } : {};
   const gsBtn = h("button", { class: "btn primary", onClick: () => run(gsBtn, async () => {
@@ -287,9 +316,9 @@ export async function renderDocs(root) {
       h("label", {}, h("span", { class: "label" }, t("d_week")), weekSel)), info, planBox);
   const slidesBox = h("div", {});   // the slide maker lives here as one more thing to make; it opens the first time it is chosen
   // one kind of file at a time: the page stays short and the teacher sees only what they chose
-  const panelList = [["wk", wkPanel, "wk_tab"], ["lp", lpPanel, "d_lp_title"], ["quiz", quizPanel, "d_quiz_title"], ["rv", rvPanel, "rv_title"], ["sl", slidesBox, "hub_make_slides"], ["gs", gsPanel, "d_gs_title"]];
+  const panelList = [["wk", wkPanel, "wk_tab"], ["lp", lpPanel, "d_lp_title"], ["quiz", quizPanel, "d_quiz_title"], ["rv", rvPanel, "rv_title"], ["sl", slidesBox, "hub_make_slides"], ["gs", gsPanel, "d_gs_title"], ["ct", ctPanel, "ct_title"]];
   // three steps: 1) class and week, 2) what to make, 3) fill it in and make it. Each step shows one thing.
-  const KIND_ICON = { wk: "spark", lp: "file", quiz: "list", rv: "check", sl: "slides", gs: "tasks" };
+  const KIND_ICON = { wk: "spark", lp: "file", quiz: "list", rv: "check", sl: "slides", gs: "tasks", ct: "user" };
   const stepNames = [t("dz_step1"), t("dz_step2"), t("dz_step3")];
   const stepBar = h("div", { class: "steps", role: "list" });
   const step1 = h("div", {}, pickPanel, h("div", { class: "foot" }, h("span", { class: "grow" }), h("button", { class: "btn pri", "data-step-next": "", onClick: () => go(2) }, t("dz_next"), " ", icon("chevron"))));
@@ -312,7 +341,7 @@ export async function renderDocs(root) {
     if (n === 3) {
       const kind = panelList.find(([k]) => k === memoDocs.tab);
       summary.replaceChildren(h("span", { class: "chip" }, kind ? t(kind[2]) : ""), " ",
-        memoDocs.tab === "sl" ? "" : `${roomSel.selectedOptions[0]?.textContent || ""} · ${weekSel.selectedOptions[0]?.textContent || ""}`,
+        memoDocs.tab === "sl" ? "" : memoDocs.tab === "ct" ? (roomSel.selectedOptions[0]?.textContent || "") : `${roomSel.selectedOptions[0]?.textContent || ""} · ${weekSel.selectedOptions[0]?.textContent || ""}`,
         h("button", { class: "btn sm", onClick: () => go(2) }, t("dz_change")));
     }
     window.scrollTo?.(0, 0);

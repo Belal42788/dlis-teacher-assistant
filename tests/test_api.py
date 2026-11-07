@@ -84,6 +84,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(f["names"], ["لمى", "يوسف"])
         self.call("PUT", "/api/rooms/g4-a/students", {"names": r["names"]})
         self.assertEqual(self.call("GET", "/api/rooms/g4-a/students")["names"], ["سارة", "عمر"])
+        self._certificates()
         self.call("GET", "/api/rooms/nope/students", expect=404)
         self.call("GET", "/api/rooms/..%2F..%2Fx/students", expect=404)
         self.assertEqual([x for x in self.call("GET", "/api/structure")["rooms"] if x["id"] == "g4-a"][0]["student_count"], 2)
@@ -131,6 +132,23 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(self.call("PUT", "/api/structure", st, expect=400)["error"], "missing_grade")
 
     @unittest.skipUnless(LEGACY.exists(), "no legacy sample")
+    # ---- certificates (runs inside the flow, while the first class has its students)
+    def _certificates(self):
+        from docx import Document
+        def texts(r): return "\n".join(p.text for p in Document(r["path"]).paragraphs) + "\n".join(c.text for t in Document(r["path"]).tables for row in t.rows for c in row.cells)
+        r = self.call("POST", "/api/docs/certificates", {"room_id": "g4-a", "occasion": "excellence", "lang": "ar"})
+        self.assertEqual(r["count"], 2)
+        self.assertTrue(Path(r["path"]).is_file())
+        self.assertIn("شهادة تفوّق", texts(r)); self.assertIn("سارة", texts(r))
+        r = self.call("POST", "/api/docs/certificates", {"room_id": "g4-a", "students": ["عمر"], "extra_names": "Guest One\nGuest Two", "occasion": "thanks", "kind": "card", "lang": "en"})
+        self.assertEqual(r["count"], 3)
+        self.assertIn("Guest Two", texts(r)); self.assertIn("Thank You", texts(r))
+        r = self.call("POST", "/api/docs/certificates", {"room_id": "", "extra_names": "Only Me", "occasion": "custom", "title": "Best Reader", "text": "for reading 20 books"})
+        self.assertEqual(r["count"], 1); self.assertIn("for reading 20 books", texts(r))
+        self.call("POST", "/api/docs/certificates", {"room_id": "g4-a", "occasion": "custom"}, expect=400)
+        self.call("POST", "/api/docs/certificates", {"room_id": "", "occasion": "excellence"}, expect=409)
+        self.call("POST", "/api/docs/certificates", {"room_id": "g4-a", "occasion": "nope"}, expect=400)
+
     def test_03_legacy_and_folder_browser(self):
         self.call("POST", "/api/import/legacy", {"path": tempfile.mkdtemp()}, expect=400)
         rep = self.call("POST", "/api/import/legacy", {"path": str(LEGACY), "dry_run": True})
