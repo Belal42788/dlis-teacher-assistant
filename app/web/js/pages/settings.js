@@ -1,4 +1,4 @@
-import { getFontSize, setFontSize } from "../fontsize.js";
+import { getFontSize, setFontSize, getDensity, setDensity } from "../fontsize.js";
 import { h, icon, toast, modal } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { t, setLang, getLang } from "../i18n.js";
@@ -76,6 +76,9 @@ export async function renderSettings(root, { reloadApp }) {
     h("div", { class: "panel" }, h("h3", {}, t("fs_title")), h("p", { class: "muted small" }, t("fs_hint")),
       (() => { const row = h("div", { class: "row" }); const draw = () => row.replaceChildren(...[["s", "fs_s"], ["m", "fs_m"], ["l", "fs_l"]].map(([v, k]) =>
         h("button", { class: `chip${getFontSize() === v ? " on" : ""}`, "aria-pressed": String(getFontSize() === v), onClick: () => { setFontSize(v); draw(); } }, t(k)))); draw(); return row; })()),
+    h("div", { class: "panel" }, h("h3", {}, t("dn_title")), h("p", { class: "muted small" }, t("dn_hint")),
+      (() => { const row = h("div", { class: "row" }); const draw = () => row.replaceChildren(...[["comfortable", "dn_comfortable"], ["compact", "dn_compact"]].map(([v, k]) =>
+        h("button", { class: `chip${getDensity() === v ? " on" : ""}`, "aria-pressed": String(getDensity() === v), onClick: () => { setDensity(v); draw(); } }, t(k)))); draw(); return row; })()),
     h("div", { class: "panel" }, h("h3", {}, t("upd_set_title")), h("p", { class: "muted small" }, t("upd_set_hint")),
       (() => { const row = h("div", { class: "row" }); const draw = (on) => row.replaceChildren(...[[true, "upd_on"], [false, "upd_off"]].map(([v, k]) =>
         h("button", { class: `chip${on === v ? " on" : ""}`, "aria-pressed": String(on === v), onClick: async () => { const r = await guarded(() => api.post("/api/update/setting", { enabled: v })); if (r) draw(r.enabled); } }, t(k))));

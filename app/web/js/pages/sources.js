@@ -2,6 +2,7 @@ import { hubTabs } from "../components/hubtabs.js";
 import { h, icon, toast, confirmBox, readFileB64 } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { t } from "../i18n.js";
+import { emptyState } from "../components/empty.js";
 
 export async function renderSources(root) {
   const ai = await guarded(() => api.get("/api/ai")) || { ready: false };
@@ -11,7 +12,7 @@ export async function renderSources(root) {
 
   async function loadList() {
     const { sources } = await api.get("/api/sources");
-    listBox.replaceChildren(sources.length ? sources.map(card) : h("p", { class: "muted" }, t("src_empty")));
+    listBox.replaceChildren(sources.length ? sources.map(card) : emptyState({ icon: "slides", title: t("es_src_title"), text: t("src_empty") }));
   }
   // read the picture pages (a few at a time), then let the AI sort what it found
   async function process(id) {

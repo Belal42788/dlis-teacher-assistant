@@ -10,3 +10,14 @@ export function setFontSize(v) {
   try { localStorage.setItem(KEY, v); } catch { /* private window: the size still changes for this session */ }
   document.documentElement.style.fontSize = (SIZES[v] || 16) + "px";
 }
+
+// Screen density: comfortable (default) or compact (more on one screen, for a small laptop). Same idea, same place.
+const DKEY = "dlis.density";
+export function getDensity() {
+  try { return localStorage.getItem(DKEY) === "compact" ? "compact" : "comfortable"; } catch { return "comfortable"; }
+}
+export function applyDensity() { document.documentElement.classList.toggle("compact", getDensity() === "compact"); }
+export function setDensity(v) {
+  try { localStorage.setItem(DKEY, v); } catch { /* still changes for this session */ }
+  document.documentElement.classList.toggle("compact", v === "compact");
+}

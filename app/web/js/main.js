@@ -1,7 +1,7 @@
 import { h, icon, confirmBox, modal, toast } from "./dom.js";
 import { api, guarded, inPage, readsFor, warm } from "./api.js";
 import { t, setLang, hasKey } from "./i18n.js";
-import { applyFontSize } from "./fontsize.js";
+import { applyFontSize, applyDensity } from "./fontsize.js";
 import { state } from "./state.js";
 import { startWizard } from "./wizard.js";
 import { renderToday } from "./pages/today.js";
@@ -117,6 +117,14 @@ function folderMissingScreen(path) {
       h("button", { class: "btn", onClick: () => boot("folder") }, t("folder_missing_other")))))));
 }
 
+// What a page looks like while it loads (only shown when loading is slow).
+function skeleton() {
+  const bar = (w, hgt = "1rem") => h("div", { class: "skel-bar", style: { width: w, height: hgt } });
+  return h("div", { class: "page skeleton", "aria-hidden": "true" }, bar("38%", "1.8rem"), bar("62%"),
+    h("div", { class: "skel-card" }, bar("30%"), bar("92%"), bar("84%")),
+    h("div", { class: "skel-card" }, bar("26%"), bar("90%"), bar("70%")));
+}
+
 // "A newer version is out": one quiet notice, never blocks anything, and "Later" hides it for that version.
 function checkForUpdate() {
   api.get("/api/update").then((u) => {
@@ -222,6 +230,7 @@ function restoreDraft(pageId) {
   main.scrollTop = d.scroll;
 }
 applyFontSize();
+applyDensity();
 let shownPage = null;
 
 // What each page reads first, so the very first visit can also be prepared. After a page has been opened once, what it
@@ -275,7 +284,8 @@ async function route() {
     main.classList.add("busy");
     inPage(page.id);
     const slow = setTimeout(() => document.body.classList.add("slow-nav"), 150);   // a thin progress line, only if loading is not instant
-    try { await page.render(main, { reloadApp }); } finally { clearTimeout(slow); document.body.classList.remove("slow-nav"); main.classList.remove("busy"); main.removeEventListener("input", mark, true); main.removeEventListener("change", mark, true); }
+    const skel = setTimeout(() => { if (main.classList.contains("busy")) main.replaceChildren(skeleton()); }, 450);   // still loading after almost half a second: grey blocks, not the old page
+    try { await page.render(main, { reloadApp }); } finally { clearTimeout(slow); clearTimeout(skel); document.body.classList.remove("slow-nav"); main.classList.remove("busy"); main.removeEventListener("input", mark, true); main.removeEventListener("change", mark, true); }
     if (shownPage !== page.id) main.scrollTop = 0; // a new tab starts at the top, not where the last one was scrolled to
     shownPage = page.id;
     nameLooseControls(main);
