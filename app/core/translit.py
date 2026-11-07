@@ -28,7 +28,7 @@ WORDS = {
     "سلمان": "Salman", "شادي": "Shady", "صبحي": "Sobhy", "عاطف": "Atef", "عبد": "Abd", "عزيز": "Aziz", "علاء": "Alaa", "غانم": "Ghanem",
     "فيصل": "Faisal", "لؤي": "Louay", "محسن": "Mohsen", "مجدي": "Magdy", "ممدوح ": "Mamdouh", "نور": "Nour", "هادي": "Hadi", "وائل": "Wael",
     # girls
-    "مريم": "Mariam", "فاطمة": "Fatma", "عائشة": "Aisha", "عايشة": "Aisha", "سارة": "Sara", "ساره": "Sara", "نور": "Nour", "نورا": "Nora",
+    "مريم": "Mariam", "فاطمة": "Fatma", "عائشة": "Aisha", "عايشة": "Aisha", "سارة": "Sara", "ساره": "Sara", "نورا": "Nora",
     "هبة": "Heba", "منى": "Mona", "منة": "Menna", "ياسمين": "Yasmin", "جنى": "Jana", "جني": "Jana", "لينا": "Lina", "ليلى": "Layla",
     "ليلي": "Layla", "رنا": "Rana", "رهف": "Rahaf", "ريم": "Reem", "سلمى": "Salma", "سلمي": "Salma", "شهد": "Shahd", "ملك": "Malak",
     "هنا": "Hana", "هنى": "Hana", "دعاء": "Doaa", "آية": "Aya", "اية": "Aya", "ايه": "Aya", "اسراء": "Esraa", "إسراء": "Esraa", "الاء": "Alaa",

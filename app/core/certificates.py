@@ -59,7 +59,7 @@ def embed_font(docx: Path, family: str = FONT) -> None:
     if not all(f.is_file() for f in files.values()):
         return
     tmp = docx.with_suffix(".tmp")
-    entries, rels, content = [], [], []
+    entries, rels = [], []
     with zipfile.ZipFile(docx) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
         for i, (style, f) in enumerate(files.items(), 1):
             guid = str(uuid.uuid4()).upper()

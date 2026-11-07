@@ -46,10 +46,10 @@ class Cloud:
             except Exception:
                 pass
             if e.code in (400, 401, 403) and "/auth/" in path:
-                raise AppError("cloud_bad_login", "The email or password is not right.", status=401)
-            raise AppError("cloud_error", f"The server said no ({e.code}). {msg}".strip(), status=502)
+                raise AppError("cloud_bad_login", "The email or password is not right.", status=401) from None
+            raise AppError("cloud_error", f"The server said no ({e.code}). {msg}".strip(), status=502) from None
         except (urllib.error.URLError, TimeoutError, OSError):
-            raise AppError("cloud_offline", "Could not reach the server. Check the internet and the server address.", status=502)
+            raise AppError("cloud_offline", "Could not reach the server. Check the internet and the server address.", status=502) from None
         return json.loads(raw) if raw else None
 
     def _take(self, j: dict) -> None:
@@ -94,9 +94,9 @@ class Cloud:
         try:
             urllib.request.urlopen(req, timeout=max(self.timeout, 60)).read()
         except urllib.error.HTTPError as e:
-            raise AppError("cloud_error", f"The server said no ({e.code}) when saving the file.", status=502)
+            raise AppError("cloud_error", f"The server said no ({e.code}) when saving the file.", status=502) from e
         except (urllib.error.URLError, TimeoutError, OSError):
-            raise AppError("cloud_offline", "Could not reach the server. Check the internet and the server address.", status=502)
+            raise AppError("cloud_offline", "Could not reach the server. Check the internet and the server address.", status=502) from None
 
     def remove_object(self, bucket: str, path: str) -> None:
         try:

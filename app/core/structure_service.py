@@ -80,14 +80,5 @@ def sort_structure(s: Structure) -> Structure:
     return s
 
 
-def slugify(text: str, taken: set[str], fallback: str = "x") -> str:
-    base = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-") or fallback
-    cand, n = base, 2
-    while cand in taken:
-        cand = f"{base}-{n}"
-        n += 1
-    return cand
-
-
 def preset_payload() -> dict:
     return {"stages": STAGE_PRESETS, "grades": GRADE_PRESETS, "room_letters": list(ROOM_LETTERS)}

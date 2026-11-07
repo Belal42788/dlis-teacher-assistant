@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 os.environ["DLIS_APP_HOME"] = tempfile.mkdtemp()
 
-from app.server.http import AppServer  # noqa: E402
+from app.server.http import AppServer
 
 LEGACY = Path(os.environ.get("DLIS_LEGACY_SAMPLE", "/home/claude/proj/DLIS_Data"))
 

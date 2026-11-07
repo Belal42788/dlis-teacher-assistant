@@ -1,0 +1,10 @@
+# Only the code-checker's settings live here (nothing is packaged from this file).
+[tool.ruff]
+line-length = 200            # this code is written in long lines on purpose; we only look for real mistakes
+target-version = "py313"
+extend-exclude = ["resources"]
+
+[tool.ruff.lint]
+# F: unused or missing names, E9: syntax errors, B904: keep the original error when raising a new one,
+# B007/B017: loop variable not used / "any error" in a test, RUF100: leftover "noqa"
+select = ["F", "E9", "B904", "B007", "B017", "RUF100"]

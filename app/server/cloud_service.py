@@ -388,7 +388,6 @@ class CloudMixin:
 
     def _codes_sheet(self, sheet):
         from docx import Document
-        from docx.enum.text import WD_ALIGN_PARAGRAPH
         doc = Document()
         for i, (room, rows) in enumerate(sheet):
             if i:

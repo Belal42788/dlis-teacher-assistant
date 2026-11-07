@@ -1,7 +1,6 @@
 """Revision sheet (ملف مراجعة): key words, key points and short questions, in the DLIS Word look."""
 from __future__ import annotations
 
-from datetime import date
 
 from ..core import documents as D
 from ..core.errors import AppError

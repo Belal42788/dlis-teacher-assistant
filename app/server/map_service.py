@@ -92,6 +92,6 @@ class MapMixin:
         try:
             data = clean_map(b)
         except ValueError:
-            raise AppError("bad_value", "The map is not in the right shape.", status=400)
+            raise AppError("bad_value", "The map is not in the right shape.", status=400) from None
         self._need_store().write_json(self._map_path(), data)
         return self.get_map()

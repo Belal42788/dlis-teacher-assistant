@@ -237,7 +237,6 @@ def gradient_for(big, comp):
     cc, *_ = np.linalg.lstsq(A, cols, rcond=None)
     c_lo, c_hi = cc[0] * lo + cc[1], cc[0] * hi + cc[1]
     # centre line through the shape's centre, along d
-    mid = (lo + hi) / 2
     p0 = np.array([cx, cy]) + d * (lo - (cx * d[0] + cy * d[1]))
     p1 = np.array([cx, cy]) + d * (hi - (cx * d[0] + cy * d[1]))
     return (p0, p1, np.clip(c_lo, 0, 255), np.clip(c_hi, 0, 255)), cols.mean(axis=0)

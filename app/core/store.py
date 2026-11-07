@@ -104,11 +104,6 @@ class DataStore:
     def students_path(self, room_id: str) -> Path:
         return self.room_dir(room_id) / "students.csv"
 
-    def grade_dir(self, grade_id: str) -> Path:
-        if not is_safe_id(grade_id):
-            raise AppError("bad_id", f"Unsafe grade id: {grade_id!r}")
-        return self.root / "grades" / grade_id
-
     # ------------------------------------------------------------ data version
     def _stored_version(self) -> int:
         try:
@@ -186,7 +181,7 @@ class DataStore:
             except PermissionError:
                 if attempt == 7:
                     tmp.unlink(missing_ok=True)
-                    raise AppError("file_busy", f"Another program is using {path.name}. Try again in a moment.", status=409)
+                    raise AppError("file_busy", f"Another program is using {path.name}. Try again in a moment.", status=409) from None
                 time.sleep(0.25 * (attempt + 1))
 
     def _write_bytes(self, path: Path, content: bytes) -> None:
@@ -225,7 +220,7 @@ class DataStore:
                 break
             except OSError:
                 if attempt == 5:
-                    raise AppError("file_busy", f"Another program is using {path.name}. Try again in a moment.", status=409)
+                    raise AppError("file_busy", f"Another program is using {path.name}. Try again in a moment.", status=409) from None
                 time.sleep(0.2 * (attempt + 1))
         try:
             data = json.loads(text)

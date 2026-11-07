@@ -26,7 +26,7 @@ def check_iso_date(value: str) -> str:
     try:
         date.fromisoformat(value)
     except (TypeError, ValueError):
-        raise ValueError(f"not a date (YYYY-MM-DD): {value!r}")
+        raise ValueError(f"not a date (YYYY-MM-DD): {value!r}") from None
     return value
 
 
@@ -166,8 +166,3 @@ class Calendar(_Base):
     trimesters: list[Trimester] = Field(default_factory=list)
     holidays: list[Holiday] = Field(default_factory=list)
     events: list[Event] = Field(default_factory=list)
-
-
-def default_period_names(n: int) -> list[Period]:
-    return [Period(name=str(i + 1)) for i in range(n)]
-

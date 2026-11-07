@@ -6,7 +6,6 @@ import re
 import zipfile
 from datetime import date, timedelta
 
-from ..core import paths
 from ..core.errors import AppError
 from ..core.timetable import sessions_on
 

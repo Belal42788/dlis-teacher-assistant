@@ -1,5 +1,5 @@
 """Drive the real app in a browser: whole first-run guide in Arabic, then every page, then English."""
-import datetime as _dt, os, subprocess, sys, tempfile, time, re, json
+import datetime as _dt, os, subprocess, sys, tempfile, re
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 

@@ -49,11 +49,6 @@ def room_session_days(room_id: str, tt: Timetable, working_days: list[str]) -> l
     return [d for d in working_days if room_id in (tt.grid.get(d, {}) or {}).values()]
 
 
-def grade_session_days(grade_id: str, tt: Timetable, structure: Structure, working_days: list[str]) -> list[str]:
-    ids = {r.id for r in structure.rooms if r.grade_id == grade_id}
-    return [d for d in working_days if ids & set((tt.grid.get(d, {}) or {}).values())]
-
-
 def scrub_timetable(tt: Timetable, structure: Structure) -> Timetable:
     """Remove references to rooms that no longer exist and cells for periods that no longer exist."""
     valid = {r.id for r in structure.rooms}

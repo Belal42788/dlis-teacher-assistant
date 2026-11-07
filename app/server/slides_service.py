@@ -8,7 +8,6 @@ from __future__ import annotations
 import base64
 import re
 import uuid
-from datetime import date
 from pathlib import Path
 
 from ..core import documents as D
@@ -338,7 +337,7 @@ class SlidesMixin:
         try:
             build_deck(out, deck)
         except PermissionError:
-            raise AppError("file_in_use", f"Close this file in PowerPoint first: {out.name}", status=409)
+            raise AppError("file_in_use", f"Close this file in PowerPoint first: {out.name}", status=409) from None
         try:
             self._made_source(out, [{"text": deck["title"] + ("\n" + deck["subtitle"] if deck["subtitle"] else "")}] + [
                 {"text": "\n".join([x["title"]] + x["bullets"] + ([x["explain"]] if x["explain"] else [])), "notes": x["notes"]} for x in slides])
@@ -363,7 +362,7 @@ def _as_jpeg(raw: bytes) -> bytes:
         out = io.BytesIO()
         im.save(out, "JPEG", quality=88)
         return out.getvalue()
-    except Exception:  # noqa: BLE001
+    except Exception:
         return raw
 
 

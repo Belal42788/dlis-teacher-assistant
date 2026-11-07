@@ -13,7 +13,7 @@ home = tempfile.mkdtemp()
 data = Path(tempfile.mkdtemp()) / "مدرسة دار لقمان (نسخة 2026) - بيانات المدرس"   # Arabic letters, spaces, brackets
 os.environ.update(DLIS_APP_HOME=home, HOME=home, USERPROFILE=home, PYTHONUTF8="1")
 sys.path.insert(0, str(ROOT))
-from app.server.http import AppServer  # noqa: E402
+from app.server.http import AppServer
 
 server = AppServer()
 server.start_in_thread()

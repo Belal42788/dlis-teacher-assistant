@@ -1,7 +1,7 @@
 """Makes the teachers' user guide (PDF, Arabic + English) from app/web/js/help_content.json and the e2e screenshots.
 Run:  python3 scripts/e2e.py   (makes the screenshots in /tmp/shots)  then  python3 scripts/build_guide.py
 """
-import base64, html, json, re, sys
+import base64, html, json, re
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 

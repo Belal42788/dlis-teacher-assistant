@@ -24,7 +24,6 @@ EXTS = (".pdf", ".pptx", ".docx", ".txt", ".md")
 
 
 def _jpeg(img, side: int = 1400) -> bytes:
-    from PIL import Image
     img = img.convert("RGB")
     img.thumbnail((side, side))
     buf = io.BytesIO()
@@ -40,7 +39,7 @@ def extract_pdf(raw: bytes):
     import pypdfium2 as pdfium
     try:
         pdf = pdfium.PdfDocument(raw)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         raise AppError("file_unreadable", "This PDF cannot be opened.", status=400) from e
     pages = []
     for i in range(min(len(pdf), MAX_PAGES)):
@@ -60,7 +59,7 @@ def extract_pptx(raw: bytes):
     from PIL import Image
     try:
         prs = Presentation(io.BytesIO(raw))
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         raise AppError("file_unreadable", "This PowerPoint cannot be opened.", status=400) from e
     pages = []
     for slide in list(prs.slides)[:MAX_PAGES]:
@@ -75,7 +74,7 @@ def extract_pptx(raw: bytes):
                     a = (sh.width or 0) * (sh.height or 0)
                     if a > area:
                         best, area = sh.image.blob, a
-                except Exception:  # noqa: BLE001
+                except Exception:
                     pass
         notes = slide.notes_slide.notes_text_frame.text.strip() if slide.has_notes_slide else ""
         text = _clean("\n".join(parts))
@@ -83,7 +82,7 @@ def extract_pptx(raw: bytes):
         if len(text) < MIN_TEXT and best:
             try:
                 img = _jpeg(Image.open(io.BytesIO(best)))
-            except Exception:  # noqa: BLE001
+            except Exception:
                 img = None
         pages.append({"text": text, "image": img, "notes": _clean(notes)})
     return pages
@@ -93,7 +92,7 @@ def extract_docx(raw: bytes):
     from docx import Document
     try:
         d = Document(io.BytesIO(raw))
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         raise AppError("file_unreadable", "This Word file cannot be opened.", status=400) from e
     lines = [p.text for p in d.paragraphs if p.text.strip()]
     for tb in d.tables:
@@ -222,7 +221,7 @@ class SourceMixin:
         if u.scheme not in ("http", "https") or not u.hostname:
             raise AppError("bad_value", "Write a web address that starts with http:// or https://", status=400)
         try:  # only public web sites: never this computer or the school network
-            for fam, _t, _p, _c, addr in socket.getaddrinfo(u.hostname, None):
+            for _fam, _t, _p, _c, addr in socket.getaddrinfo(u.hostname, None):
                 ip = ipaddress.ip_address(addr[0])
                 if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
                     raise AppError("bad_value", "This address is not a public web site.", status=400)
@@ -398,7 +397,7 @@ class SourceMixin:
                 src["read_model"] = used
                 try:
                     items = _json_from(raw).get("pages") or []
-                except Exception:  # noqa: BLE001
+                except Exception:
                     items = []
                 got = {}
                 for it in items:

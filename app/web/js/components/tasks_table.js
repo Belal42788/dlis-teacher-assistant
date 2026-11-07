@@ -5,7 +5,7 @@ import { fmtShort, triName } from "../labels.js";
 
 const RANK = { high: 0, medium: 1, low: 2 };
 
-export function sortedOpen(data) {
+function sortedOpen(data) {
   const open = [...data.auto, ...data.tasks.filter((x) => !x.done)];
   const key = (x) => [x.deadline && x.deadline < data.today ? 0 : 1, RANK[x.importance] ?? 1, x.deadline || "9999"];
   return open.sort((a, b) => { const ka = key(a), kb = key(b); return ka[0] - kb[0] || ka[1] - kb[1] || String(ka[2]).localeCompare(String(kb[2])); });

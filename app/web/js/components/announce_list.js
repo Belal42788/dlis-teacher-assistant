@@ -2,7 +2,7 @@ import { h, icon } from "../dom.js";
 import { t } from "../i18n.js";
 import { fmtDate } from "../labels.js";
 
-export const audLabel = (a) => t(`an_aud_${a}`);
+const audLabel = (a) => t(`an_aud_${a}`);
 
 // One announcement as a card. `onDelete` is given only to the administration.
 export function announceCard(a, onDelete, onEdit) {

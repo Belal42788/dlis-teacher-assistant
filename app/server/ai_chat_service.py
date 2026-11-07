@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 
-from ..core import ai_client, paths
+from ..core import paths
 from ..core.errors import AppError
 from .ai_service import redact
 
