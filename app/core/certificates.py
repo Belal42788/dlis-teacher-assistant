@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import re
+import shutil
+import uuid
+import zipfile
 from pathlib import Path
 
 from docx import Document
@@ -47,6 +50,50 @@ def wording(occasion: str, lang: str, subject: str, title: str = "", text: str =
     return t, body
 
 
+FONT = "Cairo"   # the app's own font; it is packed inside the Word file, so it looks the same on a computer that does not have it
+
+
+def embed_font(docx: Path, family: str = FONT) -> None:
+    """Pack the font into the .docx (Word and LibreOffice read it from there). Silent if the font files are missing: Word then picks its own."""
+    files = {"Regular": paths.resources_dir() / "fonts" / f"{family}-Regular.ttf", "Bold": paths.resources_dir() / "fonts" / f"{family}-Bold.ttf"}
+    if not all(f.is_file() for f in files.values()):
+        return
+    tmp = docx.with_suffix(".tmp")
+    entries, rels, content = [], [], []
+    with zipfile.ZipFile(docx) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for i, (style, f) in enumerate(files.items(), 1):
+            guid = str(uuid.uuid4()).upper()
+            key = bytes.fromhex(guid.replace("-", ""))[::-1]
+            data = bytearray(f.read_bytes())
+            for k in range(32):
+                data[k] ^= key[k % 16]   # the first 32 bytes are scrambled with the key, as the Word format says
+            zout.writestr(f"word/fonts/font{i}.odttf", bytes(data))
+            rels.append(f'<Relationship Id="rIdFont{i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/font" Target="fonts/font{i}.odttf"/>')
+            entries.append(f'<w:embed{style} r:id="rIdFont{i}" w:fontKey="{{{guid}}}"/>')
+        zout.writestr("word/_rels/fontTable.xml.rels", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + "".join(rels) + "</Relationships>")
+        for item in zin.infolist():
+            raw = zin.read(item.filename)
+            if item.filename == "word/fontTable.xml":
+                x = raw.decode("utf-8")
+                if 'xmlns:r=' not in x.split(">", 2)[1]:
+                    x = x.replace("<w:fonts ", '<w:fonts xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ', 1)
+                x = x.replace("</w:fonts>", f'<w:font w:name="{family}"><w:charset w:val="01"/><w:family w:val="auto"/><w:pitch w:val="variable"/>' + "".join(entries) + "</w:font></w:fonts>")
+                raw = x.encode("utf-8")
+            elif item.filename == "[Content_Types].xml":
+                x = raw.decode("utf-8")
+                if "odttf" not in x:
+                    x = x.replace("<Default ", '<Default Extension="odttf" ContentType="application/vnd.openxmlformats-officedocument.obfuscatedFont"/><Default ', 1)
+                raw = x.encode("utf-8")
+            elif item.filename == "word/settings.xml":
+                x = raw.decode("utf-8")
+                if "embedTrueTypeFonts" not in x:
+                    # the schema wants it right after <w:zoom/> (before proofState); Word is strict about the order
+                    x = re.sub(r"(<w:zoom[^>]*/>)", r"\1<w:embedTrueTypeFonts/>", x, count=1) if "<w:zoom" in x else re.sub(r"(<w:settings[^>]*>)", r"\1<w:embedTrueTypeFonts/>", x, count=1)
+                raw = x.encode("utf-8")
+            zout.writestr(item, raw)
+    shutil.move(str(tmp), str(docx))
+
+
 def _font(run, size, bold=False, color=None, ar=False):
     run.font.size = Pt(size); run.bold = bold
     if color is not None:
@@ -56,7 +103,7 @@ def _font(run, size, bold=False, color=None, ar=False):
     if fonts is None:
         fonts = OxmlElement("w:rFonts"); rpr.insert(0, fonts)
     for a in ("w:ascii", "w:hAnsi", "w:cs", "w:eastAsia"):
-        fonts.set(qn(a), "Arial" if ar else "Georgia")
+        fonts.set(qn(a), FONT)
     if ar:
         rpr.append(OxmlElement("w:rtl"))
         if bold:
@@ -170,16 +217,17 @@ def write_certificates(out: Path, names: list[str], *, occasion: str = "excellen
         sec.left_margin = sec.right_margin = Cm(2.2); sec.top_margin = sec.bottom_margin = Cm(1.6)
         _page_border(sec)
         for i, name in enumerate(names):
-            first = _line(doc, "", 10, after=14)
+            first = _line(doc, "", 4, after=2)
             first.paragraph_format.page_break_before = bool(i)   # a new page per student, with no empty page between
-            _logo(doc, logo, 78)
+            _logo(doc, logo, 64)
             if school:
-                _line(doc, school, 15, False, BLUE, after=22, lang=lang)
-            _line(doc, head, 40, True, DARK, after=26, lang=lang)
-            _line(doc, PRESENT[lang], 16, color=RGBColor(0x44, 0x4A, 0x6E), after=16, lang=lang)
-            _line(doc, name, 38, True, BLUE, after=20, lang=lang, underline=True)
-            _line(doc, body, 19, color=DARK, after=70, lang=lang)
+                _line(doc, school, 14, False, BLUE, after=8, lang=lang)
+            _line(doc, head, 34, True, DARK, after=8, lang=lang)
+            _line(doc, PRESENT[lang], 14, color=RGBColor(0x44, 0x4A, 0x6E), after=4, lang=lang)
+            _line(doc, name, 32, True, BLUE, after=6, lang=lang, underline=True)
+            _line(doc, body, 17, color=DARK, after=22, lang=lang)
             _signature_row(doc, lang, when, teacher)
     out.parent.mkdir(parents=True, exist_ok=True)
     _save(doc, out)
+    embed_font(out)
     return out

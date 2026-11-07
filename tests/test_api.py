@@ -140,6 +140,11 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(r["count"], 2)
         self.assertTrue(Path(r["path"]).is_file())
         self.assertIn("شهادة تفوّق", texts(r)); self.assertIn("سارة", texts(r))
+        import zipfile
+        z = zipfile.ZipFile(r["path"])   # the app's own font (Cairo) travels inside the file
+        self.assertTrue({"word/fonts/font1.odttf", "word/fonts/font2.odttf"} <= set(z.namelist()))
+        self.assertIn(b"embedTrueTypeFonts", z.read("word/settings.xml"))
+        self.assertIn(b'w:name="Cairo"', z.read("word/fontTable.xml"))
         r = self.call("POST", "/api/docs/certificates", {"room_id": "g4-a", "students": ["عمر"], "extra_names": "Guest One\nGuest Two", "occasion": "thanks", "kind": "card", "lang": "en"})
         self.assertEqual(r["count"], 3)
         self.assertIn("Guest Two", texts(r)); self.assertIn("Thank You", texts(r))
