@@ -10,6 +10,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "tests"))
+import nonet
+nonet.install()
 APP = ROOT / "app"
 
 
@@ -105,6 +108,26 @@ class TestDocs(unittest.TestCase):
         import make_dev_docs
         old = make_dev_docs.DOC.read_text(encoding="utf-8")
         self.assertEqual(make_dev_docs.render(old), old, "docs/DEVELOPER.md is out of date: run  python scripts/make_dev_docs.py")
+
+
+class TestNoInternet(unittest.TestCase):
+    """A test that quietly used the real internet passed on the developer's computer and failed on GitHub. Never again."""
+
+    def test_every_test_file_cuts_the_internet(self):
+        for f in sorted((ROOT / "tests").glob("test_*.py")):
+            self.assertIn("nonet.install()", f.read_text(encoding="utf-8"), f"{f.name} must call nonet.install() near the top")
+
+    def test_other_computers_are_unreachable_but_this_one_is(self):
+        import socket
+        import urllib.error
+        import urllib.request
+        before = len(nonet.ATTEMPTS)
+        with self.assertRaises((urllib.error.URLError, OSError)):
+            urllib.request.urlopen("https://image.pollinations.ai/prompt/x", timeout=5)
+        self.assertGreater(len(nonet.ATTEMPTS), before)
+        srv = socket.socket(); srv.bind(("127.0.0.1", 0)); srv.listen(1)
+        c = socket.create_connection(("127.0.0.1", srv.getsockname()[1]), timeout=2)     # the app's own local server must still work
+        c.close(); srv.close()
 
 
 if __name__ == "__main__":

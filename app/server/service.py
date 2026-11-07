@@ -118,7 +118,14 @@ class Service(SeatingMixin, BehaviorMixin, UpdateMixin, InsightsMixin, GradesMix
                 store.auto_backup()
             except Exception as e:   # a failed copy must never disturb the teacher
                 paths.log_error(f"auto backup failed: {e}")
-        threading.Thread(target=run, daemon=True).start()
+        self._auto_backup_thread = threading.Thread(target=run, daemon=True)
+        self._auto_backup_thread.start()
+
+    def wait_for_backup(self, seconds: float = 20) -> None:
+        """Lets the weekly background copy finish (tests call it before they delete their folder: Windows cannot delete a folder while it is written)."""
+        t = getattr(self, "_auto_backup_thread", None)
+        if t is not None:
+            t.join(seconds)
 
     def set_language(self, lang: str) -> dict:
         if lang not in LANGS:
