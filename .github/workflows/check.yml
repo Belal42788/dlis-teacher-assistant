@@ -25,7 +25,13 @@ jobs:
       - run: python -m pip install -r requirements.txt playwright
       - name: Browser for the screen tests
         run: python -m playwright install --with-deps chromium
-      - name: Unit tests
+      - name: Code checker (unused names, hidden errors)
+        if: runner.os == 'Linux'
+        run: python -m pip install ruff && ruff check app scripts tests
+      - name: Translations (every text in English and Arabic)
+        if: runner.os == 'Linux'
+        run: sh scripts/check_i18n.sh
+      - name: Unit tests (also the code-health rules)
         run: python -m unittest discover -s tests
       - name: A school year of data, many requests at once, a folder name in Arabic, a damaged file
         run: python scripts/stress.py

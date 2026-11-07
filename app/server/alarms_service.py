@@ -6,7 +6,7 @@ import uuid
 from datetime import date
 
 from ..core.errors import AppError
-from ..core.models import WEEKDAYS, is_safe_id
+from ..core.models import is_safe_id
 
 DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 

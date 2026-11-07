@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 
 from .errors import AppError
-from .models import AgeBand, Grade, GradeSettings, Room, Stage, Structure, Timetable
+from .models import AgeBand, Grade, GradeSettings, Room, Stage, Timetable
 from .presets import GRADE_PRESET_BY_ID, STAGE_PRESET_BY_ID
 from .store import DataStore, _migrate_calendar, _migrate_timetable
 from .structure_service import normalize

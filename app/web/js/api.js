@@ -42,7 +42,7 @@ const NEVER = /^\/api\/(ping|bootstrap|reminders|background|alarms|status\/|fs\/
 const KEEP_MS = 30000;
 const kept = new Map(), flying = new Map();
 let gen = 0;
-export function forgetReads() { gen++; kept.clear(); flying.clear(); }
+function forgetReads() { gen++; kept.clear(); flying.clear(); }
 
 let pageNow = "";
 const pageReads = new Map();      // page id -> the reads that page made last time

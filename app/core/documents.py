@@ -385,7 +385,6 @@ def fill_quiz(template: Path, out: Path, ctx: dict) -> Path:
     set_par(score, f"Score:  ____ / {total}")
 
     anchor = pars[2]            # the empty line under the student table: the questions go here, "Good luck!" stays last
-    base = pars[2]
     font = _first_run(pars[4]).font.name if len(pars) > 4 else None
 
     def add_par(after: Paragraph, text: str, bold: bool = False, indent: float = 0, space_after: float = 4) -> Paragraph:
@@ -614,12 +613,12 @@ def fill_revision(template: Path, out: Path, ctx: dict) -> Path:
             para("\u2022  " + p_, indent=10, after=3)
     if qs:
         para("Check yourself", bold=True, size=14, color=GREEN, before=12, after=4)
-        for i, (q, a) in enumerate(qs, 1):
+        for i, (q, _a) in enumerate(qs, 1):
             para(f"{i}. {q}", bold=True, after=2)
             para("_" * 70, size=10, indent=14, after=6, color=RGBColor(0x9B, 0xB7, 0xC6))
         if ctx.get("with_answers") and any(a for _, a in qs):
             para("Answers", bold=True, size=14, color=BLUE, before=14, after=4)
-            for i, (q, a) in enumerate(qs, 1):
+            for i, (_q, a) in enumerate(qs, 1):
                 if a:
                     para(f"{i}. {a}", indent=10, after=2)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -697,7 +696,7 @@ def _save(doc, out: Path) -> None:
     try:
         doc.save(str(out))
     except PermissionError:  # the same file is still open in Word
-        raise AppError("file_in_use", f"Close this file in Word first: {out.name}", status=409)
+        raise AppError("file_in_use", f"Close this file in Word first: {out.name}", status=409) from None
 
 
 def fill_revision_cover(template: Path, out: Path, ctx: dict) -> Path:
@@ -766,7 +765,6 @@ def write_plain_doc(out: Path, title: str, text: str, meta: dict) -> Path:
     """A simple Word file for the extra tools: school logo, title, then the text (bullets, numbers and '|' tables are recognised)."""
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.oxml import OxmlElement
-    from docx.oxml.ns import qn
     ctx = _scrub({"t": title, "x": text, "s": meta.get("school"), "u": meta.get("subject"), "n": meta.get("teacher")})
     doc = Document()
     sec = doc.sections[0]

@@ -11,7 +11,6 @@ import json
 import os
 import re
 import webbrowser
-from datetime import date
 from typing import Optional
 
 from ..core import ai_client

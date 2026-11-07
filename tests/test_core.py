@@ -227,7 +227,7 @@ class LegacyImportTests(unittest.TestCase):
 
 class TestSortAndPaste(unittest.TestCase):
     def test_grades_sorted_youngest_first_numerically(self):
-        from app.core.models import Grade, Room, Stage, Structure
+        from app.core.models import Grade, Room, Stage
         from app.core.structure_service import sort_structure
         s = Structure(stages=[Stage(id="high_school", name="High", order=3), Stage(id="kg", name="KG", order=0), Stage(id="preparatory", name="Prep", order=2)],
                       grades=[Grade(id=f"g{n}", name=f"Grade {n}", stage_id="high_school" if n > 8 else "preparatory", order=0) for n in (11, 9, 10, 8)] + [Grade(id="kg2", name="KG2", stage_id="kg", order=1)],
@@ -283,7 +283,7 @@ class TestWeekendHolidays(unittest.TestCase):
             self.assertEqual([h["name"] for h in out["holidays"]], ["Oct 6", "Winter"])
 
     def test_official_year_gets_all_holidays_and_loses_event_rows(self):
-        import tempfile, json
+        import tempfile
         from app.server.service import Service
         from app.core.store import DataStore
         with tempfile.TemporaryDirectory() as d:
@@ -717,10 +717,11 @@ class TestDocsAndTasks(unittest.TestCase):
         txt = " ".join(c.text for t in Document(r["path"]).tables for row in t.rows for c in row.cells)
         self.assertIn("Sara Ali", txt); self.assertIn("Grade level Grade 4 A", txt)
         self.assertEqual(self.svc.open_file(r["path"])["opened"], r["path"])
-        with self.assertRaises(Exception):
+        with self.assertRaises(AppError):
             self.svc.open_file("/etc/passwd")
-        with self.assertRaises(Exception):
-            self.svc.build_structure({"g5": ["A"]}); self.svc.make_grading_sheet({"room_id": "g5-a", "trimester": 0, "week": 8})  # no students
+        self.svc.build_structure({"g5": ["A"]})
+        with self.assertRaises(AppError):   # a class with no students
+            self.svc.make_grading_sheet({"room_id": "g5-a", "trimester": 0, "week": 8})
 
     def test_library_lists_files_and_keeps_private_ones_off_the_server(self):
         r1 = self.svc.make_quiz({"grade_id": "g4", "trimester": 0, "week": 8, "number": 1, "text": "1. Q?\na) x\nb) y\nAnswer: a"})
@@ -1004,7 +1005,6 @@ class TestAi(unittest.TestCase):
         import base64, io
         from PIL import Image
         from pptx import Presentation
-        from pptx.util import Inches
         self.svc.ai_save({"provider": "groq", "api_key": "k"})
         # a PDF made only of pictures (like NotebookLM) and a PowerPoint with one full-slide picture and one text slide
         imgs = [Image.new("RGB", (800, 450), c) for c in ((250, 250, 250), (200, 220, 250))]
@@ -1227,7 +1227,6 @@ class TestOneDayChanges(unittest.TestCase):
 
     def test_open_word_file_gives_a_clear_error_and_errors_are_logged(self):
         import os, tempfile
-        from unittest import mock
         from app.core import documents as D, paths
         os.environ["DLIS_APP_HOME"] = tempfile.mkdtemp()
         class Doc:

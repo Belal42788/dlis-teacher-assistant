@@ -10,7 +10,6 @@ import time
 import urllib.request
 
 from ..core import paths
-from ..core.errors import AppError
 
 CHECK_EVERY = 24 * 3600
 RETRY_EVERY = 6 * 3600
