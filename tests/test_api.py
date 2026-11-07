@@ -85,6 +85,7 @@ class ApiTests(unittest.TestCase):
         self.call("PUT", "/api/rooms/g4-a/students", {"names": r["names"]})
         self.assertEqual(self.call("GET", "/api/rooms/g4-a/students")["names"], ["سارة", "عمر"])
         self._certificates()
+        self._behavior_and_seating()
         self.call("GET", "/api/rooms/nope/students", expect=404)
         self.call("GET", "/api/rooms/..%2F..%2Fx/students", expect=404)
         self.assertEqual([x for x in self.call("GET", "/api/structure")["rooms"] if x["id"] == "g4-a"][0]["student_count"], 2)
@@ -153,6 +154,36 @@ class ApiTests(unittest.TestCase):
         self.call("POST", "/api/docs/certificates", {"room_id": "g4-a", "occasion": "custom"}, expect=400)
         self.call("POST", "/api/docs/certificates", {"room_id": "", "occasion": "excellence"}, expect=409)
         self.call("POST", "/api/docs/certificates", {"room_id": "g4-a", "occasion": "nope"}, expect=400)
+
+    # ---- behaviour notes and seating (inside the flow too)
+    def _behavior_and_seating(self):
+        r = self.call("POST", "/api/behavior", {"room_id": "g4-a", "student": "سارة", "kind": "good", "note": "Helped a classmate"})
+        n1 = r["note"]["id"]
+        n2 = self.call("POST", "/api/behavior", {"room_id": "g4-a", "student": "عمر", "kind": "concern", "note": "Late three times"})["note"]["id"]
+        self.call("POST", "/api/behavior", {"room_id": "g4-a", "student": "nobody", "note": "x"}, expect=404)
+        self.call("POST", "/api/behavior", {"room_id": "g4-a", "student": "سارة", "note": "  "}, expect=400)
+        self.call("POST", "/api/behavior", {"room_id": "g4-a", "student": "سارة", "kind": "bad", "note": "x"}, expect=400)
+        d = self.call("GET", "/api/behavior?room=g4-a")
+        self.assertEqual(len(d["notes"]), 2)
+        self.assertEqual(d["counts"]["عمر"], {"good": 0, "concern": 1, "open": 1})
+        self.call("POST", f"/api/behavior/{n2}/done", {"done": True})
+        self.assertEqual(self.call("GET", "/api/behavior?room=g4-a")["counts"]["عمر"]["open"], 0)
+        self.call("POST", f"/api/behavior/{n1}/done", {"done": True})   # a good note is never "open"
+        self.assertFalse(next(x for x in self.call("GET", "/api/behavior?room=g4-a")["notes"] if x["id"] == n1)["done"])
+        self.call("POST", f"/api/behavior/{n1}/delete", {})
+        self.assertEqual(len(self.call("GET", "/api/behavior?room=g4-a")["notes"]), 1)
+        self.call("GET", "/api/behavior?room=nope", expect=404)
+
+        c = self.call("GET", "/api/seating?room=g4-a")
+        self.assertEqual((c["rows"], c["cols"], c["seats"], c["saved"]), (5, 6, {}, False))
+        c = self.call("PUT", "/api/seating", {"room_id": "g4-a", "rows": 2, "cols": 3, "seats": {"0-0": "سارة", "1-2": "عمر", "9-9": "سارة"}})
+        self.assertEqual(c["seats"], {"0-0": "سارة", "1-2": "عمر"})   # a seat outside the grid is dropped
+        self.call("PUT", "/api/seating", {"room_id": "g4-a", "rows": 2, "cols": 3, "seats": {"0-0": "سارة", "0-1": "سارة"}}, expect=400)
+        self.call("PUT", "/api/seating", {"room_id": "g4-a", "rows": 2, "cols": 3, "seats": {"0-0": "ghost"}}, expect=404)
+        self.call("PUT", "/api/seating", {"room_id": "g4-a", "rows": 99, "cols": 3, "seats": {}}, expect=400)
+        c = self.call("PUT", "/api/seating", {"room_id": "g4-a", "rows": 1, "cols": 2, "seats": {"0-0": "سارة", "1-2": "عمر"}})
+        self.assertEqual(c["seats"], {"0-0": "سارة"})
+        self.assertTrue(self.call("GET", "/api/seating?room=g4-a")["saved"])
 
     def test_03_legacy_and_folder_browser(self):
         self.call("POST", "/api/import/legacy", {"path": tempfile.mkdtemp()}, expect=400)

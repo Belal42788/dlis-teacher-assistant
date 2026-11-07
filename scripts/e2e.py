@@ -242,6 +242,11 @@ try:
         # certificates: a file for the whole class, in Arabic
         page.click(".nav a[data-page=docs]"); page.wait_for_selector("#main:not(.busy) .steps"); pick_kind(page, "ct")
         page.click("button:has-text('اعمل الملف')"); page.wait_for_selector(".banner.ok:visible:has-text('في الملف')", timeout=20000); shot("17o_certificates")
+        # behaviour note, then a seat
+        page.evaluate("location.hash='#/behavior'"); page.wait_for_selector("#main:not(.busy) .panel input[type=text]")
+        page.fill(".panel input[type=text]", "مشاركة ممتازة"); page.keyboard.press("Enter"); page.wait_for_selector(".bh-note", timeout=10000); shot("17p_behavior")
+        page.evaluate("location.hash='#/seating'"); page.wait_for_selector("#main:not(.busy) .seat")
+        page.click(".st-pool .chip >> nth=0"); page.click(".seat >> nth=0"); page.wait_for_selector(".seat.full", timeout=10000); shot("17p_seating")
         # teacher tools: pick a tool, fill its form, the (fake) AI writes, save as Word; a student tool offers the name picker
         page.click(".nav a[data-page=tools]"); page.wait_for_selector(".tl-form")
         page.select_option("select[aria-label='اختار الأداة']", "rubric")

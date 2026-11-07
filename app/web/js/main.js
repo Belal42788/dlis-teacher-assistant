@@ -12,6 +12,8 @@ import { renderSettings } from "./pages/settings.js";
 import { renderDocs } from "./pages/docs.js";
 import { renderTasks } from "./pages/tasks.js";
 import { renderLog } from "./pages/log.js";
+import { renderBehavior } from "./pages/behavior.js";
+import { renderSeating } from "./pages/seating.js";
 import { renderSources } from "./pages/sources.js";
 import { renderLibrary } from "./pages/library.js";
 import { renderScheme } from "./pages/scheme.js";
@@ -70,6 +72,8 @@ const PAGES = [
   { id: "log", nav: "classes", render: renderLog },
   { id: "progress", nav: "classes", render: renderProgress },
   { id: "grades", nav: "classes", render: renderGrades },
+  { id: "behavior", nav: "classes", render: renderBehavior },
+  { id: "seating", nav: "classes", render: renderSeating },
   { id: "insights", nav: "classes", render: renderInsights },
   { id: "announcements", icon: "megaphone", group: "school", need: "online", render: renderAnnouncements },
   { id: "parentweek", nav: "announcements", render: renderParentWeek },

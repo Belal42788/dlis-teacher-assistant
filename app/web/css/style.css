@@ -786,3 +786,28 @@ html[dir="ltr"] .btn { white-space: normal; }
 .compact .page-head { margin-bottom: .5rem; }
 .compact .btn { min-height: 30px; }
 .compact .banner { padding: .45rem .7rem; margin-bottom: .6rem; }
+
+/* behaviour notes */
+.bh-list { display: grid; gap: .5rem; }
+.bh-note { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; padding: .6rem .8rem; background: var(--sheet); border: 1px solid var(--rule); border-inline-start: 4px solid #3f9d6b; border-radius: 10px; }
+.bh-note.concern { border-inline-start-color: #d98a1f; }
+.bh-note.done { opacity: .65; border-inline-start-color: var(--rule); }
+.tag.warn { background: #fdecc8; color: #7a4b00; }
+
+/* seating chart */
+.st-tools { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; }
+.st-pool h3 { margin: 0 0 .5rem; }
+.st-pool.has-pick { border-color: var(--blue); background: var(--blue-wash); }
+.seat-print { margin-top: .8rem; }
+.seat-board { text-align: center; padding: .4rem; margin-bottom: .6rem; border-radius: 8px; background: #2a2a72; color: #fff; font-weight: 600; }
+.seat-grid { display: grid; gap: .5rem; }
+.seat { min-height: 64px; border: 2px dashed var(--rule); border-radius: 10px; background: var(--sheet); font: inherit; font-weight: 600; color: var(--ink); cursor: pointer; padding: .2rem; overflow-wrap: anywhere; }
+.seat.full { border-style: solid; border-color: var(--blue); background: var(--blue-wash); }
+.seat.free { border-color: #3f9d6b; background: #eaf6ef; }
+.seat:hover { border-color: var(--blue-dark); }
+@media print {
+  body * { visibility: hidden; }
+  .seat-print, .seat-print * { visibility: visible; }
+  .seat-print { position: absolute; inset: 0; margin: 0; padding: 1cm; }
+  .seat { border: 1px solid #555; background: #fff; min-height: 70px; }
+}
