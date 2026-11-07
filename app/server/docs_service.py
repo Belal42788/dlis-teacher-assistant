@@ -247,6 +247,42 @@ class DocsMixin:
             "subject": store.load_settings().subject, "grade_label": room.name, "students": names, "full": parts, "absent": absent})
         return self._result(out)
 
+    def make_certificates(self, b: dict) -> dict:
+        """Certificates or thank-you cards for a whole class, some of its students, or typed names. Names never leave the computer."""
+        from ..core import certificates as C
+        from ..core.translit import to_arabic, to_english
+        store = self._need_store()
+        s = store.load_settings()
+        lang = "ar" if b.get("lang") == "ar" else "en"
+        kind = "card" if b.get("kind") == "card" else "certificate"
+        occasion = str(b.get("occasion", "excellence"))
+        if occasion not in C.OCCASIONS:
+            raise AppError("bad_request", "Unknown occasion.", status=400)
+        if occasion == "custom" and not (str(b.get("title", "")).strip() and str(b.get("text", "")).strip()):
+            raise AppError("bad_request", "Write the title and the sentence first.", status=400)
+        room_id = str(b.get("room_id", ""))
+        names: list[str] = []
+        label = "Certificates"
+        if room_id:
+            room, grade = self._room_grade(room_id)
+            full = store.load_students_full(room_id)
+            chosen = {str(x).strip() for x in (b.get("students") or [])}
+            names = [x["name"] if lang == "ar" else (x["english"] or to_english(x["name"])) for x in full if not chosen or x["name"].strip() in chosen]
+            label = f"{_safe(grade.name)}/{_safe(room.name)}"
+        names += [n.strip() for n in str(b.get("extra_names", "")).splitlines() if n.strip()]
+        if not names:
+            raise AppError("no_names", "Choose a class or type at least one name.", status=409)
+        teacher = to_arabic(s.teacher_name or "") if lang == "ar" else (s.teacher_name or "")
+        school = "مدرسة دار لقمان الحكيم الدولية" if (lang == "ar" and s.school_name.startswith("Dar Luqman")) else s.school_name
+        try:
+            when = _fmt_full(date.fromisoformat(str(b.get("date", ""))))
+        except ValueError:
+            when = _fmt_full(date.today())
+        out = store.root / "Documents" / label / f"{'Cards' if kind == 'card' else 'Certificates'}_{occasion}_{date.today():%Y%m%d}.docx"
+        C.write_certificates(out, names, occasion=occasion, lang=lang, kind=kind, subject=s.subject, title=str(b.get("title", "")), text=str(b.get("text", "")),
+                             school=school, teacher=teacher, when=when, logo=paths.resources_dir() / "logo.png")
+        return {**self._result(out), "count": len(names)}
+
     def open_file(self, path: str, folder: bool = False) -> dict:
         """Open a file (or its folder) with the computer's own program. Only inside the data folder."""
         root = self._need_store().root.resolve()

@@ -239,6 +239,9 @@ try:
         page.click(".nav a[data-page=docs]"); page.wait_for_selector("#main:not(.busy) .steps"); pick_kind(page, "rv"); page.wait_for_selector(".src-pick select >> visible=true")
         page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", label=re.compile(r'nlm')) if False else page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", value=page.eval_on_selector(".panel:has(h3:text('ملف المراجعة')) .src-pick select", "s => [...s.options].find(o => o.textContent.includes('nlm')).value")); page.click("text=املا من سلايداتي")
         page.wait_for_function("[...document.querySelectorAll('textarea')].some(t => t.value === 'Mouse: points and clicks')")
+        # certificates: a file for the whole class, in Arabic
+        page.click(".nav a[data-page=docs]"); page.wait_for_selector("#main:not(.busy) .steps"); pick_kind(page, "ct")
+        page.click("button:has-text('اعمل الملف')"); page.wait_for_selector(".banner.ok:visible:has-text('في الملف')", timeout=20000); shot("17o_certificates")
         # teacher tools: pick a tool, fill its form, the (fake) AI writes, save as Word; a student tool offers the name picker
         page.click(".nav a[data-page=tools]"); page.wait_for_selector(".tl-form")
         page.select_option("select[aria-label='اختار الأداة']", "rubric")
@@ -307,7 +310,7 @@ try:
             page.click("a.seg-btn[href='#/reminders']"); snap("tasks_new_reminder")
             go("classes"); page.click("a.seg-btn[href='#/log']"); snap("classes_lesson_log")
             go("docs")
-            for tab_ in ("wk", "lp", "quiz", "rv", "sl", "gs"):
+            for tab_ in ("wk", "lp", "quiz", "rv", "sl", "gs", "ct"):
                 pick_kind(page, tab_); snap(f"files_{tab_}")
             go("library"); page.click("a.seg-btn[href='#/sources']"); snap("library_sources")
             go("scheme"); page.wait_for_selector(".sw-card"); snap("scheme")
