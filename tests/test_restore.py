@@ -193,7 +193,9 @@ class TestRestore(unittest.TestCase):
             z.writestr("_backup/auto/planted.zip", "x"); z.writestr("Exports/planted.zip", "x"); z.writestr("good/inside.txt", "ok")
         restore.restore(self.st, "Exports/DLIS_backup_evil.zip")
         self.assertFalse((self.root.parent / "escaped.txt").exists())
-        self.assertFalse((self.root / "escaped.txt").exists() or (self.root / "abs_escaped.txt").exists() or (self.root / "C:").exists())
+        for name in ("escaped.txt", "abs_escaped.txt", "win_escaped.txt"):      # (not root / "C:", which Windows reads as the C drive itself)
+            self.assertFalse((self.root / name).exists(), name)
+            self.assertFalse((self.root / "C:" / name).exists() if sys.platform != "win32" else False)
         self.assertFalse((self.root / "_backup" / "auto" / "planted.zip").exists())
         self.assertEqual((self.root / "good" / "inside.txt").read_text(), "ok")
 
