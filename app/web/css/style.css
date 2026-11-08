@@ -552,6 +552,11 @@ table.wc .dot { display: inline-block; width: .6rem; height: .6rem; border-radiu
 .chat-main .bubble.user { max-width: 80%; }
 
 .tag-model { font-size: .75rem; padding: .1rem .55rem; border-radius: 99px; background: var(--blue-wash); color: var(--blue-dark); font-weight: 600; }
+.hl-use { list-style: none; padding: 0; margin: 0; display: grid; gap: .35rem; }
+.hl-use li { display: grid; grid-template-columns: minmax(110px, 160px) 1fr 3rem; gap: .6rem; align-items: center; }
+.hl-use b { text-align: end; }
+.hl-bar { height: 10px; background: var(--blue-wash); border-radius: 6px; overflow: hidden; }
+.hl-bar i { display: block; height: 100%; background: var(--blue-dark); border-radius: 6px; }
 .hl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .5rem; margin-top: .8rem; }
 .hl-row b { unicode-bidi: plaintext; text-align: end; }
 .hl-row { display: flex; justify-content: space-between; gap: .6rem; padding: .5rem .8rem; background: var(--blue-wash); border-radius: 10px; }

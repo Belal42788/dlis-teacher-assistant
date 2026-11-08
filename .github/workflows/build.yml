@@ -12,6 +12,8 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with: { python-version: "3.13" }
+      - name: This school's server settings are safe (no secret key inside the installer)
+        run: python scripts/school_check.py
       - run: pip install -r requirements.txt pyinstaller
       - run: python -m unittest discover -s tests
       - run: pyinstaller --noconfirm --clean --windowed --icon resources/icon.ico --name DLIS_Teacher_Assistant --add-data "app/web;app/web" --add-data "resources;resources" --collect-data docx --collect-data certifi --collect-all pypdfium2 --hidden-import webview --hidden-import pystray._win32 run.py
@@ -33,6 +35,8 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with: { python-version: "3.13" }
+      - name: This school's server settings are safe (no secret key inside the installer)
+        run: python scripts/school_check.py
       - run: pip install -r requirements.txt pyinstaller
       - run: pyinstaller --noconfirm --clean --windowed --icon resources/icon.icns --name DLIS_Teacher_Assistant --add-data "app/web:app/web" --add-data "resources:resources" --collect-data docx --collect-data certifi --collect-all pypdfium2 --hidden-import webview run.py
       - name: Check the built program is complete

@@ -15,6 +15,7 @@ import nonet
 nonet.install()
 
 import check_release
+import school_check
 import write_latest
 from app.core import paths
 
@@ -41,6 +42,54 @@ class TestReleaseChecks(unittest.TestCase):
             self.assertEqual(len(check_release.problems(f"v{paths.VERSION}", root)), 1)   # both languages needed
             (root / "resources/whats_new.json").write_text(json.dumps({paths.VERSION: {"ar": ["x"], "en": ["x"]}}), encoding="utf-8")
             self.assertEqual(check_release.problems(f"v{paths.VERSION}", root), [])
+
+
+def _jwt(role: str) -> str:
+    import base64
+    b = lambda d: base64.urlsafe_b64encode(json.dumps(d).encode()).decode().rstrip("=")
+    return f"{b({'alg': 'HS256'})}.{b({'role': role, 'ref': 'abc'})}.signature_part_here"
+
+
+class TestSchoolCheck(unittest.TestCase):
+    def folder(self, cfg: dict, portal: str = 'window.PORTAL = { url: "", key: "" };'):
+        d = tempfile.TemporaryDirectory(); self.addCleanup(d.cleanup)
+        root = Path(d.name)
+        (root / "resources").mkdir(); (root / "portal").mkdir()
+        (root / "resources/school_server.json").write_text(json.dumps(cfg), encoding="utf-8")
+        (root / "portal/config.js").write_text(portal, encoding="utf-8")
+        return root
+
+    def errors(self, root):
+        return [t for lvl, t in school_check.problems(root) if lvl == "error"]
+
+    def test_this_repository_is_ready_to_build(self):
+        self.assertEqual([t for lvl, t in school_check.problems() if lvl == "error"], [])
+
+    def test_a_good_school_passes(self):
+        cfg = {"url": "https://abcd.supabase.co", "key": _jwt("anon"), "school": "DLIS"}
+        self.assertEqual(self.errors(self.folder(cfg, f'window.PORTAL = {{ url: "https://abcd.supabase.co", key: "{_jwt("anon")}" }};')), [])
+        self.assertEqual(self.errors(self.folder({"url": "https://abcd.supabase.co", "key": "sb_publishable_abc123", "school": "X"})), [])
+        self.assertEqual(self.errors(self.folder({"url": "", "key": ""})), [])             # no server at all is allowed (a warning only)
+
+    def test_the_secret_key_is_stopped_everywhere(self):
+        secret = _jwt("service_role")
+        self.assertTrue(self.errors(self.folder({"url": "https://abcd.supabase.co", "key": secret})))
+        self.assertTrue(self.errors(self.folder({"url": "https://abcd.supabase.co", "key": "sb_secret_abcdefghijk"})))
+        self.assertTrue(self.errors(self.folder({"url": "", "key": ""}, f'window.PORTAL = {{ url: "", key: "{secret}" }};')))
+        root = self.folder({"url": "", "key": ""})
+        (root / "resources/notes.txt").write_text(f"remember {secret}", encoding="utf-8")   # hidden in some other shipped file
+        self.assertTrue(any("SECRET" in e for e in self.errors(root)))
+
+    def test_typical_mistakes_are_explained(self):
+        for cfg in ({"url": "https://abcd.supabase.co", "key": ""}, {"url": "", "key": _jwt("anon")},
+                    {"url": "http://abcd.supabase.co", "key": _jwt("anon")}, {"url": "https://abcd.supabase.co", "key": "not-a-key"},
+                    {"url": "", "key": "", "update_repo": "not a repo"}, {"url": "", "key": "", "update_url": "http://x"}):
+            self.assertTrue(self.errors(self.folder(cfg)), cfg)
+        other = f'window.PORTAL = {{ url: "https://other.supabase.co", key: "{_jwt("anon")}" }};'
+        self.assertTrue(self.errors(self.folder({"url": "https://abcd.supabase.co", "key": _jwt("anon")}, other)))     # two different projects
+        bad = self.folder({})
+        (bad / "resources/school_server.json").write_text("{not json", encoding="utf-8")
+        self.assertTrue(self.errors(bad))
 
 
 class TestLatestFile(unittest.TestCase):
