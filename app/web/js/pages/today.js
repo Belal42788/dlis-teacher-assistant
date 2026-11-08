@@ -8,7 +8,11 @@ import { announceCard } from "../components/announce_list.js";
 import { tasksTable } from "../components/tasks_table.js";
 
 const aiHint = { hidden: false };   // "not now" hides the AI hint until the program is opened again
-import { fmtDate, fmtShort, fmtDay, roomLabel, gradeName, todayIso, addDays, triName, localName, fmt12, stageTone } from "../labels.js";
+import { fmtDate, fmtShort, fmtDay, roomLabel, todayIso, addDays, triName, localName, fmt12, stageTone } from "../labels.js";
+
+// A lesson's "more" menu closes when you press anywhere else or Esc
+document.addEventListener("pointerdown", (e) => { document.querySelectorAll(".lesson-more[open]").forEach((d) => { if (!d.contains(e.target)) d.open = false; }); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") document.querySelectorAll(".lesson-more[open]").forEach((d) => { d.open = false; }); });
 
 export async function renderToday(root) {
   let day = todayIso();
@@ -159,9 +163,23 @@ export async function renderToday(root) {
     return lessons.length;
   }
 
-  const slot = (x) => h("div", { class: "slot", style: { "--tone": x.tone || "var(--blue)" }, "data-s": x.live ? x.start : "", "data-e": x.live ? x.end || "" : "" },
-    h("div", { class: "slot-time", dir: "ltr" }, x.start && x.start !== "99" ? [h("b", {}, fmt12(x.start)), x.end ? h("span", {}, fmt12(x.end)) : null] : null, x.live ? h("span", { class: "until" }) : null),
-    x.node());
+  const slot = (x) => {
+    const until = x.live ? h("span", { class: "until" }) : null;   // "in 20 min" / "now" / "done": written by trackNow, shown inside the card
+    return h("div", { class: "slot", style: { "--tone": x.tone || "var(--blue)" }, "data-s": x.live ? x.start : "", "data-e": x.live ? x.end || "" : "" },
+      h("div", { class: "slot-time", dir: "ltr" }, x.start && x.start !== "99" ? [h("b", {}, fmt12(x.start)), x.end ? h("span", {}, fmt12(x.end)) : null] : null),
+      x.node(until));
+  };
+
+  // The "more" menu of a lesson: a small floating list, so opening it never pushes the other lessons down.
+  const menuItem = (label, onClick, opts = {}) => h(opts.href ? "a" : "button", { class: `menu-item${opts.danger ? " danger" : ""}`, type: opts.href ? null : "button", href: opts.href || null,
+    onClick: (e) => { e.currentTarget.closest("details").open = false; onClick && onClick(e); } }, opts.icon ? icon(opts.icon) : null, label);
+  const moreMenu = (items) => {
+    const box = h("details", { class: "lesson-more", onToggle: (e) => {
+      const slotEl = e.currentTarget.closest(".slot"); if (slotEl) slotEl.classList.toggle("menu-open", e.currentTarget.open);
+      if (e.currentTarget.open) document.querySelectorAll(".lesson-more[open]").forEach((d) => { if (d !== box) d.open = false; });
+    } }, h("summary", { class: "kebab", "aria-label": t("more"), title: t("more") }, "⋯"), h("div", { class: "menu" }, items));
+    return box;
+  };
 
   const nextBanner = (s, structure) => {
     const room = structure.rooms.find((r) => r.id === s.room_id);
@@ -171,56 +189,53 @@ export async function renderToday(root) {
         h("h2", {}, room ? roomLabel(room, structure) : s.room_id, " · ", t("ch_period_n", { n: s.period })),
         s.plan && s.plan.topic ? h("div", { class: "nb-plan" }, icon("file"), " ", s.plan.topic, s.plan.slides ? ` · ${t("tn_slides_n", { n: s.plan.slides })}` : "") : null),
       h("div", { class: "nb-btns" },
-        h("button", { class: "btn primary", onClick: () => openLog(s) }, icon("file"), logged(s) ? t("log_edit") : t("log_lesson")),
-        h("a", { class: "btn", href: `#/docs?room=${s.room_id}` }, icon("spark"), t("nav_docs"))));
+        h("button", { class: "btn small primary", onClick: () => openLog(s) }, icon("file"), logged(s) ? t("log_edit") : t("log_lesson")),
+        h("a", { class: "btn small", href: `#/docs?room=${s.room_id}` }, icon("spark"), t("nav_docs"))));
   };
 
   const coverOut = h("div", {});
   function sessionsView(d, structure, isToday, nextBox) {
     const items = [
-      ...d.sessions.map((s) => ({ start: s.start || "99", end: s.end, live: true, lesson: true, tone: stageTone(s.grade_id), label: sessionLabel(s, structure), banner: () => nextBanner(s, structure), node: () => {
+      ...d.sessions.map((s) => ({ start: s.start || "99", end: s.end, live: true, lesson: true, tone: stageTone(s.grade_id), label: sessionLabel(s, structure), banner: () => nextBanner(s, structure), node: (until) => {
         const room = structure.rooms.find((r) => r.id === s.room_id);
-        const grade = structure.grades.find((g) => g.id === s.grade_id);
+        const plan = s.plan && s.plan.topic ? h("span", { class: "plan-line small" }, icon("file"), " ", h("b", {}, s.plan.topic), s.plan.slides ? h("span", { class: "muted" }, ` · ${t("tn_slides_n", { n: s.plan.slides })}`) : null) : null;
+        const last = lastLine(logInfo.last[s.room_id]);
         return h("div", { class: `lesson${s.extra ? " extra" : ""}` },
           h("div", { class: "no" }, s.period),
-          h("div", { class: "what" }, h("b", {}, room ? roomLabel(room, structure) : s.room_id),
-            s.kind ? h("span", { class: `kind ${s.kind}` }, t(`ch_kind_${s.kind}`)) : null,
-            s.note ? h("span", { class: "muted small" }, ` ${s.note}`) : null,
-            grade ? h("div", { class: "muted small" }, `${gradeName(grade)} · ${t("students_n", { n: room?.student_count ?? 0 })}`) : null,
-            s.plan && s.plan.topic ? h("div", { class: "plan-line small" }, icon("file"), " ", t("tn_planned"), " ", h("b", {}, s.plan.topic), s.plan.slides ? h("span", { class: "muted" }, ` · ${t("tn_slides_n", { n: s.plan.slides })}`) : null) : null,
-            lastLine(logInfo.last[s.room_id]),
-            h("div", { class: "row small" },
-              h("button", { class: "btn small primary", onClick: () => openLog(s) }, icon("file"), logged(s) ? t("log_edit") : t("log_lesson")),
-              h("details", { class: "lesson-more" }, h("summary", { class: "btn small ghost", "aria-label": t("more") }, "⋯"),
-                h("div", { class: "row small" },
-                  h("a", { class: "btn small ghost go", href: `#/docs?room=${s.room_id}` }, icon("file"), t("nav_docs")),
-                  isToday ? h("button", { class: "btn small ghost", onClick: () => moveDialog(d, structure, s) }, t("ch_move")) : null,
-                  isToday ? h("button", { class: "btn small ghost", onClick: () => change({ action: "cancel", period: s.period }) }, t("ch_cancel")) : null)))),
-          timeCell(s.start, s.end));
+          h("div", { class: "what" },
+            h("div", { class: "l1" }, h("b", {}, room ? roomLabel(room, structure) : s.room_id),
+              s.kind ? h("span", { class: `kind ${s.kind}` }, t(`ch_kind_${s.kind}`)) : null,
+              h("span", { class: "muted small meta" }, t("students_n", { n: room?.student_count ?? 0 })),
+              s.note ? h("span", { class: "muted small" }, s.note) : null),
+            plan || last ? h("div", { class: "l2" }, plan, last) : null),
+          h("div", { class: "acts" }, until,
+            h("button", { class: "btn small primary", onClick: () => openLog(s) }, icon("file"), logged(s) ? t("log_edit") : t("log_lesson")),
+            moreMenu([menuItem(t("nav_docs"), null, { href: `#/docs?room=${s.room_id}`, icon: "file" }),
+              isToday ? menuItem(t("ch_move"), () => moveDialog(d, structure, s), { icon: "timetable" }) : null,
+              isToday ? menuItem(t("ch_cancel"), () => change({ action: "cancel", period: s.period }), { danger: true, icon: "trash" }) : null])));
       } })),
       ...(d.cancelled || []).map((s) => ({ start: s.start || "99", node: () => {
         const room = structure.rooms.find((r) => r.id === s.room_id);
         return h("div", { class: "lesson cancelled" },
           h("div", { class: "no" }, s.period),
-          h("div", { class: "what" }, h("b", {}, room ? roomLabel(room, structure) : s.room_id), h("span", { class: "kind cancelled" }, t("ch_cancelled")),
-            h("div", {}, h("button", { class: "btn small ghost", onClick: () => change({ action: "uncancel", period: s.period }) }, t("ch_undo")))),
-          timeCell(s.start, s.end));
+          h("div", { class: "what" }, h("div", { class: "l1" }, h("b", {}, room ? roomLabel(room, structure) : s.room_id), h("span", { class: "kind cancelled" }, t("ch_cancelled")))),
+          h("div", { class: "acts" }, h("button", { class: "btn small ghost", onClick: () => change({ action: "uncancel", period: s.period }) }, t("ch_undo"))));
       } })),
-      ...(d.duties || []).map((u) => ({ start: u.start, end: u.end, live: true, tone: "var(--pencil)", label: t(`duty_${u.kind}`), node: () => h("div", { class: "lesson duty" },
+      ...(d.duties || []).map((u) => ({ start: u.start, end: u.end, live: true, tone: "var(--pencil)", label: t(`duty_${u.kind}`), node: (until) => h("div", { class: "lesson duty" },
         h("div", { class: "no" }, icon("clock")),
-        h("div", { class: "what" }, h("b", {}, t(`duty_${u.kind}`)),
-          isToday ? h("div", {}, h("button", { class: "btn small ghost", onClick: () => change({ action: "cancel_duty", kind: u.kind }) }, t("duty_cancel"))) : null),
-        timeCell(u.start, u.end)) })),
+        h("div", { class: "what" }, h("div", { class: "l1" }, h("b", {}, t(`duty_${u.kind}`)))),
+        h("div", { class: "acts" }, until, isToday ? h("button", { class: "btn small ghost", onClick: () => change({ action: "cancel_duty", kind: u.kind }) }, t("duty_cancel")) : null)) })),
       ...(d.cancelled_duties || []).map((u) => ({ start: u.start, node: () => h("div", { class: "lesson cancelled" },
         h("div", { class: "no" }, icon("clock")),
-        h("div", { class: "what" }, h("b", {}, t(`duty_${u.kind}`)), h("span", { class: "kind cancelled" }, t("duty_cancelled")),
-          h("div", {}, h("button", { class: "btn small ghost", onClick: () => change({ action: "restore_duty", kind: u.kind }) }, t("duty_restore")))),
-        timeCell(u.start, u.end)) })),
+        h("div", { class: "what" }, h("div", { class: "l1" }, h("b", {}, t(`duty_${u.kind}`)), h("span", { class: "kind cancelled" }, t("duty_cancelled")))),
+        h("div", { class: "acts" }, h("button", { class: "btn small ghost", onClick: () => change({ action: "restore_duty", kind: u.kind }) }, t("duty_restore")))) })),
     ].sort((a, b) => a.start.localeCompare(b.start));
     if (items.length) {
       return h("div", {},
         coverOut,
-        isToday && d.school_day ? h("div", { class: "row", style: { marginBottom: ".6rem" } },
+        isToday ? trackNow(items, nextBox) && null : null,
+        h("div", { class: "ladder" }, items.map(slot)),
+        isToday && d.school_day ? h("div", { class: "row ladder-foot" },
           h("button", { class: "btn small", onClick: () => coverDialog(d, structure) }, icon("plus"), t("ch_cover")),
           d.sessions.length ? h("button", { class: "btn small", onClick: async () => {
             const r = await guarded(() => api.post("/api/docs/cover-sheet", { date: day })); if (!r) return;
@@ -229,9 +244,7 @@ export async function renderToday(root) {
                 h("button", { class: "btn small", onClick: () => guarded(() => api.post("/api/open", { path: r.path, folder: true })) }, icon("folder"), t("d_open_folder")))));
           } }, icon("file"), t("tn_cover_sheet")) : null,
           d.changed ? h("button", { class: "btn small ghost", onClick: () => change({ action: "restore" }) }, t("ch_restore")) : null) : null,
-        isToday ? trackNow(items, nextBox) && null : null,
-        h("div", { class: "ladder" }, items.map(slot)),
-        h("p", { class: "muted small", style: { marginTop: ".8rem" } }, t("sessions_count", { n: d.sessions.length })));
+        h("p", { class: "muted small", style: { marginTop: ".5rem" } }, t("sessions_count", { n: d.sessions.length })));
     }
     const addCover = isToday && d.school_day ? h("div", { style: { marginBottom: ".6rem" } }, h("button", { class: "btn small", onClick: () => coverDialog(d, structure) }, icon("plus"), t("ch_cover"))) : null;
     const reason = d.holiday ? t("no_school_today") : d.weekend ? t("weekend_today") : !d.school_day ? t("outside_term") : t("no_sessions_today");

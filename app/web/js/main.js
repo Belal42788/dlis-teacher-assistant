@@ -23,6 +23,7 @@ import { renderGrades } from "./pages/grades.js";
 import { renderInsights } from "./pages/insights.js";
 import { openQuick } from "./components/quick.js";
 import { showWhatsNew } from "./components/whatsnew.js";
+import { drawAiBall, showAiBall } from "./components/ai_ball.js";
 import { renderMap } from "./pages/map.js";
 import { renderAnnouncements } from "./pages/announcements.js";
 import { renderPublish } from "./pages/publish.js";
@@ -202,6 +203,8 @@ function drawShell() {
     h("nav", { class: "nav sub", "aria-label": t("main_menu") }, PAGES.filter((p) => p.icon && GROUPS.includes(p.group)).map(link)),
     h("main", { class: "main", id: "main", tabindex: "-1" }),
     h("button", { class: "fb-btn", "aria-label": t("fb_title"), onClick: feedbackDialog }, t("fb_btn"))));
+  drawAiBall(root.firstChild, (id) => { location.hash = `#/${id}`; });
+  showAiBall((location.hash.replace(/^#\//, "") || "today").split("?")[0]);
   setGroup(openGroup);
 }
 
@@ -296,6 +299,7 @@ async function route() {
     try { await page.render(main, { reloadApp }); } finally { clearTimeout(slow); clearTimeout(skel); document.body.classList.remove("slow-nav"); main.classList.remove("busy"); main.removeEventListener("input", mark, true); main.removeEventListener("change", mark, true); }
     if (shownPage !== page.id) main.scrollTop = 0; // a new tab starts at the top, not where the last one was scrolled to
     shownPage = page.id;
+    showAiBall(page.id);
     nameLooseControls(main);
     prepareNeighbours(page);
     api.note("/api/usage", { page: page.id }).catch(() => {});

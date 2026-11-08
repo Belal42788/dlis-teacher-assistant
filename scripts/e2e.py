@@ -180,8 +180,8 @@ try:
         page.click("text=ملف التفتيش")
         page.click(".nav a[data-page=today]"); page.wait_for_selector(".today-tasks")
         # one-day changes on Today: cancel + undo, then a cover lesson, then back to normal
-        page.click(".lesson summary >> nth=0"); page.wait_for_selector(".lesson .btn >> text=إلغاء النهارده"); n0 = page.locator(".lesson:not(.cancelled)").count()
-        page.click(".lesson .btn >> text=إلغاء النهارده >> nth=0"); page.wait_for_selector(".lesson.cancelled")
+        page.click(".lesson summary >> nth=0"); page.wait_for_selector(".lesson .menu-item >> text=إلغاء النهارده"); n0 = page.locator(".lesson:not(.cancelled)").count()
+        page.click(".lesson .menu-item >> text=إلغاء النهارده >> nth=0"); page.wait_for_selector(".lesson.cancelled")
         assert page.locator(".lesson:not(.cancelled)").count() == n0 - 1; shot("17e_cancelled")
         page.click(".lesson.cancelled >> text=رجّعها"); page.wait_for_function("!document.querySelector('.lesson.cancelled')")
         page.click("text=حصة تغطية"); page.fill(".modal input[type=text]", "المدرس غايب"); page.click(".modal footer .btn.primary")

@@ -19,7 +19,7 @@ export async function renderTimetable(root) {
   }
   state.isDirty = () => dirty;
 
-  root.replaceChildren(h("div", { class: "page" },
+  root.replaceChildren(h("div", { class: "page full" },
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_timetable")), h("p", {}, t("timetable_page_lead"))),
       h("div", { class: "row" }, status, saveBtn)),
     h("div", { class: "panel" }, ed.el)));
