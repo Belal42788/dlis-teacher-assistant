@@ -123,8 +123,11 @@ class TestNoInternet(unittest.TestCase):
     """A test that quietly used the real internet passed on the developer's computer and failed on GitHub. Never again."""
 
     def test_every_test_file_cuts_the_internet(self):
+        self.assertIn("nonet.install()", (ROOT / "tests" / "helpers.py").read_text(encoding="utf-8"))   # the shared header the test files import
         for f in sorted((ROOT / "tests").glob("test_*.py")):
-            self.assertIn("nonet.install()", f.read_text(encoding="utf-8"), f"{f.name} must call nonet.install() near the top")
+            text = f.read_text(encoding="utf-8")
+            self.assertTrue("nonet.install()" in text or re.search(r"(?m)^(from helpers import|import helpers)\b", text),
+                            f"{f.name} must call nonet.install() (or import helpers, which does) near the top")
 
     def test_other_computers_are_unreachable_but_this_one_is(self):
         import socket
