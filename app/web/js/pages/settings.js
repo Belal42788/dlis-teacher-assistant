@@ -11,6 +11,7 @@ import { promptEditor } from "../components/prompt_editor.js";
 import { cloudPanel } from "../components/cloud_panel.js";
 import { reminderPanel } from "../components/reminder_panel.js";
 import { openWhatsNew } from "../components/whatsnew.js";
+import { healthPanel } from "../components/health_panel.js";
 
 // Shared with the first-run guide.
 export async function importOldDialog(done) {
@@ -107,6 +108,8 @@ export async function renderSettings(root, { reloadApp }) {
       h("h3", { style: { marginTop: "1.4rem" } }, t("df_title")), h("p", { class: "muted" }, t("df_lead")),
       h("ul", { class: "df-list" }, ["docs", "slides", "sheets", "students", "data", "backup"].map((k) => h("li", {}, h("b", {}, t(`df_${k}_h`)), h("div", { class: "small muted" }, t(`df_${k}`))))),
       h("p", { class: "small" }, t("df_benefit")))],
+
+    ["health", t("hl_title"), healthPanel({ reloadApp })],
 
     ["rem", t("rem_title"), reminderPanel()],
 

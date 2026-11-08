@@ -1,0 +1,67 @@
+{
+  "schema_version": 2,
+  "stages": [
+    {
+      "id": "primary",
+      "name": "Primary",
+      "name_ar": "الابتدائي",
+      "order": 1
+    }
+  ],
+  "grades": [
+    {
+      "id": "g4",
+      "name": "Grade 4",
+      "name_ar": "الصف الرابع",
+      "stage_id": "primary",
+      "order": 5,
+      "settings": {
+        "lms_stage_name": "Grade 4",
+        "age_band": "UPPER_PRIMARY",
+        "period_minutes": 40,
+        "textbook": "",
+        "grading_maximums": {
+          "Behavior": 10,
+          "Attendance": 10,
+          "Classwork": 15,
+          "Homework": 15,
+          "Quiz Score": 20
+        }
+      }
+    },
+    {
+      "id": "g5",
+      "name": "Grade 5",
+      "name_ar": "الصف الخامس",
+      "stage_id": "primary",
+      "order": 6,
+      "settings": {
+        "lms_stage_name": "Grade 5",
+        "age_band": "UPPER_PRIMARY",
+        "period_minutes": 40,
+        "textbook": "",
+        "grading_maximums": {
+          "Behavior": 10,
+          "Attendance": 10,
+          "Classwork": 15,
+          "Homework": 15,
+          "Quiz Score": 20
+        }
+      }
+    }
+  ],
+  "rooms": [
+    {
+      "id": "g4-a",
+      "grade_id": "g4",
+      "name": "Grade 4 A",
+      "subject": ""
+    },
+    {
+      "id": "g5-b",
+      "grade_id": "g5",
+      "name": "Grade 5 B",
+      "subject": ""
+    }
+  ]
+}

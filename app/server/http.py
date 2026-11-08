@@ -302,6 +302,8 @@ class Handler(BaseHTTPRequestHandler):
             ("PUT", r"/api/seating", lambda m, b: svc.seating_save(b)),
             ("GET", r"/api/update", lambda m, b: svc.check_update()),
             ("POST", r"/api/update/dismiss", lambda m, b: svc.dismiss_update(b.get("version", ""))),
+            ("GET", r"/api/health", lambda m, b: svc.health()),
+            ("POST", r"/api/health/restore", lambda m, b: svc.backup_restore(b)),
             ("GET", r"/api/whats-new", lambda m, b: svc.whats_new(q.get("all") == "1")),
             ("POST", r"/api/whats-new/seen", lambda m, b: svc.mark_whats_new_seen()),
             ("POST", r"/api/update/setting", lambda m, b: svc.set_update_check(bool(b.get("enabled")))),

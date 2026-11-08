@@ -42,6 +42,7 @@ Feature files (each is a mixin of `Service`):
 <!-- AUTO:features -->
 | Mixin | File | Lines |
 |---|---|---|
+| `HealthMixin` | `app/server/health_service.py` | 58 |
 | `SeatingMixin` | `app/server/seating_service.py` | 56 |
 | `BehaviorMixin` | `app/server/behavior_service.py` | 89 |
 | `UpdateMixin` | `app/server/update_service.py` | 111 |
@@ -101,6 +102,9 @@ Habits that keep it simple: one feature = one `*_service.py` + one page + its ke
 * **A provider:** one entry in `ai_providers.json`.
 * **A language:** add a dictionary in `i18n.js` and set `dir` in `setLang`.
 * **Version:** `app/core/paths.py`, `installer/dlis.iss` and a new entry in `resources/whats_new.json` (`{"1.0.1": {"ar": [...], "en": [...]}}`, the "What is new" window teachers see once after updating). `python scripts/check_release.py v1.0.1` says what is still missing; tests enforce the same.
+
+## Changing how the data is stored
+Raise `DATA_VERSION` in `core/store.py` and add `MIGRATIONS[old] = step`. BEFORE you change the shape, run `python scripts/make_golden_fixture.py` so the old shape is frozen in `tests/fixtures/data_vN`; the tests then upgrade that folder, check the copy made before the upgrade, and fail if a field the old data had is no longer known. Restore of a backup lives in `core/restore.py` (and "App health" in Settings).
 
 ## Making a release (one click)
 1. Change the three things above, upload to GitHub, wait for the green Check.
@@ -262,6 +266,8 @@ The server listens on 127.0.0.1 only and every request carries the secret token 
 | PUT | `/api/seating` | `seating_save` |
 | GET | `/api/update` | `check_update` |
 | POST | `/api/update/dismiss` | `dismiss_update` |
+| GET | `/api/health` | `health` |
+| POST | `/api/health/restore` | `backup_restore` |
 | GET | `/api/whats-new` | `whats_new` |
 | POST | `/api/whats-new/seen` | `mark_whats_new_seen` |
 | POST | `/api/update/setting` | `set_update_check` |
