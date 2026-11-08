@@ -475,6 +475,9 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--b
 .seg-btn { flex: 1 1 auto; border: 0; background: transparent; color: var(--ink-2); font: inherit; font-weight: 600; padding: .5rem .9rem; border-radius: 9px; cursor: pointer; transition: background-color .12s, color .12s; }
 .seg-btn:hover { background: rgba(255,255,255,.6); }
 .seg-btn[aria-selected="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(28,31,77,.14); }
+.tab-hint { display: flex; gap: .65rem; align-items: flex-start; margin: -.3rem 0 1rem; padding: .6rem .9rem; border-radius: 10px; background: var(--blue-wash); color: var(--ink-2); font-size: .92rem; line-height: 1.6; }
+.tab-hint svg { flex: none; margin-top: .25rem; }
+.tab-hint b { color: var(--ink); }
 [hidden] { display: none !important; }
 
 /* ---------- stage colour carried through the app ---------- */

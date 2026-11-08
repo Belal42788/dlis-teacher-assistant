@@ -145,7 +145,7 @@ export async function renderSlides(root, { embedded = false } = {}) {
         s.data_url ? h("img", { class: "slide-pic", src: s.data_url, alt: "" }) : h("div", { class: "slide-pic empty" }, icon("file")));
     }));
     result.replaceChildren(memo.built ? h("div", { class: "banner ok" }, icon("check"),
-      h("div", { class: "grow" }, h("b", {}, t("sl_built", { n: memo.built.slides })), h("div", { class: "dir-ltr small" }, memo.built.rel)),
+      h("div", { class: "grow" }, h("b", {}, t("sl_built", { n: memo.built.slides })), h("div", { class: "dir-ltr small" }, memo.built.rel), h("div", { class: "muted small" }, t("sl_built_note"))),
       h("div", { class: "row" },
         h("button", { class: "btn small primary", onClick: () => guarded(() => api.post("/api/open", { path: memo.built.path, folder: false })) }, icon("file"), t("d_open_file")),
         h("button", { class: "btn small", onClick: () => guarded(() => api.post("/api/open", { path: memo.built.path, folder: true })) }, icon("folder"), t("d_open_folder")))) : null);
