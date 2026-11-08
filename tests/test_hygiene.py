@@ -110,6 +110,15 @@ class TestDocs(unittest.TestCase):
         self.assertEqual(make_dev_docs.render(old), old, "docs/DEVELOPER.md is out of date: run  python scripts/make_dev_docs.py")
 
 
+class TestPageList(unittest.TestCase):
+    def test_the_usage_counter_knows_every_page(self):
+        """The counter silently ignored 10 newer pages once. Now a new page in main.js must be added to PAGE_IDS too."""
+        from app.server.service import Service
+        main = (ROOT / "app/web/js/main.js").read_text(encoding="utf-8")
+        ids = set(re.findall(r'\{ id: "([a-z_]+)"', main)) - {"titlebar"}
+        self.assertEqual(ids, set(Service.PAGE_IDS))
+
+
 class TestNoInternet(unittest.TestCase):
     """A test that quietly used the real internet passed on the developer's computer and failed on GitHub. Never again."""
 

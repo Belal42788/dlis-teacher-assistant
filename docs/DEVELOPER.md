@@ -42,7 +42,7 @@ Feature files (each is a mixin of `Service`):
 <!-- AUTO:features -->
 | Mixin | File | Lines |
 |---|---|---|
-| `HealthMixin` | `app/server/health_service.py` | 58 |
+| `HealthMixin` | `app/server/health_service.py` | 61 |
 | `SeatingMixin` | `app/server/seating_service.py` | 56 |
 | `BehaviorMixin` | `app/server/behavior_service.py` | 89 |
 | `UpdateMixin` | `app/server/update_service.py` | 111 |
@@ -105,6 +105,9 @@ Habits that keep it simple: one feature = one `*_service.py` + one page + its ke
 
 ## Changing how the data is stored
 Raise `DATA_VERSION` in `core/store.py` and add `MIGRATIONS[old] = step`. BEFORE you change the shape, run `python scripts/make_golden_fixture.py` so the old shape is frozen in `tests/fixtures/data_vN`; the tests then upgrade that folder, check the copy made before the upgrade, and fail if a field the old data had is no longer known. Restore of a backup lives in `core/restore.py` (and "App health" in Settings).
+
+## Building for a school
+Edit `resources/school_server.json` (and `portal/config.js`) for the school, then `python scripts/school_check.py`. It refuses a secret Supabase key (service_role / sb_secret_) anywhere that ships, a url/key mismatch, and bad addresses. The Build and Release workflows run it first, so a wrong file never becomes an installer.
 
 ## Making a release (one click)
 1. Change the three things above, upload to GitHub, wait for the green Check.

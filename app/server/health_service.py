@@ -41,6 +41,8 @@ class HealthMixin:
         except OSError:
             free = None
         backups = restore.list_backups(store)
+        use = paths.read_prefs().get("usage") or {}
+        opens = {k: int(v) for k, v in (use.get("pages") or {}).items() if k in self.PAGE_IDS}
         return {
             "app_version": paths.VERSION, "platform": sys.platform, "data_version": store._stored_version() or DATA_VERSION,
             "latest_data_version": DATA_VERSION, "locked": store.locked, "data_folder": str(store.root),
@@ -48,6 +50,7 @@ class HealthMixin:
             "problems": list(store.problems), "errors": errors,
             "last_auto_backup": next((b["when"] for b in backups if b["kind"] == "auto"), ""),
             "backups": backups[:30],
+            "usage": {"since": use.get("since") or "", "pages": opens, "never": [k for k in self.PAGE_IDS if not opens.get(k)]},
         }
 
     def backup_restore(self, b: dict) -> dict:

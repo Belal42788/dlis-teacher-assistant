@@ -24,6 +24,8 @@ jobs:
         env:
           TAG: ${{ github.event.release.tag_name }}
         run: python scripts/check_release.py "$TAG"
+      - name: This school's server settings are safe
+        run: python scripts/school_check.py
   build:
     needs: verify
     uses: ./.github/workflows/build.yml

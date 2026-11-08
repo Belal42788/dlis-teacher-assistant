@@ -1,7 +1,7 @@
 // Settings > App health: how the app and the data folder are doing, the backups that exist (with a restore button), the last errors.
 import { h, icon, toast, confirmBox } from "../dom.js";
 import { api, guarded } from "../api.js";
-import { t, getLang } from "../i18n.js";
+import { t, getLang, hasKey } from "../i18n.js";
 
 const when = (iso) => new Date(iso).toLocaleString(getLang() === "ar" ? "ar-EG" : "en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
 const mb = (n) => (n >= 1024 ? `${(n / 1024).toFixed(1)} GB` : `${n} MB`);
@@ -12,6 +12,17 @@ function report(d) {
     `${d.rooms} classes, ${d.students} students, ${d.files} files, ${d.folder_mb} MB, ${d.free_mb ?? "?"} MB free`,
     `Last weekly backup: ${d.last_auto_backup || "never"}`, d.problems.length ? `Damaged files: ${d.problems.map((p) => p.file).join(", ")}` : "Damaged files: none",
     "Last errors:", ...(d.errors.length ? d.errors : ["none"])].join("\n");
+}
+
+const pageName = (id) => (hasKey(`nav_${id}`) ? t(`nav_${id}`) : id);
+
+// Which pages are used (counts stay on this computer). It helps to decide what to keep, move or remove.
+function usagePanel(u) {
+  const rows = Object.entries(u.pages).sort((a, b) => b[1] - a[1]);
+  const top = rows[0]?.[1] || 1;
+  return h("div", { class: "panel" }, h("h3", {}, t("hl_usage")), h("p", { class: "muted small" }, t("hl_usage_hint", { since: u.since || "—" })),
+    rows.length ? h("ul", { class: "hl-use" }, rows.map(([id, n]) => h("li", {}, h("span", {}, pageName(id)), h("span", { class: "hl-bar" }, h("i", { style: { width: `${Math.max(4, Math.round((n / top) * 100))}%` } })), h("b", {}, String(n))))) : h("p", { class: "muted" }, t("hl_usage_none")),
+    u.never.length && rows.length ? h("p", { class: "small" }, h("b", {}, `${t("hl_never_opened")}: `), u.never.map(pageName).join("، ")) : null);
 }
 
 export function healthPanel({ reloadApp }) {
@@ -46,6 +57,7 @@ export function healthPanel({ reloadApp }) {
         d.backups.length ? h("ul", { class: "hl-list" }, d.backups.map((b) => h("li", {},
           h("div", { class: "grow" }, h("b", {}, when(b.when)), h("div", { class: "small muted" }, `${t(`hl_kind_${b.kind}`)} · ${(b.size / 1024).toFixed(0)} KB${b.usable ? "" : ` · ${t("hl_empty")}`}`)),
           h("button", { class: "btn small", disabled: !!d.locked || !b.usable, onClick: () => restore(b) }, t("hl_restore"))))) : h("p", { class: "muted" }, t("hl_backups_none"))),
+      usagePanel(d.usage),
       h("div", { class: "panel" }, h("h3", {}, t("hl_errors")),
         d.errors.length ? h("pre", { class: "hl-log dir-ltr small" }, d.errors.join("\n")) : h("p", { class: "muted" }, t("hl_no_errors"))));
   }
