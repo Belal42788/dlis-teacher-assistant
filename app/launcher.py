@@ -272,6 +272,250 @@ def _selftest(server, out_file: str) -> int:
     return 0 if not problems else 1
 
 
+def _native_beep() -> None:
+    """The computer's own beep: a minimised web page is not allowed to make sound."""
+    try:
+        if sys.platform == "win32":
+            import winsound
+            for _ in range(3):
+                winsound.Beep(880, 200)
+                time.sleep(0.08)
+        elif sys.platform == "darwin":
+            import subprocess
+            subprocess.run(["afplay", "/System/Library/Sounds/Glass.aiff"], timeout=5)
+        else:
+            print("\a", end="", flush=True)
+    except Exception:
+        pass
+
+
+def _drag_window(window) -> None:
+    """Move the window while the mouse button is held (our own title bar). Windows only."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        from ctypes import wintypes
+        user32 = ctypes.windll.user32
+        user32.GetAsyncKeyState.argtypes = [ctypes.c_int]
+        user32.SetWindowPos.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_uint]
+        hwnd = ctypes.c_void_p(int(window.native.Handle.ToInt64()))
+        pt, rc = wintypes.POINT(), wintypes.RECT()
+        user32.GetCursorPos(ctypes.byref(pt)); user32.GetWindowRect(hwnd, ctypes.byref(rc))
+        if user32.IsZoomed(hwnd):  # dragging a maximised window brings it back to its normal size under the mouse
+            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+            user32.GetWindowRect(hwnd, ctypes.byref(rc))
+            w1 = rc.right - rc.left
+            user32.SetWindowPos(hwnd, None, pt.x - w1 // 2, pt.y - 15, 0, 0, 0x0001 | 0x0004 | 0x0010)
+            user32.GetWindowRect(hwnd, ctypes.byref(rc))
+        ox, oy, wx, wy = pt.x, pt.y, rc.left, rc.top
+        end = time.time() + 120
+        while user32.GetAsyncKeyState(0x01) & 0x8000 and time.time() < end:  # VK_LBUTTON
+            user32.GetCursorPos(ctypes.byref(pt))
+            user32.SetWindowPos(hwnd, None, wx + pt.x - ox, wy + pt.y - oy, 0, 0, 0x0001 | 0x0004 | 0x0010)  # no size, no z-order, no activate
+            time.sleep(0.008)
+        # let go at the very top of the screen = maximise (like every Windows program)
+        user32.GetCursorPos(ctypes.byref(pt))
+        top = 0
+        try:
+            class MI(ctypes.Structure):
+                _fields_ = [("cbSize", wintypes.DWORD), ("rcMonitor", wintypes.RECT), ("rcWork", wintypes.RECT), ("dwFlags", wintypes.DWORD)]
+            user32.MonitorFromPoint.restype = ctypes.c_void_p
+            user32.MonitorFromPoint.argtypes = [wintypes.POINT, wintypes.DWORD]
+            mi = MI(); mi.cbSize = ctypes.sizeof(MI)
+            if user32.GetMonitorInfoW(ctypes.c_void_p(user32.MonitorFromPoint(pt, 2)), ctypes.byref(mi)):
+                top = mi.rcMonitor.top
+        except Exception:
+            top = 0
+        if pt.y <= top + 4:
+            window.maximize()
+    except Exception:
+        import traceback
+        paths.log_error("could not move the window:\n" + traceback.format_exc())
+
+
+def _run_app_window(server: AppServer, args) -> int:
+    """The app window (pywebview) with the tray icon, reminders ringing and the window controls. Raises if there is no web view
+    on this computer, and the caller then falls back to the browser."""
+    import webview  # pywebview: a real app window, no browser bars
+
+    frameless = sys.platform == "win32" and args.custom_titlebar and not args.native_titlebar  # the normal title bar gives Windows 11 snap layouts (hover on maximize, Win+Z)
+    svc = server.service
+    state = {"tray": None, "quitting": False, "hidden": False}
+    holder: dict = {}
+
+    ring_stop = threading.Event()
+
+    def start_ring(seconds):
+        ring_stop.set()          # one ring at a time
+        time.sleep(0.05)
+        ring_stop.clear()
+
+        def run():
+            end = time.time() + (seconds if seconds > 0 else 3600)
+            while not ring_stop.is_set() and time.time() < end:
+                _native_beep()
+                ring_stop.wait(1.8)
+        threading.Thread(target=run, daemon=True).start()
+
+    def show_window():
+        w = holder.get("window")
+        if w:
+            try:
+                w.show()
+                # only un-minimize: restore() on a maximized window would shrink it back to its small size
+                minimized = True
+                if sys.platform == "win32":
+                    try:
+                        minimized = int(w.native.WindowState) == 1  # FormWindowState.Minimized
+                    except Exception:
+                        minimized = True
+                if minimized or state["hidden"]:
+                    w.restore()
+                state["hidden"] = False
+            except Exception:
+                pass
+
+    hooks: dict = {}
+    if not _single_instance(show_window, lambda: hooks.get("quit") and hooks["quit"]()):
+        server.shutdown()
+        return 0
+
+    ar = paths.read_prefs().get("language") == "ar"
+
+    def start_tray():
+        if state["tray"] or not _tray_available():
+            return
+        import pystray
+        from PIL import Image
+
+        menu = pystray.Menu(
+            pystray.MenuItem("فتح البرنامج" if ar else "Open", lambda *a: show_window(), default=True),
+            pystray.MenuItem("إغلاق تمامًا" if ar else "Quit", lambda *a: quit_app()))
+        icon = pystray.Icon("DLIS", Image.open(paths.resources_dir() / "icon.png"), paths.APP_NAME, menu)
+        icon.run_detached()
+        state["tray"] = icon
+
+    def stop_tray():
+        if state["tray"]:
+            try:
+                state["tray"].stop()
+            except Exception:
+                pass
+            state["tray"] = None
+
+    def quit_app():
+        state["quitting"] = True
+        stop_tray()
+        try:
+            holder["window"].destroy()
+        except Exception:
+            pass
+
+    hooks["quit"] = quit_app
+
+    def close_clicked():
+        if state["tray"] and not state["quitting"]:
+            holder["window"].hide()
+            state["hidden"] = True
+        else:
+            quit_app()
+
+    class WindowControls:  # called from the page
+        def minimize(self):
+            holder["window"].minimize()
+
+        def toggle_maximize(self):
+            _keep_taskbar_visible(holder["window"])
+            state_max = getattr(self, "_max", False)
+            (holder["window"].restore if state_max else holder["window"].maximize)()
+            self._max = not state_max
+
+        def start_drag(self):
+            """Move the window while the mouse button is held (our own title bar; works on every Windows version)."""
+            _drag_window(holder["window"])
+
+        def close(self):
+            close_clicked()
+
+        def reminder_stop(self):
+            ring_stop.set()
+
+        def reminder_alert(self, text="", sound=True, seconds=60):
+            """A reminder is due: bring the window up, ring (played by the computer itself, because a minimised
+            web page is not allowed to make sound) and show a balloon if it was hidden."""
+            was_hidden = state["hidden"]
+            if sound:
+                start_ring(int(seconds or 0))
+            show_window()
+            if was_hidden and state["tray"]:
+                try:
+                    state["tray"].notify(str(text)[:200], paths.APP_NAME)
+                except Exception:
+                    pass
+
+    # what this computer can do in the background
+    svc.background_support = {"tray": _tray_available(), "autostart": sys.platform == "win32" and bool(getattr(sys, "frozen", False))}
+
+    def apply_background(cfg):
+        if cfg.get("keep_running"):
+            start_tray()
+        else:
+            stop_tray()
+            show_window()
+        if svc.background_support["autostart"]:
+            try:
+                _set_autostart(bool(cfg.get("autostart")))
+            except Exception:
+                pass
+
+    svc.apply_background = apply_background
+    saved_bg = paths.read_prefs().get("background") or {}
+    if saved_bg.get("keep_running"):
+        start_tray()
+    start_hidden = bool(args.background and state["tray"])
+
+    window = webview.create_window(paths.APP_NAME, server.url, width=1320, height=860, min_size=(960, 640), hidden=start_hidden,
+                                   frameless=frameless, easy_drag=False, js_api=WindowControls())
+    holder["window"] = window
+    state["hidden"] = start_hidden
+    svc.frameless = frameless
+
+    def on_closing():  # the system close button / Alt+F4: hide near the clock instead of quitting
+        if state["tray"] and not state["quitting"]:
+            window.hide()
+            state["hidden"] = True
+            return False
+        return None
+
+    window.events.closing += on_closing
+    window.events.shown += lambda: (_keep_taskbar_visible(window), _enable_taskbar_minimize(window), _set_window_icon(window))
+
+    def native_folder_dialog(start: str = ""):
+        kind = getattr(getattr(webview, "FileDialog", None), "FOLDER", None) or webview.FOLDER_DIALOG
+        start = start if start and Path(start).is_dir() else str(Path.home())
+        res = window.create_file_dialog(kind, directory=start)
+        return res[0] if res else ""
+
+    svc.native_folder_dialog = native_folder_dialog
+
+    def keep_ticking():  # a hidden window may slow its timers down; nudge the reminder check
+        while True:
+            time.sleep(20)
+            if state["hidden"]:
+                try:
+                    window.evaluate_js("window.__dlisTick && window.__dlisTick()")
+                except Exception:
+                    pass
+
+
+    threading.Thread(target=keep_ticking, daemon=True).start()
+    webview.start()
+    stop_tray()
+    server.shutdown()
+    return 0
+
+
 def _main(argv: list[str] | None = None) -> int:
     for name in ("stdout", "stderr"):  # a windowed .exe has none; anything that prints would crash
         if getattr(sys, name) is None:
@@ -301,238 +545,7 @@ def _main(argv: list[str] | None = None) -> int:
 
     if not args.browser:
         try:
-            import webview  # pywebview: a real app window, no browser bars
-
-            frameless = sys.platform == "win32" and args.custom_titlebar and not args.native_titlebar  # the normal title bar gives Windows 11 snap layouts (hover on maximize, Win+Z)
-            svc = server.service
-            state = {"tray": None, "quitting": False, "hidden": False}
-            holder: dict = {}
-
-            ring_stop = threading.Event()
-
-            def native_beep():
-                try:
-                    if sys.platform == "win32":
-                        import winsound
-                        for _ in range(3):
-                            winsound.Beep(880, 200)
-                            time.sleep(0.08)
-                    elif sys.platform == "darwin":
-                        import subprocess
-                        subprocess.run(["afplay", "/System/Library/Sounds/Glass.aiff"], timeout=5)
-                    else:
-                        print("\a", end="", flush=True)
-                except Exception:
-                    pass
-
-            def start_ring(seconds):
-                ring_stop.set()          # one ring at a time
-                time.sleep(0.05)
-                ring_stop.clear()
-
-                def run():
-                    end = time.time() + (seconds if seconds > 0 else 3600)
-                    while not ring_stop.is_set() and time.time() < end:
-                        native_beep()
-                        ring_stop.wait(1.8)
-                threading.Thread(target=run, daemon=True).start()
-
-            def show_window():
-                w = holder.get("window")
-                if w:
-                    try:
-                        w.show()
-                        # only un-minimize: restore() on a maximized window would shrink it back to its small size
-                        minimized = True
-                        if sys.platform == "win32":
-                            try:
-                                minimized = int(w.native.WindowState) == 1  # FormWindowState.Minimized
-                            except Exception:
-                                minimized = True
-                        if minimized or state["hidden"]:
-                            w.restore()
-                        state["hidden"] = False
-                    except Exception:
-                        pass
-
-            hooks: dict = {}
-            if not _single_instance(show_window, lambda: hooks.get("quit") and hooks["quit"]()):
-                server.shutdown()
-                return 0
-
-            ar = paths.read_prefs().get("language") == "ar"
-
-            def start_tray():
-                if state["tray"] or not _tray_available():
-                    return
-                import pystray
-                from PIL import Image
-
-                menu = pystray.Menu(
-                    pystray.MenuItem("فتح البرنامج" if ar else "Open", lambda *a: show_window(), default=True),
-                    pystray.MenuItem("إغلاق تمامًا" if ar else "Quit", lambda *a: quit_app()))
-                icon = pystray.Icon("DLIS", Image.open(paths.resources_dir() / "icon.png"), paths.APP_NAME, menu)
-                icon.run_detached()
-                state["tray"] = icon
-
-            def stop_tray():
-                if state["tray"]:
-                    try:
-                        state["tray"].stop()
-                    except Exception:
-                        pass
-                    state["tray"] = None
-
-            def quit_app():
-                state["quitting"] = True
-                stop_tray()
-                try:
-                    holder["window"].destroy()
-                except Exception:
-                    pass
-
-            hooks["quit"] = quit_app
-
-            def close_clicked():
-                if state["tray"] and not state["quitting"]:
-                    holder["window"].hide()
-                    state["hidden"] = True
-                else:
-                    quit_app()
-
-            class WindowControls:  # called from the page
-                def minimize(self):
-                    holder["window"].minimize()
-
-                def toggle_maximize(self):
-                    _keep_taskbar_visible(holder["window"])
-                    state_max = getattr(self, "_max", False)
-                    (holder["window"].restore if state_max else holder["window"].maximize)()
-                    self._max = not state_max
-
-                def start_drag(self):
-                    """Move the window while the mouse button is held (our own title bar; works on every Windows version)."""
-                    if sys.platform != "win32":
-                        return
-                    try:
-                        import ctypes
-                        from ctypes import wintypes
-                        user32 = ctypes.windll.user32
-                        user32.GetAsyncKeyState.argtypes = [ctypes.c_int]
-                        user32.SetWindowPos.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_uint]
-                        hwnd = ctypes.c_void_p(int(holder["window"].native.Handle.ToInt64()))
-                        pt, rc = wintypes.POINT(), wintypes.RECT()
-                        user32.GetCursorPos(ctypes.byref(pt)); user32.GetWindowRect(hwnd, ctypes.byref(rc))
-                        if user32.IsZoomed(hwnd):  # dragging a maximised window brings it back to its normal size under the mouse
-                            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
-                            user32.GetWindowRect(hwnd, ctypes.byref(rc))
-                            w1 = rc.right - rc.left
-                            user32.SetWindowPos(hwnd, None, pt.x - w1 // 2, pt.y - 15, 0, 0, 0x0001 | 0x0004 | 0x0010)
-                            user32.GetWindowRect(hwnd, ctypes.byref(rc))
-                        ox, oy, wx, wy = pt.x, pt.y, rc.left, rc.top
-                        end = time.time() + 120
-                        while user32.GetAsyncKeyState(0x01) & 0x8000 and time.time() < end:  # VK_LBUTTON
-                            user32.GetCursorPos(ctypes.byref(pt))
-                            user32.SetWindowPos(hwnd, None, wx + pt.x - ox, wy + pt.y - oy, 0, 0, 0x0001 | 0x0004 | 0x0010)  # no size, no z-order, no activate
-                            time.sleep(0.008)
-                        # let go at the very top of the screen = maximise (like every Windows program)
-                        user32.GetCursorPos(ctypes.byref(pt))
-                        top = 0
-                        try:
-                            class MI(ctypes.Structure):
-                                _fields_ = [("cbSize", wintypes.DWORD), ("rcMonitor", wintypes.RECT), ("rcWork", wintypes.RECT), ("dwFlags", wintypes.DWORD)]
-                            user32.MonitorFromPoint.restype = ctypes.c_void_p
-                            user32.MonitorFromPoint.argtypes = [wintypes.POINT, wintypes.DWORD]
-                            mi = MI(); mi.cbSize = ctypes.sizeof(MI)
-                            if user32.GetMonitorInfoW(ctypes.c_void_p(user32.MonitorFromPoint(pt, 2)), ctypes.byref(mi)):
-                                top = mi.rcMonitor.top
-                        except Exception:
-                            top = 0
-                        if pt.y <= top + 4:
-                            holder["window"].maximize()
-                    except Exception:
-                        import traceback
-                        paths.log_error("could not move the window:\n" + traceback.format_exc())
-
-                def close(self):
-                    close_clicked()
-
-                def reminder_stop(self):
-                    ring_stop.set()
-
-                def reminder_alert(self, text="", sound=True, seconds=60):
-                    """A reminder is due: bring the window up, ring (played by the computer itself, because a minimised
-                    web page is not allowed to make sound) and show a balloon if it was hidden."""
-                    was_hidden = state["hidden"]
-                    if sound:
-                        start_ring(int(seconds or 0))
-                    show_window()
-                    if was_hidden and state["tray"]:
-                        try:
-                            state["tray"].notify(str(text)[:200], paths.APP_NAME)
-                        except Exception:
-                            pass
-
-            # what this computer can do in the background
-            svc.background_support = {"tray": _tray_available(), "autostart": sys.platform == "win32" and bool(getattr(sys, "frozen", False))}
-
-            def apply_background(cfg):
-                if cfg.get("keep_running"):
-                    start_tray()
-                else:
-                    stop_tray()
-                    show_window()
-                if svc.background_support["autostart"]:
-                    try:
-                        _set_autostart(bool(cfg.get("autostart")))
-                    except Exception:
-                        pass
-
-            svc.apply_background = apply_background
-            saved_bg = paths.read_prefs().get("background") or {}
-            if saved_bg.get("keep_running"):
-                start_tray()
-            start_hidden = bool(args.background and state["tray"])
-
-            window = webview.create_window(paths.APP_NAME, server.url, width=1320, height=860, min_size=(960, 640), hidden=start_hidden,
-                                           frameless=frameless, easy_drag=False, js_api=WindowControls())
-            holder["window"] = window
-            state["hidden"] = start_hidden
-            svc.frameless = frameless
-
-            def on_closing():  # the system close button / Alt+F4: hide near the clock instead of quitting
-                if state["tray"] and not state["quitting"]:
-                    window.hide()
-                    state["hidden"] = True
-                    return False
-                return None
-
-            window.events.closing += on_closing
-            window.events.shown += lambda: (_keep_taskbar_visible(window), _enable_taskbar_minimize(window), _set_window_icon(window))
-
-            def native_folder_dialog(start: str = ""):
-                kind = getattr(getattr(webview, "FileDialog", None), "FOLDER", None) or webview.FOLDER_DIALOG
-                start = start if start and Path(start).is_dir() else str(Path.home())
-                res = window.create_file_dialog(kind, directory=start)
-                return res[0] if res else ""
-
-            svc.native_folder_dialog = native_folder_dialog
-
-            def keep_ticking():  # a hidden window may slow its timers down; nudge the reminder check
-                while True:
-                    time.sleep(20)
-                    if state["hidden"]:
-                        try:
-                            window.evaluate_js("window.__dlisTick && window.__dlisTick()")
-                        except Exception:
-                            pass
-
-
-            threading.Thread(target=keep_ticking, daemon=True).start()
-            webview.start()
-            stop_tray()
-            server.shutdown()
-            return 0
+            return _run_app_window(server, args)
         except Exception as e:  # not installed, or no web view on this computer
             import traceback
             paths.log_error("App window could not start, so the browser was used instead:\n" + traceback.format_exc())

@@ -1,15 +1,20 @@
-import { h, icon, toast } from "../dom.js";
+import { h, icon } from "../dom.js";
 import { api, guarded } from "../api.js";
-import { t, getLang } from "../i18n.js";
+import { t } from "../i18n.js";
 import { renderSlides } from "./slides.js";
-import { sourcePicker } from "../components/source_pick.js";
-import { saveToBank, pickFromBank } from "../components/bank_pick.js";
+import { docsShared } from "../components/docs_shared.js";
+import { lessonPanel } from "../components/docs_lesson.js";
+import { quizPanel } from "../components/docs_quiz.js";
+import { certsPanel } from "../components/docs_certs.js";
+import { gradingPanel } from "../components/docs_grading.js";
+import { revisionPanel } from "../components/docs_revision.js";
+import { weekPanel } from "../components/docs_week.js";
 import { roomLabel, gradeName, fmtShort, triName } from "../labels.js";
 
 const memoDocs = { tab: "wk", step: 1 };
-const DAY_FIELDS = ["sunday", "monday", "tuesday", "wednesday", "thursday"];
-const QUIZ_EXAMPLE = "1. What is the CPU?\na) The brain of the computer\nb) A screen\nc) A printer\nAnswer: a\n\n2. Which one is an input device?\na) Mouse\nb) Speaker\nAnswer: a";
 
+// "Create files": three steps (class and week, what to make, fill it in). Each kind of file is its own panel in components/docs_*.js;
+// this page picks the class and week, keeps them in `sel`, and hands each panel what it needs.
 export async function renderDocs(root) {
   const [structure, ov, tt] = await Promise.all([api.get("/api/structure"), api.get("/api/overview"), api.get("/api/timetable")]);
   const q = new URLSearchParams((location.hash.split("?")[1]) || "");
@@ -41,11 +46,24 @@ export async function renderDocs(root) {
   const info = h("div", { class: "muted small", style: { marginTop: ".5rem" } });
   roomSel.value = sel.room; triSel.value = sel.tri;
 
+
   function drawWeeks() {
     weekSel.replaceChildren(triObj().weeks.map((w) => h("option", { value: w.number }, `${t("week_n", { n: w.number })} · ${fmtShort(w.start)} → ${fmtShort(w.end)}${w.school_days === 0 ? " ✕" : ""}`)));
     if (!triObj().weeks.some((w) => w.number === sel.week)) sel.week = 1;
     weekSel.value = sel.week;
   }
+
+  const ai = await guarded(() => api.get("/api/ai")) || { ready: false };
+  const shared = docsShared(ai);
+  const ctx = { root, structure, rooms, used, sel, gradeOf, ai, ...shared };
+  const lesson = await lessonPanel(ctx);
+  const quiz = await quizPanel(ctx);
+  const revision = await revisionPanel(ctx);
+  const grading = gradingPanel(ctx);
+  const certs = certsPanel(ctx);
+  const week = await weekPanel(ctx);
+  const result = shared.result;
+
   // the week's topic comes from the scheme of work: shown here, and put in the topic boxes that are still empty
   const planBox = h("div", { class: "plan-line small", style: { marginTop: ".4rem" } });
   async function planLine() {
@@ -53,268 +71,27 @@ export async function renderDocs(root) {
     const r = await guarded(() => api.get(`/api/slides/topics?grade=${g.id}&tri=${sel.tri}`));
     const w = r && r.weeks.find((x) => x.week === sel.week);
     if (!w || !w.topic) { planBox.replaceChildren(icon("info"), " ", t("pl_none"), " ", h("a", { href: "#/scheme" }, t("pl_open"))); return; }
-    if (w.curriculum && lp.objectives && (!lp.objectives.value.trim() || lp.objectives.dataset.auto === lp.objectives.value)) { lp.objectives.value = w.curriculum; lp.objectives.dataset.auto = w.curriculum; }   // curriculum objectives from the scheme
+    if (w.curriculum) lesson.setObjectives(w.curriculum);
     planBox.replaceChildren(icon("list"), " ", t("pl_from"), " ", h("b", {}, w.unit ? `${w.unit} · ${w.topic}` : w.topic), w.pages ? ` · ${t("sc_pages")} ${w.pages}` : "", " ", h("a", { href: "#/scheme" }, t("pl_edit")));
-    for (const el of [topic, qTopic, rvTopic]) { if (!el.value.trim() || el.dataset.auto === el.value) { el.value = w.topic; el.dataset.auto = w.topic; } }
+    for (const el of [lesson.topic, quiz.topic, revision.topic]) { if (!el.value.trim() || el.dataset.auto === el.value) { el.value = w.topic; el.dataset.auto = w.topic; } }
+  }
+  // the student names are loaded once per class and shared by the two boxes that list them
+  async function loadNames() {
+    const r = await guarded(() => api.get(`/api/rooms/${sel.room}/students`));
+    const names = (r && r.names) || [];
+    grading.setNames(names); certs.setNames(names);
   }
   async function refresh() {
     const c = await guarded(() => api.get(`/api/docs/context?room=${sel.room}&tri=${sel.tri}&week=${sel.week}`));
     if (!c) return;
     const notes = Object.entries(c.day_notes).map(([d, n]) => `${t(`day_${d}`)}: ${n}`);
     info.replaceChildren(`${gradeName(gradeOf())} · ${c.range}`, notes.length ? h("div", {}, icon("info"), " ", notes.join(" · ")) : null);
-    gsCount.textContent = t("students_n", { n: c.students });
-    loadGsNames();
-    fillWeekTopics();
+    grading.count.textContent = t("students_n", { n: c.students });
+    loadNames();
+    week.fillTopics();
     planLine();
-    // days this grade has no lesson: the Word file will say "No session"
-    DAY_FIELDS.forEach((d) => { const off = !c.teach_days.includes(d[0].toUpperCase() + d.slice(1)); lp[d].placeholder = off ? t("d_no_session") : ""; lp[d].classList.toggle("no-session", off); });
+    lesson.applyContext(c);
   }
-
-  // ---------- AI helper (fills the boxes; the teacher reviews, then creates the file)
-  const ai = await guarded(() => api.get("/api/ai")) || { ready: false };
-  const aiNeeded = () => ai.ready ? null : h("div", { class: "banner" }, icon("info"), h("div", { class: "small" }, h("a", { href: "#/settings" }, t("ai_setup_link"))));
-  const aiButton = (label, run) => {
-    const b = h("button", { class: "btn", disabled: !ai.ready, onClick: async () => {
-      b.disabled = true; const old = b.lastChild.textContent; b.lastChild.textContent = t("ai_writing");
-      try { const ok = await guarded(run); if (ok !== undefined) toast(t("ai_filled")); } finally { b.disabled = false; b.lastChild.textContent = old; }
-    } }, icon("spark"), label);
-    return b;
-  };
-
-  // ---------- "use my slides" (sources the teacher imported): the AI helpers then write from them
-  const srcLp = await sourcePicker(async (id, s) => { if (id && s && s.topic && !topic.value.trim()) topic.value = s.topic; });
-  const srcQz = await sourcePicker(null, { exact: true });
-  const srcRv = await sourcePicker((id, s) => { if (id && s && s.topic && !rvTopic.value.trim()) rvTopic.value = s.topic; }, { exact: true });
-  const sid = (p) => (p ? p.value() : "");
-
-  // ---------- results area
-  const result = h("div", {});
-  function showResult(r, extra) {
-    result.replaceChildren(h("div", { class: "banner ok" }, icon("check"),
-      h("div", { class: "grow" }, h("b", {}, t("d_created")), h("div", { class: "dir-ltr small" }, r.rel), extra || null),
-      h("div", { class: "row" },
-        h("button", { class: "btn small primary", onClick: () => open(r.path, false) }, icon("file"), t("d_open_file")),
-        h("button", { class: "btn small", onClick: () => open(r.path, true) }, icon("folder"), t("d_open_folder")),
-        /grading|lesson_plan|trimester_plan|Certificates_|Cards_|\.txt$/i.test(r.name) ? null : h("a", { class: "btn small", href: `#/library?share=${encodeURIComponent(r.rel.replace(/\\/g, "/"))}` }, icon("send"), t("lb_share")))));
-    result.scrollIntoView({ block: "nearest" });
-  }
-  const open = (path, folder) => guarded(() => api.post("/api/open", { path, folder }));
-  const run = async (btn, fn) => { btn.disabled = true; try { return await guarded(fn); } finally { btn.disabled = false; } };
-
-  // ---------- lesson plan
-  const lp = {};
-  const field = (key, label, rows = 2, ph = "") => { lp[key] = h("textarea", { rows, placeholder: ph, style: { minHeight: "0" } }); return h("label", { class: "field" }, h("span", { class: "label" }, label), lp[key]); };
-  const topic = h("input", { type: "text" }); lp.topic = topic;
-  const lpBtn = h("button", { class: "btn primary", onClick: () => run(lpBtn, async () => {
-    const content = Object.fromEntries(Object.entries(lp).map(([k, el]) => [k, el.value]));
-    showResult(await api.post("/api/docs/lesson-plan", { grade_id: gradeOf().id, trimester: sel.tri, week: sel.week, content }));
-  }) }, icon("file"), t("d_create_lp"));
-  const lpAi = aiButton(t("ai_write"), async () => {
-    if (!topic.value.trim()) { toast(t("ai_need_topic"), "error"); return null; }
-    const r = await api.post("/api/ai/lesson", { grade_id: gradeOf().id, trimester: sel.tri, week: sel.week, topic: topic.value.trim(), source_id: sid(srcLp) });
-    for (const [k, v] of Object.entries(r.content)) if (lp[k] && v) lp[k].value = v;
-    return true;
-  });
-  const lpPanel = h("div", { class: "panel" }, h("h3", {}, t("d_lp_title")), h("p", { class: "muted small" }, t("d_lp_lead")), aiNeeded(),
-    srcLp ? srcLp.el : null, h("label", { class: "field" }, h("span", { class: "label" }, t("d_topic")), topic),
-    field("objectives", t("d_objectives"), 3),
-    h("details", { class: "more" }, h("summary", {}, t("d_steps_by_day")),
-      DAY_FIELDS.map((d) => field(d, t(`day_${d[0].toUpperCase()}${d.slice(1)}`), 2))),
-    h("details", { class: "more" }, h("summary", {}, t("d_more")),
-      field("practice_pages", t("d_practice"), 1), field("activities", t("d_activities")), field("resources", t("d_resources")),
-      field("differentiation", t("d_diff")), field("assessment", t("d_assess")), field("reflection", t("d_reflect"))),
-    h("div", { class: "row" }, lpAi, lpBtn));
-
-  // ---------- quiz
-  const quizNo = h("input", { type: "number", min: 1, max: 20, value: 1, style: { width: "5em" } });
-  const quizText = h("textarea", { rows: 9, placeholder: QUIZ_EXAMPLE, dir: "ltr", onInput: () => countQ() });
-  const withAns = h("input", { type: "checkbox" });
-  const twoVer = h("input", { type: "checkbox" });
-  const found = h("span", { class: "muted small" });
-  let bankIds = [];   // saved questions that went into this quiz (so the bank can remember where they were used)
-  const countQ = () => { const n = (quizText.value.match(/^\s*(?:Q\s*)?\d+\s*[.)\-:]/gim) || []).length; found.textContent = n ? t("d_questions_found", { n }) : ""; };
-  const quizBtn = h("button", { class: "btn primary", onClick: () => run(quizBtn, async () => {
-    await api.post("/api/docs/quiz", { grade_id: gradeOf().id, trimester: sel.tri, week: sel.week, number: +quizNo.value || 1, text: quizText.value, with_answers: withAns.checked, versions: twoVer.checked ? 2 : 1, bank_ids: bankIds }).then((r) => { showResult(r, r.b ? h("div", {}, h("button", { class: "btn small", onClick: () => open(r.b.path, false) }, icon("file"), t("d_open_b"))) : null); });
-  }) }, icon("file"), t("d_create_quiz"));
-  const exportBtn = (fmt, label) => { const b = h("button", { class: "btn", onClick: () => run(b, async () => {
-    const r = await api.post("/api/docs/quiz-export", { grade_id: gradeOf().id, trimester: sel.tri, week: sel.week, number: +quizNo.value || 1, text: quizText.value, format: fmt, bank_ids: bankIds });
-    showResult(r, h("p", { class: "muted small" }, t(fmt === "forms" ? "qx_forms_how" : "qx_moodle_how")));
-  }) }, icon("download"), label); return b; };
-  const qTopic = h("input", { type: "text", placeholder: t("ai_topic_q"), style: { flex: "1", minWidth: "10em" } });
-  const secBox = h("div", { class: "qsec-list" });
-  const secs = [{ type: "mcq", count: 5, options: 4, topic: "" }];
-  const drawSecs = () => secBox.replaceChildren(...secs.map((sc, i) => {
-    const type = h("select", { onChange: (e) => { sc.type = e.target.value; drawSecs(); } }, ["mcq", "tf", "match", "essay", "fill"].map((k) => h("option", { value: k, selected: k === sc.type }, t(`qt_${k}`))));
-    const cnt = h("input", { type: "number", min: 1, max: 20, value: sc.count, "aria-label": t("ai_q_count"), style: { width: "4.5em" }, onInput: (e) => { sc.count = +e.target.value || 1; } });
-    const opts = sc.type === "mcq" ? h("label", { class: "row small" }, t("qt_choices"), h("input", { type: "number", min: 2, max: 6, value: sc.options, style: { width: "4em" }, onInput: (e) => { sc.options = +e.target.value || 4; } })) : null;
-    const topic = h("input", { type: "text", value: sc.topic, placeholder: t("qt_topic_ph"), style: { flex: "1", minWidth: "9em" }, onInput: (e) => { sc.topic = e.target.value; } });
-    return h("div", { class: "qsec" }, type, h("label", { class: "row small" }, t("ai_q_count"), cnt), opts, topic,
-      secs.length > 1 ? h("button", { class: "btn icon ghost", "aria-label": t("remove"), onClick: () => { secs.splice(i, 1); drawSecs(); } }, icon("trash")) : null);
-  }));
-  drawSecs();
-  const addSec = h("button", { class: "btn small", onClick: () => { secs.push({ type: "mcq", count: 3, options: 4, topic: "" }); drawSecs(); } }, icon("plus"), t("qt_add"));
-  const qLevel = h("select", {}, ["easy", "medium", "hard"].map((l) => h("option", { value: l, selected: l === "medium" }, t(`ai_${l}`))));
-  const quizAi = aiButton(t("ai_write"), async () => {
-    if (!sid(srcQz) && !qTopic.value.trim() && secs.some((x) => !x.topic.trim())) { toast(t("ai_need_topic"), "error"); return null; }
-    const r = await api.post("/api/ai/quiz", { grade_id: gradeOf().id, topic: qTopic.value.trim(), sections: secs, difficulty: qLevel.value, source_id: sid(srcQz), ...(srcQz ? srcQz.extra() : {}) });
-    quizText.value = r.text; countQ(); return true;
-  });
-  const bankPick = h("button", { class: "btn small", onClick: () => pickFromBank({ gradeId: gradeOf().id, start: (quizText.value.match(/^\s*(?:Q\s*)?\d+\s*[.)\-:]/gim) || []).length, onPick: (r) => {
-    quizText.value = `${quizText.value.trim()}${quizText.value.trim() ? "\n\n" : ""}${r.text}`; bankIds = [...new Set([...bankIds, ...r.ids])]; countQ();
-  } }) }, icon("list"), t("bk_pick"));
-  const bankSave = h("button", { class: "btn small", onClick: () => saveToBank({ gradeId: gradeOf().id, topic: qTopic.value.trim(), level: qLevel.value, text: quizText.value }) }, icon("plus"), t("bk_save_these"));
-  const quizPanel = h("div", { class: "panel" }, h("h3", {}, t("d_quiz_title")), h("p", { class: "muted small" }, t("d_quiz_lead")), aiNeeded(), srcQz ? srcQz.el : null,
-    h("div", { class: "ai-bar" }, qTopic, qLevel),
-    secBox, h("div", { class: "row", style: { margin: ".4rem 0" } }, addSec, h("span", { class: "grow" }), quizAi),
-    h("label", { class: "row", style: { marginBottom: ".6rem" } }, h("b", {}, t("d_quiz_n")), quizNo),
-    h("div", { class: "row", style: { marginBottom: ".4rem" } }, bankPick, bankSave),
-    quizText, found,
-    h("div", { class: "row", style: { marginTop: ".6rem" } },
-      h("label", { class: "row" }, withAns, t("d_with_answers")), h("label", { class: "row" }, twoVer, t("d_two_versions")), h("span", { class: "grow" }), quizBtn),
-    h("div", { class: "row", style: { marginTop: ".5rem" } }, h("span", { class: "muted small" }, t("qx_title")), exportBtn("gift", t("qx_moodle")), exportBtn("forms", t("qx_forms"))));
-
-  // ---------- certificates and thank-you cards (names go only into the Word file, never to the AI)
-  const ctOcc = h("select", {}, ["excellence", "improvement", "behavior", "participation", "attendance", "thanks", "custom"].map((k) => h("option", { value: k }, t(`ct_o_${k}`))));
-  const ctKind = h("select", {}, h("option", { value: "certificate" }, t("ct_k_cert")), h("option", { value: "card" }, t("ct_k_card")));
-  const ctLang = h("select", {}, h("option", { value: "ar" }, "العربية"), h("option", { value: "en" }, "English"));
-  ctLang.value = getLang();
-  const ctTitle = h("input", { type: "text", placeholder: t("ct_title_ph") });
-  const ctText = h("input", { type: "text", placeholder: t("ct_text_ph"), style: { minWidth: "18rem" } });
-  const ctCustom = h("div", { class: "row", hidden: true }, ctTitle, ctText);
-  ctOcc.addEventListener("change", () => { ctCustom.hidden = ctOcc.value !== "custom"; });
-  const ctNames = h("div", { class: "gs-absent", hidden: true, "data-nodraft": "1" });
-  const ctAll = h("input", { type: "checkbox", checked: true });
-  ctAll.addEventListener("change", () => { ctNames.hidden = ctAll.checked; });
-  const ctExtra = h("textarea", { rows: 3, placeholder: t("ct_extra_ph") });
-  const ctBtn = h("button", { class: "btn primary", onClick: () => run(ctBtn, async () => {
-    const picked = [...ctNames.querySelectorAll("input:checked")].map((x) => x.value);
-    const classPart = ctAll.checked ? { room_id: sel.room } : picked.length ? { room_id: sel.room, students: picked } : { room_id: "" };
-    const r = await api.post("/api/docs/certificates", { ...classPart, occasion: ctOcc.value, kind: ctKind.value, lang: ctLang.value,
-      title: ctTitle.value.trim(), text: ctText.value.trim(), extra_names: ctExtra.value, date: new Date().toISOString().slice(0, 10) });
-    showResult(r, h("div", { class: "small" }, t("ct_count", { n: r.count })));
-  }) }, icon("file"), t("ct_create"));
-  const ctPanel = h("div", { class: "panel" }, h("h3", {}, t("ct_title")), h("p", { class: "muted small" }, t("ct_lead")),
-    h("div", { class: "row" }, h("label", { class: "field" }, h("span", { class: "label" }, t("ct_occasion")), ctOcc),
-      h("label", { class: "field" }, h("span", { class: "label" }, t("ct_kind")), ctKind), h("label", { class: "field" }, h("span", { class: "label" }, t("ct_lang")), ctLang)),
-    ctCustom,
-    h("label", { class: "row", style: { marginTop: ".5rem" } }, ctAll, h("b", {}, t("ct_all"))), ctNames,
-    h("label", { class: "field", style: { marginTop: ".5rem" } }, h("span", { class: "label" }, t("ct_extra")), ctExtra),
-    h("div", { class: "row", style: { marginTop: ".6rem" } }, h("span", { class: "grow" }), ctBtn));
-
-  // ---------- grading sheet
-  const gsCount = h("span", { class: "muted" });
-  // "full mark" for everyone except the absent: the teacher ticks the parts to fill and the students who were absent (left empty)
-  const GS_PARTS = ["behavior", "attendance", "classwork", "homework", "quiz"];
-  const gsFull = h("input", { type: "checkbox" });
-  const gsPart = Object.fromEntries(GS_PARTS.map((k) => [k, h("input", { type: "checkbox", checked: k !== "quiz" })]));
-  const gsAbsent = h("div", { class: "gs-absent", "data-nodraft": "1" });   // filled after the page loads, so it is not part of the saved draft
-  let gsNames = [];
-  async function loadGsNames() {
-    const r = await guarded(() => api.get(`/api/rooms/${sel.room}/students`));
-    gsNames = (r && r.names) || [];
-    gsAbsent.replaceChildren(...gsNames.map((n) => h("label", { class: "row small" }, h("input", { type: "checkbox", value: n }), n)));
-    ctNames.replaceChildren(...gsNames.map((n) => h("label", { class: "row small" }, h("input", { type: "checkbox", value: n }), n)));
-  }
-  const gsExtra = () => gsFull.checked ? { fill: GS_PARTS.filter((k) => gsPart[k].checked), absent: [...gsAbsent.querySelectorAll("input:checked")].map((x) => x.value) } : {};
-  const gsBtn = h("button", { class: "btn primary", onClick: () => run(gsBtn, async () => {
-    showResult(await api.post("/api/docs/grading-sheet", { room_id: sel.room, trimester: sel.tri, week: sel.week, lang: getLang(), ...gsExtra() }));
-  }) }, icon("file"), t("d_create_gs"));
-  const gsX = h("button", { class: "btn", onClick: () => run(gsX, async () => {
-    showResult(await api.post("/api/docs/grading-sheet", { room_id: sel.room, trimester: sel.tri, week: sel.week, lang: getLang(), format: "xlsx", ...gsExtra() }));
-  }) }, icon("file"), t("d_create_gs_xlsx"));
-  const gsFullBox = h("details", { class: "fold", style: { marginTop: ".6rem" } }, h("summary", {}, t("gs_full_title")),
-    h("p", { class: "muted small" }, t("gs_full_lead")),
-    h("label", { class: "row" }, gsFull, h("b", {}, t("gs_full_on"))),
-    h("div", { class: "row small", style: { flexWrap: "wrap", margin: ".4rem 0" } }, GS_PARTS.map((k) => h("label", { class: "row" }, gsPart[k], t(`gs_part_${k}`)))),
-    h("div", { class: "label small" }, t("gs_absent")), gsAbsent);
-  const gsPanel = h("div", { class: "panel" }, h("h3", {}, t("d_gs_title")), h("p", { class: "muted small" }, t("d_gs_lead")),
-    h("div", { class: "row" }, gsBtn, gsX, gsCount), gsFullBox, h("p", { class: "muted small", style: { marginTop: ".6rem" } }, t("d_gs_lms")));
-
-  // ---------- revision sheet
-  const rvTopic = h("input", { type: "text", placeholder: t("rv_topic_ph") });
-  const rvWhole = h("input", { type: "checkbox" });
-  const rvCount = h("input", { type: "number", min: 3, max: 15, value: 6, style: { width: "5em" } });
-  const rvWords = h("textarea", { rows: 4, placeholder: "CPU: the brain of the computer" });
-  const rvPoints = h("textarea", { rows: 4, placeholder: "..." });
-  const rvQs = h("textarea", { rows: 5, placeholder: "What does the CPU do? | It processes data" });
-  const rvAns = h("input", { type: "checkbox", checked: true });
-  const rvAi = aiButton(t("ai_write"), async () => {
-    if (!rvTopic.value.trim()) { toast(t("ai_need_topic"), "error"); return null; }
-    const r = await api.post("/api/ai/revision", { grade_id: gradeOf().id, topic: rvTopic.value.trim(), count: +rvCount.value || 6, source_id: sid(srcRv), ...(srcRv ? srcRv.extra() : {}) });
-    rvWords.value = r.words; rvPoints.value = r.points; rvQs.value = r.questions; return true;
-  });
-  const rvFromSrc = h("button", { class: "btn", onClick: () => run(rvFromSrc, async () => {
-    const id = sid(srcRv); if (!id) { toast(t("src_pick_first"), "error"); return; }
-    const d = (await api.get(`/api/sources/${id}`)).digest;
-    if (!d || !d.topic) { toast(t("src_no_digest"), "error"); return; }
-    if (!rvTopic.value.trim()) rvTopic.value = d.topic;
-    rvWords.value = d.words.map((w) => `${w.term}: ${w.meaning}`).join("\n"); rvPoints.value = d.points.join("\n"); rvQs.value = d.questions.map((x) => `${x.q} | ${x.a}`).join("\n");
-  }) }, icon("file"), t("src_fill_rv"));
-  // the cover page (school logo, Cognia logo, subject, covered lessons and book pages) goes inside the same file
-  const cvOn = h("input", { type: "checkbox" });
-  const cvRows = h("textarea", { rows: 7, placeholder: t("cv_ph") });
-  const cvFill = h("button", { class: "btn", onClick: () => run(cvFill, async () => { const r = await api.get(`/api/docs/revision-cover?grade_id=${gradeOf().id}&tri=${sel.tri}`); cvRows.value = r.lines; if (!r.lines) toast(t("cv_none"), "error"); }) }, icon("file"), t("cv_fill"));
-  const cvBox = h("div", { class: "fold-body", hidden: true }, h("p", { class: "muted small" }, t("cv_lead")), h("label", { class: "field" }, h("span", { class: "label" }, t("cv_rows")), cvRows), cvFill);
-  cvOn.addEventListener("change", () => { cvBox.hidden = !cvOn.checked; });
-  const rvBtn = h("button", { class: "btn primary", onClick: () => run(rvBtn, async () => {
-    showResult(await api.post("/api/docs/revision", { grade_id: gradeOf().id, trimester: sel.tri, week: rvWhole.checked ? 0 : sel.week, title: rvTopic.value.trim(),
-      words: rvWords.value, points: rvPoints.value, questions: rvQs.value, with_answers: rvAns.checked, with_cover: cvOn.checked, cover_rows: cvRows.value }));
-  }) }, icon("file"), t("rv_create"));
-  const rvPanel = h("div", { class: "panel" }, h("h3", {}, t("rv_title")), h("p", { class: "muted small" }, t("rv_lead")), aiNeeded(), srcRv ? srcRv.el : null,
-    h("div", { class: "ai-bar" }, rvTopic, h("label", { class: "row" }, t("ai_q_count"), rvCount), rvAi),
-    h("label", { class: "field" }, h("span", { class: "label" }, t("rv_words")), rvWords),
-    h("label", { class: "field" }, h("span", { class: "label" }, t("rv_points")), rvPoints),
-    h("label", { class: "field" }, h("span", { class: "label" }, t("rv_qs")), rvQs),
-    h("label", { class: "row" }, cvOn, t("cv_include")), cvBox,
-    h("div", { class: "row" }, srcRv ? rvFromSrc : null, h("label", { class: "row" }, rvWhole, t("rv_whole")), h("label", { class: "row" }, rvAns, t("d_with_answers")), h("span", { class: "grow" }), rvBtn));
-
-  // ---------- prepare the whole week: lesson plan + quiz + revision + grading sheets, for every grade you teach
-  const weekGrades = structure.grades.filter((g) => rooms.some((r) => r.grade_id === g.id && used.has(r.id)));
-  const wk = weekGrades.map((g) => ({ g, topic: h("input", { type: "text", placeholder: t("wk_topic_ph"), "aria-label": `${gradeName(g)} · ${t("d_topic")}`, onInput: (e) => { e.target.dataset.typed = "1"; } }),
-    lp: h("input", { type: "checkbox", checked: true, "aria-label": `${gradeName(g)} · ${t("d_lp_title")}` }), qz: h("input", { type: "checkbox", checked: true, "aria-label": `${gradeName(g)} · ${t("d_quiz_title")}` }),
-    rv: h("input", { type: "checkbox", checked: true, "aria-label": `${gradeName(g)} · ${t("rv_title")}` }), gs: h("input", { type: "checkbox", checked: true, "aria-label": `${gradeName(g)} · ${t("d_gs_title")}` }) }));
-  let docsDir = "", topicsKey = "";
-  const keep = (r) => { if (r && r.folder) docsDir = r.folder; return r; };
-  const wkOut = h("div", { class: "wk-out" });
-  const srcWk = await sourcePicker();
-  async function fillWeekTopics() {
-    const key = `${sel.tri}|${sel.week}`; if (key === topicsKey) return; topicsKey = key;
-    for (const row of wk) {
-      if (!root.isConnected) return;   // the teacher already left this page
-      const r = await guarded(() => api.get(`/api/slides/topics?grade=${row.g.id}&tri=${sel.tri}`));
-      const w = r && r.weeks.find((x) => x.week === sel.week);
-      if (!row.topic.value.trim() || !row.topic.dataset.typed) row.topic.value = w && w.topic ? w.topic : "";
-    }
-  }
-  const wkBtn = h("button", { class: "btn primary", disabled: !wk.length, onClick: async () => {
-    wkBtn.disabled = true; wkOut.replaceChildren();
-    const line = (txt, state) => { const el = h("div", { class: `wk-line ${state}` }, txt); wkOut.append(el); return el; };
-    const step = async (label, fn) => { const el = line(label + " …", "busy"); try { const r = await fn(); el.className = "wk-line ok"; el.textContent = "✓ " + label; return r; } catch (e) { if (e.code === "no_students") { el.className = "wk-line busy"; el.textContent = "– " + label + " — " + t("wk_no_students"); return null; } el.className = "wk-line err"; el.textContent = "✗ " + label + " — " + (e.friendly || e.message); return null; } };
-    const base = { trimester: sel.tri, week: sel.week };
-    const sid = srcWk ? srcWk.value() : "";
-    let made = 0;
-    for (const row of wk) {
-      const g = row.g, topicText = row.topic.value.trim(), name = gradeName(g);
-      if ((row.lp.checked || row.qz.checked || row.rv.checked) && !topicText) { line(`${name}: ${t("wk_need_topic")}`, "err"); }
-      if (ai.ready && topicText) {
-        if (row.lp.checked && await step(`${name} · ${t("d_lp_title")}`, async () => { const c = await api.post("/api/ai/lesson", { grade_id: g.id, ...base, topic: topicText, source_id: sid }); keep(await api.post("/api/docs/lesson-plan", { grade_id: g.id, ...base, content: c.content })); })) made++;
-        if (row.qz.checked && await step(`${name} · ${t("d_quiz_title")}`, async () => { const q = await api.post("/api/ai/quiz", { grade_id: g.id, topic: topicText, count: 5, difficulty: "medium", source_id: sid }); keep(await api.post("/api/docs/quiz", { grade_id: g.id, ...base, number: 1, text: q.text, with_answers: true })); })) made++;
-        if (row.rv.checked && await step(`${name} · ${t("rv_title")}`, async () => { const v = await api.post("/api/ai/revision", { grade_id: g.id, topic: topicText, count: 6, source_id: sid }); keep(await api.post("/api/docs/revision", { grade_id: g.id, ...base, title: topicText, words: v.words, points: v.points, questions: v.questions, with_answers: true })); })) made++;
-      }
-      if (row.gs.checked) for (const r of rooms.filter((x) => x.grade_id === g.id && used.has(x.id))) {
-        if (!(r.student_count > 0)) { line(`– ${roomLabel(r, structure)} · ${t("d_gs_title")} — ${t("wk_no_students")}`, "busy"); continue; }
-        if (await step(`${roomLabel(r, structure)} · ${t("d_gs_title")}`, async () => keep(await api.post("/api/docs/grading-sheet", { room_id: r.id, ...base, lang: getLang() })))) made++;
-      }
-    }
-    wkOut.append(h("div", { class: "banner ok" }, icon("check"), h("div", { class: "grow" }, h("b", {}, t("wk_done", { n: made }))),
-      h("button", { class: "btn small", onClick: () => guarded(() => api.post("/api/open", { path: docsDir, folder: true })) }, icon("folder"), t("d_open_folder"))));
-    wkBtn.disabled = false;
-  } }, icon("spark"), t("wk_go"));
-  const wkPanel = h("div", { class: "panel" }, h("h3", {}, t("wk_title")), h("p", { class: "muted small" }, t("wk_lead")), ai.ready ? null : aiNeeded(), srcWk ? srcWk.el : null,
-    wk.length ? h("div", { class: "wk-grid" },
-      h("div", { class: "wk-head" }, t("ch_class")), h("div", { class: "wk-head" }, t("d_topic")), h("div", { class: "wk-head" }, t("d_lp_title")), h("div", { class: "wk-head" }, t("d_quiz_title")), h("div", { class: "wk-head" }, t("rv_title")), h("div", { class: "wk-head" }, t("d_gs_title")),
-      wk.flatMap((r) => [h("b", {}, gradeName(r.g)), r.topic, r.lp, r.qz, r.rv, r.gs])) : h("p", { class: "muted" }, t("wk_none")),
-    h("div", { class: "row", style: { marginTop: ".8rem" } }, wkBtn), wkOut);
 
   const pickPanel = h("div", { class: "panel sticky-pick" },
     h("div", { class: "pick-row" },
@@ -323,7 +100,7 @@ export async function renderDocs(root) {
       h("label", {}, h("span", { class: "label" }, t("d_week")), weekSel)), info, planBox);
   const slidesBox = h("div", {});   // the slide maker lives here as one more thing to make; it opens the first time it is chosen
   // one kind of file at a time: the page stays short and the teacher sees only what they chose
-  const panelList = [["wk", wkPanel, "wk_tab"], ["lp", lpPanel, "d_lp_title"], ["quiz", quizPanel, "d_quiz_title"], ["rv", rvPanel, "rv_title"], ["sl", slidesBox, "hub_make_slides"], ["gs", gsPanel, "d_gs_title"], ["ct", ctPanel, "ct_title"]];
+  const panelList = [["wk", week.el, "wk_tab"], ["lp", lesson.el, "d_lp_title"], ["quiz", quiz.el, "d_quiz_title"], ["rv", revision.el, "rv_title"], ["sl", slidesBox, "hub_make_slides"], ["gs", grading.el, "d_gs_title"], ["ct", certs.el, "ct_title"]];
   // three steps: 1) class and week, 2) what to make, 3) fill it in and make it. Each step shows one thing.
   const KIND_ICON = { wk: "spark", lp: "file", quiz: "list", rv: "check", sl: "slides", gs: "tasks", ct: "user" };
   const stepNames = [t("dz_step1"), t("dz_step2"), t("dz_step3")];
