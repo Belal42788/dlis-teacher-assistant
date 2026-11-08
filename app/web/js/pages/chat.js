@@ -6,7 +6,7 @@ import { state } from "../state.js";
 import { sourcePicker } from "../components/source_pick.js";
 
 // The open conversation stays here while the teacher visits other tabs; every conversation is also saved in the data folder.
-const chat = { id: "", messages: [], busy: false, student: null };  // student: { ar, en } chosen for a parent message
+export const chat = { id: "", messages: [], busy: false, student: null };  // student: { ar, en } chosen for a parent message
 
 export async function renderChat(root) {
   const [ai, structure, pr] = await Promise.all([api.get("/api/ai"), api.get("/api/structure"), api.get("/api/ai/prompts")]);
