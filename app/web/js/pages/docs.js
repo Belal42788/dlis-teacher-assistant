@@ -3,6 +3,7 @@ import { api, guarded } from "../api.js";
 import { t, getLang } from "../i18n.js";
 import { renderSlides } from "./slides.js";
 import { sourcePicker } from "../components/source_pick.js";
+import { saveToBank, pickFromBank } from "../components/bank_pick.js";
 import { roomLabel, gradeName, fmtShort, triName } from "../labels.js";
 
 const memoDocs = { tab: "wk", step: 1 };
@@ -130,12 +131,13 @@ export async function renderDocs(root) {
   const withAns = h("input", { type: "checkbox" });
   const twoVer = h("input", { type: "checkbox" });
   const found = h("span", { class: "muted small" });
+  let bankIds = [];   // saved questions that went into this quiz (so the bank can remember where they were used)
   const countQ = () => { const n = (quizText.value.match(/^\s*(?:Q\s*)?\d+\s*[.)\-:]/gim) || []).length; found.textContent = n ? t("d_questions_found", { n }) : ""; };
   const quizBtn = h("button", { class: "btn primary", onClick: () => run(quizBtn, async () => {
-    await api.post("/api/docs/quiz", { grade_id: gradeOf().id, trimester: sel.tri, week: sel.week, number: +quizNo.value || 1, text: quizText.value, with_answers: withAns.checked, versions: twoVer.checked ? 2 : 1 }).then((r) => { showResult(r, r.b ? h("div", {}, h("button", { class: "btn small", onClick: () => open(r.b.path, false) }, icon("file"), t("d_open_b"))) : null); });
+    await api.post("/api/docs/quiz", { grade_id: gradeOf().id, trimester: sel.tri, week: sel.week, number: +quizNo.value || 1, text: quizText.value, with_answers: withAns.checked, versions: twoVer.checked ? 2 : 1, bank_ids: bankIds }).then((r) => { showResult(r, r.b ? h("div", {}, h("button", { class: "btn small", onClick: () => open(r.b.path, false) }, icon("file"), t("d_open_b"))) : null); });
   }) }, icon("file"), t("d_create_quiz"));
   const exportBtn = (fmt, label) => { const b = h("button", { class: "btn", onClick: () => run(b, async () => {
-    const r = await api.post("/api/docs/quiz-export", { grade_id: gradeOf().id, trimester: sel.tri, week: sel.week, number: +quizNo.value || 1, text: quizText.value, format: fmt });
+    const r = await api.post("/api/docs/quiz-export", { grade_id: gradeOf().id, trimester: sel.tri, week: sel.week, number: +quizNo.value || 1, text: quizText.value, format: fmt, bank_ids: bankIds });
     showResult(r, h("p", { class: "muted small" }, t(fmt === "forms" ? "qx_forms_how" : "qx_moodle_how")));
   }) }, icon("download"), label); return b; };
   const qTopic = h("input", { type: "text", placeholder: t("ai_topic_q"), style: { flex: "1", minWidth: "10em" } });
@@ -157,10 +159,15 @@ export async function renderDocs(root) {
     const r = await api.post("/api/ai/quiz", { grade_id: gradeOf().id, topic: qTopic.value.trim(), sections: secs, difficulty: qLevel.value, source_id: sid(srcQz), ...(srcQz ? srcQz.extra() : {}) });
     quizText.value = r.text; countQ(); return true;
   });
+  const bankPick = h("button", { class: "btn small", onClick: () => pickFromBank({ gradeId: gradeOf().id, start: (quizText.value.match(/^\s*(?:Q\s*)?\d+\s*[.)\-:]/gim) || []).length, onPick: (r) => {
+    quizText.value = `${quizText.value.trim()}${quizText.value.trim() ? "\n\n" : ""}${r.text}`; bankIds = [...new Set([...bankIds, ...r.ids])]; countQ();
+  } }) }, icon("list"), t("bk_pick"));
+  const bankSave = h("button", { class: "btn small", onClick: () => saveToBank({ gradeId: gradeOf().id, topic: qTopic.value.trim(), level: qLevel.value, text: quizText.value }) }, icon("plus"), t("bk_save_these"));
   const quizPanel = h("div", { class: "panel" }, h("h3", {}, t("d_quiz_title")), h("p", { class: "muted small" }, t("d_quiz_lead")), aiNeeded(), srcQz ? srcQz.el : null,
     h("div", { class: "ai-bar" }, qTopic, qLevel),
     secBox, h("div", { class: "row", style: { margin: ".4rem 0" } }, addSec, h("span", { class: "grow" }), quizAi),
     h("label", { class: "row", style: { marginBottom: ".6rem" } }, h("b", {}, t("d_quiz_n")), quizNo),
+    h("div", { class: "row", style: { marginBottom: ".4rem" } }, bankPick, bankSave),
     quizText, found,
     h("div", { class: "row", style: { marginTop: ".6rem" } },
       h("label", { class: "row" }, withAns, t("d_with_answers")), h("label", { class: "row" }, twoVer, t("d_two_versions")), h("span", { class: "grow" }), quizBtn),

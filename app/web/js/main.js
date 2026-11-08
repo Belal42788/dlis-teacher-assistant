@@ -15,6 +15,7 @@ import { renderLog } from "./pages/log.js";
 import { renderBehavior } from "./pages/behavior.js";
 import { renderSeating } from "./pages/seating.js";
 import { renderSources } from "./pages/sources.js";
+import { renderBank } from "./pages/bank.js";
 import { renderLibrary } from "./pages/library.js";
 import { renderScheme } from "./pages/scheme.js";
 import { renderTools } from "./pages/tools.js";
@@ -68,6 +69,7 @@ const PAGES = [
   { id: "library", icon: "folder", group: "prepare", render: renderLibrary },
   { id: "sources", nav: "library", render: renderSources },
   { id: "publish", nav: "library", render: renderPublish },
+  { id: "bank", nav: "library", render: renderBank },
   { id: "chat", icon: "spark", group: "prepare", render: renderChat },
   { id: "classes", icon: "classes", group: "school", render: renderClasses },
   { id: "log", nav: "classes", render: renderLog },
