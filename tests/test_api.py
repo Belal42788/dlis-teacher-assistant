@@ -204,6 +204,20 @@ class ApiTests(unittest.TestCase):
         self.call("GET", "/api/nothing", expect=404)
         self.call("POST", "/api/bootstrap", {}, expect=405)
 
+    def test_05_health_and_restore(self):
+        h = self.call("GET", "/api/health")
+        self.assertEqual(h["locked"], "")
+        self.assertGreaterEqual(h["students"], 2)
+        made = self.call("POST", "/api/backup", {})
+        mine = [b for b in self.call("GET", "/api/health")["backups"] if b["name"] == made["name"]]
+        self.assertEqual(len(mine), 1)
+        self.call("POST", "/api/health/restore", {"id": "../../etc/passwd"}, expect=404)
+        self.call("POST", "/api/health/restore", {"id": "Exports/nothing.zip"}, expect=404)
+        r = self.call("POST", "/api/health/restore", {"id": mine[0]["id"]})
+        self.assertGreater(r["restored"], 0)
+        self.assertEqual(self.call("GET", "/api/health")["locked"], "")
+        self.assertTrue(any(b["kind"] == "restore" for b in self.call("GET", "/api/health")["backups"]))
+
 
 if __name__ == "__main__":
     unittest.main()

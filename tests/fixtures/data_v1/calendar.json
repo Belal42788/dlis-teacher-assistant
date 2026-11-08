@@ -1,0 +1,506 @@
+{
+  "schema_version": 2,
+  "academic_year": "2026-2027",
+  "trimesters": [
+    {
+      "name": "T1",
+      "start": "2026-09-06",
+      "end": "2026-11-26",
+      "week1_start": "2026-09-06"
+    },
+    {
+      "name": "T2",
+      "start": "2026-11-29",
+      "end": "2027-03-04",
+      "week1_start": "2026-11-29"
+    },
+    {
+      "name": "T3",
+      "start": "2027-03-14",
+      "end": "2027-06-24",
+      "week1_start": "2027-03-14"
+    }
+  ],
+  "holidays": [
+    {
+      "start": "2026-08-27",
+      "end": "",
+      "name": "El Mouled El Nabawy Off / المولد النبوي"
+    },
+    {
+      "start": "2026-10-06",
+      "end": "",
+      "name": "6th of October Celebration Day Off / عيد القوات المسلحة"
+    },
+    {
+      "start": "2026-11-25",
+      "end": "2026-11-26",
+      "name": "Long Weekend / إجازة طويلة"
+    },
+    {
+      "start": "2026-12-27",
+      "end": "2026-12-31",
+      "name": "Winter Break / إجازة الشتاء"
+    },
+    {
+      "start": "2027-01-07",
+      "end": "",
+      "name": "Coptic Christmas Day / عيد الميلاد المجيد"
+    },
+    {
+      "start": "2027-01-25",
+      "end": "",
+      "name": "National Police Day / عيد الشرطة"
+    },
+    {
+      "start": "2027-01-31",
+      "end": "2027-02-08",
+      "name": "Mid-Year Vacation / إجازة نصف العام"
+    },
+    {
+      "start": "2027-03-07",
+      "end": "2027-03-11",
+      "name": "Eid Al-Fitr Vacation / إجازة عيد الفطر"
+    },
+    {
+      "start": "2027-04-11",
+      "end": "2027-04-15",
+      "name": "Spring Break / إجازة الربيع"
+    },
+    {
+      "start": "2027-04-25",
+      "end": "",
+      "name": "Sinai Liberation Day / عيد تحرير سيناء"
+    },
+    {
+      "start": "2027-05-03",
+      "end": "",
+      "name": "Sham El Nessim / شم النسيم"
+    },
+    {
+      "start": "2027-05-16",
+      "end": "2027-05-20",
+      "name": "Eid Al-Adha Vacation / إجازة عيد الأضحى"
+    },
+    {
+      "start": "2027-06-06",
+      "end": "",
+      "name": "Islamic New Year / رأس السنة الهجرية"
+    },
+    {
+      "start": "2027-06-27",
+      "end": "2027-08-31",
+      "name": "Summer Vacation / الإجازة الصيفية"
+    }
+  ],
+  "events": [
+    {
+      "date": "2026-08-16",
+      "name": "Staff Return"
+    },
+    {
+      "date": "2026-08-30",
+      "name": "New Staff Return"
+    },
+    {
+      "date": "2026-08-30",
+      "name": "Training For Staff"
+    },
+    {
+      "date": "2026-08-31",
+      "name": "Training For Staff"
+    },
+    {
+      "date": "2026-09-01",
+      "name": "Training For Staff"
+    },
+    {
+      "date": "2026-09-02",
+      "name": "Training For Staff"
+    },
+    {
+      "date": "2026-09-03",
+      "name": "Meet & Greet"
+    },
+    {
+      "date": "2026-09-06",
+      "name": "First Day Of Foundation Stage To G3 + Welcome Party"
+    },
+    {
+      "date": "2026-09-07",
+      "name": "First Day Of G4 To G7 + Welcome Party"
+    },
+    {
+      "date": "2026-09-08",
+      "name": "First Day Of G8 To G11 + Welcome Party"
+    },
+    {
+      "date": "2026-09-10",
+      "name": "Breaking Ice"
+    },
+    {
+      "date": "2026-09-24",
+      "name": "Sports Day For All School"
+    },
+    {
+      "date": "2026-10-01",
+      "name": "Character Day Event (KG1 – G5)"
+    },
+    {
+      "date": "2026-10-05",
+      "name": "6th of October Celebration (Morning Line + First Session)"
+    },
+    {
+      "date": "2026-10-07",
+      "name": "Trip (KG – G5)"
+    },
+    {
+      "date": "2026-10-12",
+      "name": "Spelling Bee Round 1 (G1 – G6)"
+    },
+    {
+      "date": "2026-10-14",
+      "name": "Spelling Bee Round 1 (G7 – G11)"
+    },
+    {
+      "date": "2026-10-15",
+      "name": "Trip (G6 – G11)"
+    },
+    {
+      "date": "2026-10-19",
+      "name": "Book Week KG & Elementary School (KG – G5)"
+    },
+    {
+      "date": "2026-10-21",
+      "name": "Book Week Middle School (G6 – G8)"
+    },
+    {
+      "date": "2026-10-22",
+      "name": "Book Week High School (G9 – G11)"
+    },
+    {
+      "date": "2026-11-02",
+      "name": "(G9 – G10) Cultural Diversity / (G11) Business Conference"
+    },
+    {
+      "date": "2026-11-05",
+      "name": "(G1 – G8) Cultural Diversity / International Day"
+    },
+    {
+      "date": "2026-11-08",
+      "name": "Map Test"
+    },
+    {
+      "date": "2026-11-09",
+      "name": "Map Test"
+    },
+    {
+      "date": "2026-11-10",
+      "name": "Map Test"
+    },
+    {
+      "date": "2026-11-11",
+      "name": "Map Test"
+    },
+    {
+      "date": "2026-11-12",
+      "name": "Map Test"
+    },
+    {
+      "date": "2026-11-15",
+      "name": "Revision Days"
+    },
+    {
+      "date": "2026-11-16",
+      "name": "Revision Days"
+    },
+    {
+      "date": "2026-11-17",
+      "name": "Revision Days"
+    },
+    {
+      "date": "2026-11-18",
+      "name": "Exams Days"
+    },
+    {
+      "date": "2026-11-19",
+      "name": "Exams Days"
+    },
+    {
+      "date": "2026-11-20",
+      "name": "Exams Days"
+    },
+    {
+      "date": "2026-11-21",
+      "name": "Exams Days"
+    },
+    {
+      "date": "2026-11-22",
+      "name": "Exams Days"
+    },
+    {
+      "date": "2026-11-23",
+      "name": "Exams Days"
+    },
+    {
+      "date": "2026-11-24",
+      "name": "Exams Days"
+    },
+    {
+      "date": "2026-11-29",
+      "name": "First Day Of Trimester Two / Recap Day"
+    },
+    {
+      "date": "2026-11-30",
+      "name": "Camera Show Event (KG – G5)"
+    },
+    {
+      "date": "2026-12-03",
+      "name": "Parents Meeting / Day Off For Students"
+    },
+    {
+      "date": "2026-12-07",
+      "name": "Math Is Fun (KG – G5)"
+    },
+    {
+      "date": "2026-12-09",
+      "name": "Math Is Fun (G6 – G8)"
+    },
+    {
+      "date": "2026-12-10",
+      "name": "Math Is Fun (G9 – G11)"
+    },
+    {
+      "date": "2026-12-14",
+      "name": "Spelling Bee Round 2 (G1 – G6)"
+    },
+    {
+      "date": "2026-12-16",
+      "name": "Spelling Bee Round 2 (G7 – G11)"
+    },
+    {
+      "date": "2026-12-17",
+      "name": "اليوم العالمي للغة العربية"
+    },
+    {
+      "date": "2026-12-24",
+      "name": "Go Green + Healthy Day Event (KG – G5)"
+    },
+    {
+      "date": "2027-01-04",
+      "name": "Winter Festival & Pyjama Day (KG – G5) / Trip (G6 – G11)"
+    },
+    {
+      "date": "2027-01-14",
+      "name": "DLIS Garage Sale"
+    },
+    {
+      "date": "2027-01-18",
+      "name": "La Journee Francoise"
+    },
+    {
+      "date": "2027-01-21",
+      "name": "Detacher Carnival"
+    },
+    {
+      "date": "2027-01-27",
+      "name": "Trip (KG – G5)"
+    },
+    {
+      "date": "2027-02-08",
+      "name": "First day of Ramadan"
+    },
+    {
+      "date": "2027-02-09",
+      "name": "Back To School"
+    },
+    {
+      "date": "2027-02-21",
+      "name": "Revision Days"
+    },
+    {
+      "date": "2027-02-22",
+      "name": "Revision Days"
+    },
+    {
+      "date": "2027-02-23",
+      "name": "Revision Days"
+    },
+    {
+      "date": "2027-02-24",
+      "name": "Exam Days"
+    },
+    {
+      "date": "2027-02-25",
+      "name": "Exam Days"
+    },
+    {
+      "date": "2027-02-26",
+      "name": "Exam Days"
+    },
+    {
+      "date": "2027-02-27",
+      "name": "Exam Days"
+    },
+    {
+      "date": "2027-02-28",
+      "name": "Exam Days"
+    },
+    {
+      "date": "2027-03-01",
+      "name": "Exam Days"
+    },
+    {
+      "date": "2027-03-02",
+      "name": "Exam Days"
+    },
+    {
+      "date": "2027-03-03",
+      "name": "Recap Days"
+    },
+    {
+      "date": "2027-03-04",
+      "name": "Recap Days"
+    },
+    {
+      "date": "2027-03-14",
+      "name": "First Day Of Trimester Three"
+    },
+    {
+      "date": "2027-03-18",
+      "name": "Parents Meeting / Day Off For Students"
+    },
+    {
+      "date": "2027-03-22",
+      "name": "Math Week (G6 – G8)"
+    },
+    {
+      "date": "2027-03-24",
+      "name": "Math Week (KG – G5)"
+    },
+    {
+      "date": "2027-03-25",
+      "name": "Math Week (G9 – G11)"
+    },
+    {
+      "date": "2027-03-29",
+      "name": "Spelling Bee Round Three (G7 – G11)"
+    },
+    {
+      "date": "2027-03-30",
+      "name": "Spelling Bee Round Three (G1 – G6)"
+    },
+    {
+      "date": "2027-03-31",
+      "name": "Holy Quraan Competition (G6 – G11)"
+    },
+    {
+      "date": "2027-04-01",
+      "name": "Holy Quraan Competition (G1 – G5)"
+    },
+    {
+      "date": "2027-04-05",
+      "name": "Science Fair (G1 – G5)"
+    },
+    {
+      "date": "2027-04-06",
+      "name": "Science Fair (G6 – G11)"
+    },
+    {
+      "date": "2027-04-08",
+      "name": "Spring Festival All School"
+    },
+    {
+      "date": "2027-04-19",
+      "name": "ELA Learning Journey Project (G6 – G11)"
+    },
+    {
+      "date": "2027-04-20",
+      "name": "ELA Learning Journey Project (KG – G5)"
+    },
+    {
+      "date": "2027-04-22",
+      "name": "Trip For All School"
+    },
+    {
+      "date": "2027-05-09",
+      "name": "Map Test"
+    },
+    {
+      "date": "2027-05-10",
+      "name": "Map Test"
+    },
+    {
+      "date": "2027-05-11",
+      "name": "Map Test"
+    },
+    {
+      "date": "2027-05-12",
+      "name": "Map Test"
+    },
+    {
+      "date": "2027-05-13",
+      "name": "Map Test"
+    },
+    {
+      "date": "2027-05-31",
+      "name": "Art Gallery"
+    },
+    {
+      "date": "2027-06-07",
+      "name": "Revision Days"
+    },
+    {
+      "date": "2027-06-08",
+      "name": "Revision Days"
+    },
+    {
+      "date": "2027-06-09",
+      "name": "Revision Days"
+    },
+    {
+      "date": "2027-06-10",
+      "name": "Revision Days"
+    },
+    {
+      "date": "2027-06-13",
+      "name": "Exam Days"
+    },
+    {
+      "date": "2027-06-14",
+      "name": "Exam Days"
+    },
+    {
+      "date": "2027-06-15",
+      "name": "Exam Days"
+    },
+    {
+      "date": "2027-06-16",
+      "name": "Exam Days"
+    },
+    {
+      "date": "2027-06-17",
+      "name": "Exam Days"
+    },
+    {
+      "date": "2027-06-20",
+      "name": "Recap Days"
+    },
+    {
+      "date": "2027-06-21",
+      "name": "Recap Days"
+    },
+    {
+      "date": "2027-06-22",
+      "name": "Recap Days"
+    },
+    {
+      "date": "2027-06-23",
+      "name": "Recap Days"
+    },
+    {
+      "date": "2027-06-24",
+      "name": "Recap Days"
+    }
+  ]
+}

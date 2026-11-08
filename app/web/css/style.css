@@ -552,6 +552,12 @@ table.wc .dot { display: inline-block; width: .6rem; height: .6rem; border-radiu
 .chat-main .bubble.user { max-width: 80%; }
 
 .tag-model { font-size: .75rem; padding: .1rem .55rem; border-radius: 99px; background: var(--blue-wash); color: var(--blue-dark); font-weight: 600; }
+.hl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .5rem; margin-top: .8rem; }
+.hl-row b { unicode-bidi: plaintext; text-align: end; }
+.hl-row { display: flex; justify-content: space-between; gap: .6rem; padding: .5rem .8rem; background: var(--blue-wash); border-radius: 10px; }
+.hl-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
+.hl-list li { display: flex; gap: .8rem; align-items: center; padding: .55rem .8rem; background: var(--blue-wash); border-radius: 10px; }
+.hl-log { max-height: 220px; overflow: auto; background: #f4f6f9; border-radius: 10px; padding: .7rem; white-space: pre-wrap; word-break: break-word; margin: 0; }
 .whatsnew section + section { margin-top: 1rem; }
 .whatsnew h4 { margin: 0 0 .5rem; color: var(--blue-dark); }
 .whatsnew ul { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }

@@ -1,0 +1,16 @@
+{
+  "schema_version": 2,
+  "setup_done": true,
+  "teacher_name": "Mr Sample",
+  "school_name": "Dar Luqman Al-Hakim International School",
+  "subject": "ICT",
+  "extra_subjects": [],
+  "working_days": [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday"
+  ],
+  "ai": {}
+}
