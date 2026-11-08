@@ -284,6 +284,16 @@ def parse_quiz(text: str) -> list[dict]:
     return out
 
 
+def question_to_text(q: dict, n: int = 1) -> str:
+    """One question back as the plain text parse_quiz reads (so a saved question and a typed one are the same thing)."""
+    lines = [f"{n}. {'[match] ' if q.get('type') == 'match' else ''}{str(q.get('q', '')).strip()}"]
+    lines += [f"{str(letter).lower()}) {text}" for letter, text in q.get("options") or []]
+    lines += [f"{a} = {b}" for a, b in q.get("pairs") or []]
+    if str(q.get("answer", "")).strip():
+        lines.append(f"Answer: {str(q['answer']).strip()}")
+    return "\n".join(lines)
+
+
 def _right_option(q: dict) -> str:
     """The text of the correct choice of a multiple-choice or true/false question ('' when no answer is given)."""
     ans = str(q.get("answer", "")).strip().strip("()").upper()

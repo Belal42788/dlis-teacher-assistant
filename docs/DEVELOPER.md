@@ -42,6 +42,7 @@ Feature files (each is a mixin of `Service`):
 <!-- AUTO:features -->
 | Mixin | File | Lines |
 |---|---|---|
+| `BankMixin` | `app/server/bank_service.py` | 156 |
 | `HealthMixin` | `app/server/health_service.py` | 61 |
 | `SeatingMixin` | `app/server/seating_service.py` | 56 |
 | `BehaviorMixin` | `app/server/behavior_service.py` | 89 |
@@ -54,7 +55,7 @@ Feature files (each is a mixin of `Service`):
 | `ParentWeekMixin` | `app/server/parent_week_service.py` | 73 |
 | `CoverageMixin` | `app/server/coverage_service.py` | 117 |
 | `CloudMixin` | `app/server/cloud_service.py` | 406 |
-| `DocsMixin` | `app/server/docs_service.py` | 416 |
+| `DocsMixin` | `app/server/docs_service.py` | 418 |
 | `AiMixin` | `app/server/ai_service.py` | 374 |
 | `AiChatMixin` | `app/server/ai_chat_service.py` | 101 |
 | `ChatsMixin` | `app/server/chats_service.py` | 62 |
@@ -74,11 +75,11 @@ Pages:
 <!-- AUTO:pages -->
 Menu pages: `today`, `timetable`, `calendar`, `tasks`, `scheme`, `docs`, `tools`, `library`, `chat`, `classes`, `announcements`, `followup`, `map`, `settings`, `help`.
 
-Tabs inside a menu page: `reminders` (tab of `tasks`), `sources` (tab of `library`), `publish` (tab of `library`), `log` (tab of `classes`), `progress` (tab of `classes`), `grades` (tab of `classes`), `behavior` (tab of `classes`), `seating` (tab of `classes`), `insights` (tab of `classes`), `parentweek` (tab of `announcements`).
+Tabs inside a menu page: `reminders` (tab of `tasks`), `sources` (tab of `library`), `publish` (tab of `library`), `bank` (tab of `library`), `log` (tab of `classes`), `progress` (tab of `classes`), `grades` (tab of `classes`), `behavior` (tab of `classes`), `seating` (tab of `classes`), `insights` (tab of `classes`), `parentweek` (tab of `announcements`).
 <!-- /AUTO:pages -->
 
 Files in the teacher's data folder: <!-- AUTO:datafiles -->
-`ai_prompts.json`, `behavior.json`, `calendar.json`, `chats.json`, `cloud.json`, `cloud_students.json`, `config.json`, `data_version.json`, `grades.json`, `lesson_log.json`, `library.json`, `map.json`, `parent_week.json`, `plans.json`, `reminders.json`, `schedule.json`, `seating.json`, `sources.json`, `structure.json`, `tasks.json`, `weekly.json` (plus `data_version.json`, written by the store).
+`ai_prompts.json`, `behavior.json`, `calendar.json`, `chats.json`, `cloud.json`, `cloud_students.json`, `config.json`, `data_version.json`, `grades.json`, `lesson_log.json`, `library.json`, `map.json`, `parent_week.json`, `plans.json`, `question_bank.json`, `reminders.json`, `schedule.json`, `seating.json`, `sources.json`, `structure.json`, `tasks.json`, `weekly.json` (plus `data_version.json`, written by the store).
 <!-- /AUTO:datafiles -->
 
 ## Keeping the code healthy
@@ -269,6 +270,11 @@ The server listens on 127.0.0.1 only and every request carries the secret token 
 | PUT | `/api/seating` | `seating_save` |
 | GET | `/api/update` | `check_update` |
 | POST | `/api/update/dismiss` | `dismiss_update` |
+| GET | `/api/bank` | `bank_list` |
+| POST | `/api/bank` | `bank_add` |
+| POST | `/api/bank/pick` | `bank_pick` |
+| PUT | `/api/bank/([a-z0-9]+)` | `bank_update` |
+| POST | `/api/bank/([a-z0-9]+)/delete` | `bank_delete` |
 | GET | `/api/health` | `health` |
 | POST | `/api/health/restore` | `backup_restore` |
 | GET | `/api/whats-new` | `whats_new` |

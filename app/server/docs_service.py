@@ -195,6 +195,7 @@ class DocsMixin:
             "questions": questions, "with_answers": bool(b.get("with_answers"))})
         res = self._result(out)
         res["questions"] = len(questions)
+        self._bank_mark_used(b.get("bank_ids"), f"{grade.name} T{tri + 1}-W{week:02d} Quiz {number}")
         if int(b.get("versions", 1) or 1) == 2:   # version B: another order, so neighbours cannot copy
             out_b = self.doc_file("quiz", grade.name, tri, week, extra=f"_{number}B")
             D.fill_quiz(D.template_path("quiz"), out_b, {
@@ -218,6 +219,7 @@ class DocsMixin:
         out.write_text(D.quiz_to_forms_script(questions, title) if fmt == "forms" else D.quiz_to_gift(questions, title), encoding="utf-8")
         res = self._result(out)
         res["questions"] = len(questions)
+        self._bank_mark_used(b.get("bank_ids"), title)
         return res
 
     def make_grading_sheet(self, b: dict) -> dict:
