@@ -128,7 +128,7 @@ try:
         page.click(".banner >> text=إزاي أشغّله؟"); page.wait_for_selector("details.help[open]:has-text('الذكاء الاصطناعي')"); assert page.locator("details.help[open]").count() == 1
         page.click(".nav a[data-page=calendar]"); page.click(".nav a[data-page=today]"); page.wait_for_selector(".week-badge"); page.wait_for_timeout(500)
         # pages
-        for name, sel in (("classes", ".split"), ("timetable", "table.grid"), ("calendar", "table.weeks"), ("settings", ".seg"), ("help", "details.help")):
+        for name, sel in (("classes", ".split"), ("timetable", "table.grid"), ("calendar", ".wk-line"), ("settings", ".seg"), ("help", "details.help")):
             page.click(f".nav a[data-page={name}]"); page.wait_for_selector(sel); page.wait_for_timeout(250); shot(f"09_{name}_ar")
         # AI: set up the "other" service pointing at the fake, test it, then use it on the documents page
         page.click(".nav a[data-page=settings]"); page.click(".seg-btn[data-tab=ai]"); page.wait_for_selector(".ai-grid")
@@ -357,7 +357,7 @@ try:
         assert page.locator("table.grid").count() == 1
         page.click(".nav a[data-page=timetable]") if False else None
         page.click("text=Save"); page.wait_for_selector(".toast.ok")
-        for name, sel in (("today", ".week-badge"), ("classes", ".split"), ("calendar", "table.weeks")):
+        for name, sel in (("today", ".week-badge"), ("classes", ".split"), ("calendar", ".wk-line")):
             page.click(f".nav a[data-page={name}]"); page.wait_for_selector(sel); page.wait_for_timeout(250); shot(f"13_{name}_en")
         if os.environ.get("SWEEP"):  # English layout check: report anything that sticks out of its box
             JS = """() => { const out = []; for (const el of document.querySelectorAll('#main *, .nav *')) {
