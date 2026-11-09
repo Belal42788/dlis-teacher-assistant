@@ -3,7 +3,7 @@ import { api, guarded } from "../api.js";
 import { t } from "../i18n.js";
 import { state } from "../state.js";
 import { calendarEditor } from "../components/calendar_editor.js";
-import { weeksLine, summaryCards, monthView, upcoming, calendarIndex } from "../components/calendar_views.js";
+import { weeksLine, termCard, monthView, upcoming, calendarIndex } from "../components/calendar_views.js";
 import { fmtDate, addDays } from "../labels.js";
 
 // The calendar page is a picture of the school year first (weeks line + month); the dates are edited behind the "Edit" button.
@@ -55,7 +55,7 @@ export async function renderCalendar(root, edit = false) {
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_calendar")), h("p", {}, t("calendar_page_lead"))),
       h("div", { class: "row" }, h("button", { class: "btn", onClick: () => renderCalendar(root, true) }, icon("edit"), t("cal_edit")))),
     weeksLine(ov, cal, idx, (start) => { const d = new Date(`${start}T00:00:00Z`); view.y = d.getUTCFullYear(); view.m = d.getUTCMonth(); drawMonth(); box.scrollIntoView({ behavior: "smooth", block: "start" }); }),
-    summaryCards(ov, cal), box));
+    termCard(ov), box));
   drawMonth();
 }
 

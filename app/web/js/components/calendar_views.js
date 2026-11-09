@@ -32,7 +32,7 @@ export function weeksLine(ov, cal, idx, onWeek) {
   const now = ov.position.state === "in_term" ? ov.position : null;
   const rows = ov.trimesters.filter((x) => x.weeks.length).map((tri) => {
     const squares = tri.weeks.map((w) => {
-      const cls = ["wk-sq", w.end < ov.today ? "past" : "", now && now.trimester === tri.index && now.week === w.number ? "now" : "", w.holidays.length ? "hol" : ""].filter(Boolean).join(" ");
+      const cls = ["wk-sq", w.end < ov.today ? "past" : "", now && now.trimester === tri.index && now.week === w.number ? "now" : ""].filter(Boolean).join(" ");
       const names = [...new Set(w.holidays.map((x) => localName(x.name)))].join("، ");
       return h("button", { type: "button", class: cls, title: `${t("cal_week_n", { n: w.number })} · ${fmtShort(w.start)} → ${fmtShort(w.end)}${names ? ` · ${names}` : ""}`, "aria-label": t("cal_week_n", { n: w.number }), onClick: () => onWeek(w.start) }, w.number);
     });
@@ -41,27 +41,16 @@ export function weeksLine(ov, cal, idx, onWeek) {
       h("div", { class: "wk-squares", style: { gridTemplateColumns: `repeat(${tri.weeks.length}, minmax(0, 1fr))` } }, squares));
   });
   return h("div", { class: "panel wk-line" }, rows.length ? rows : h("p", { class: "muted" }, t("weeks_empty")),
-    h("div", { class: "cal-legend small" }, h("span", {}, h("i", { class: "lg now" }), t("cal_k_now")), h("span", {}, h("i", { class: "lg hol" }), t("holiday")), h("span", {}, h("i", { class: "lg past" }), t("cal_k_past"))));
+    h("div", { class: "cal-legend small" }, h("span", {}, h("i", { class: "lg now" }), t("cal_k_now")), h("span", {}, h("i", { class: "lg past" }), t("cal_k_past"))));
 }
 
-// ---------- three small cards under the line: where am I, next holiday, time to the next term
-export function summaryCards(ov, cal) {
-  const today = ov.today, pos = ov.position, cards = [];
-  const tri = pos.state === "in_term" ? ov.trimesters.find((x) => x.index === pos.trimester) : null;
-  if (tri) {
-    const total = tri.weeks.length, left = Math.max(0, total - pos.week);
-    cards.push(h("div", { class: "cal-card g" }, h("div", { class: "big" }, t("cal_week_of", { n: pos.week, m: total })), h("small", {}, `${triName(tri.name)} · ${t("cal_weeks_left", { n: left })}`)));
-  } else cards.push(h("div", { class: "cal-card g" }, h("div", { class: "big" }, t("cal_no_term")), h("small", {}, t("outside_term"))));
-  const hol = (cal.holidays || []).filter((x) => x.start && (x.end || x.start) >= today).sort((a, b) => a.start.localeCompare(b.start))[0];
-  cards.push(hol
-    ? h("div", { class: "cal-card" }, h("div", { class: "big" }, inDays(daysBetween(today, hol.start))), h("small", {}, `${t("cal_next_hol")}: ${localName(hol.name) || t("holiday")} (${fmtShort(hol.start)}${hol.end && hol.end !== hol.start ? " → " + fmtShort(hol.end) : ""})`))
-    : h("div", { class: "cal-card" }, h("div", { class: "big" }, "—"), h("small", {}, t("cal_next_hol"))));
-  if (tri) cards.push(h("div", { class: "cal-card" }, h("div", { class: "big" }, t("cal_days_n", { n: Math.max(0, daysBetween(today, tri.end)) })), h("small", {}, t("cal_to_end", { tri: triName(tri.name) }))));
-  else {
-    const next = (cal.trimesters || []).filter((x) => x.start && x.start > today).sort((a, b) => a.start.localeCompare(b.start))[0];
-    cards.push(h("div", { class: "cal-card" }, h("div", { class: "big" }, next ? t("cal_days_n", { n: daysBetween(today, next.start) }) : "—"), h("small", {}, next ? t("cal_to_start", { tri: triName(next.name) }) : t("cal_no_next"))));
-  }
-  return h("div", { class: "cal-cards" }, cards);
+// ---------- one card under the line: which trimester are we in (outside a trimester: the one that comes next, with its start date)
+export function termCard(ov) {
+  const pos = ov.position;
+  const inTerm = pos.state === "in_term";
+  const name = inTerm ? pos.trimester_name : pos.next_name || (ov.trimesters.filter((x) => x.weeks.length).slice(-1)[0] || {}).name;
+  return h("div", { class: "cal-cards" }, h("div", { class: "cal-card g" }, h("div", { class: "big" }, name ? triName(name) : "—"),
+    !inTerm && pos.next_start ? h("small", {}, `${t("starts_on")} ${fmtShort(pos.next_start)}`) : null));
 }
 
 // ---------- 2) one month, big
