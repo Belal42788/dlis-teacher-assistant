@@ -1,5 +1,5 @@
 """Drive the real app in a browser: whole first-run guide in Arabic, then every page, then English."""
-import datetime as _dt, os, subprocess, sys, tempfile, re
+import datetime as _dt, os, subprocess, sys, tempfile, re, time, urllib.request
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
@@ -17,14 +17,43 @@ url = proc.stdout.readline().strip()
 print("server", url)
 errors = []
 
+inflight = {}   # requests the browser has sent and not heard back from yet: shown when a screen does not appear
+
+
+def track(pg):
+    pg.on("request", lambda r: inflight.__setitem__(r, time.time()))
+    pg.on("requestfinished", lambda r: inflight.pop(r, None))
+    pg.on("requestfailed", lambda r: inflight.pop(r, None))
+
+
+def why_stuck(pg):
+    """A screen did not appear (this has timed out a few times on Windows and once on Linux, never in the same place twice):
+    say what the browser is still waiting for, whether the server still answers, and what the screen shows."""
+    now = time.time()
+    try:
+        print("STUCK. requests still waiting:", [(r.method, r.url.split("/", 3)[-1][:70], round(now - t, 1)) for r, t in inflight.items()])
+    except Exception as e:
+        print("STUCK. could not list the requests:", e)
+    t0 = time.time()
+    try:
+        print("server answers:", urllib.request.urlopen(url, timeout=8).status, f"in {time.time() - t0:.2f}s")
+    except Exception as e:
+        print("server does NOT answer within 8s:", repr(e))
+    try:
+        print("screen says:", pg.inner_text("body")[:300].replace("\n", " | "))
+        print("pending in the page:", pg.evaluate("performance.getEntriesByType('resource').filter(r => r.responseEnd === 0).map(r => r.name)"))
+    except Exception as e:
+        print("could not read the screen:", e)
+    print("console so far:", errors[-8:])
+
+
 def wait_docs(page):
     """Wait for the Create page. This once timed out on one Linux run and never again; if it happens again, say what the page was
     showing and what the console said, so the cause can be found instead of guessed."""
     try:
         page.wait_for_selector("#main:not(.busy) .steps")
     except Exception:
-        print("DOCS PAGE DID NOT APPEAR. #main says:", page.inner_text("#main")[:400].replace("\n", " | "))
-        print("console so far:", errors[-8:])
+        print("DOCS PAGE DID NOT APPEAR.")
         raise
 
 
@@ -85,6 +114,7 @@ try:
         b = p.chromium.launch()
         ctx = b.new_context(viewport={"width": 1280, "height": 860})
         page = _open_group(ctx.new_page()); page.clock.install(time=_dt.datetime(2026, 10, 28, 9, 0, 0))
+        track(page)
         page.on("console", lambda m: errors.append(f"console {m.type}: {m.text}") if m.type in ("error", "warning") else None)
         page.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
         shot = lambda n: page.screenshot(path=str(SHOTS / f"{n}.png"))
@@ -402,6 +432,12 @@ try:
         overflow = page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth")
         print("horizontal overflow on phone width:", overflow)
         b.close()
+except Exception:
+    try:
+        why_stuck(page)
+    except Exception as e:
+        print('no diagnostics:', e)
+    raise
 finally:
     proc.terminate()
 print("data files:", sorted(x.name for x in data.glob("*")))
