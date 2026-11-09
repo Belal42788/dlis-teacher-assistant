@@ -54,8 +54,9 @@ export async function renderCalendar(root, edit = false) {
   root.replaceChildren(h("div", { class: "page full" },
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_calendar")), h("p", {}, t("calendar_page_lead"))),
       h("div", { class: "row" }, h("button", { class: "btn", onClick: () => renderCalendar(root, true) }, icon("edit"), t("cal_edit")))),
+    box,
     weeksLine(ov, cal, idx, (start) => { const d = new Date(`${start}T00:00:00Z`); view.y = d.getUTCFullYear(); view.m = d.getUTCMonth(); drawMonth(); box.scrollIntoView({ behavior: "smooth", block: "start" }); }),
-    termCard(ov), box));
+    termCard(ov)));
   drawMonth();
 }
 

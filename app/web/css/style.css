@@ -890,7 +890,7 @@ html[dir="ltr"] .btn { white-space: normal; }
 
 /* ---------- calendar: weeks line + month ---------- */
 .flip { display: inline-flex; transform: scaleX(-1); }
-.wk-line { padding: .8rem 1rem; margin-bottom: .7rem; }
+.wk-line { padding: .8rem 1rem; margin: .7rem 0; }
 .wk-row { margin-bottom: .5rem; }
 .wk-name { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: .3rem; }
 .wk-squares { display: grid; gap: 4px; }
