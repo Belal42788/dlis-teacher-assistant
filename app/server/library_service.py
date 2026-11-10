@@ -73,7 +73,7 @@ class LibraryMixin:
 
     def library_source(self, b: dict) -> dict:
         """Turn a file into a source for the AI (it is read once), or stop using it as one. Slides the app made are always sources."""
-        rel = str(b.get("rel", ""))
+        rel = str(b.get("rel", "")).replace("\\", "/")
         p = self._lib_file(rel)
         cur = next((x for x in self._srcs() if x.get("file_rel") == rel or x["id"] == self._made_id(p)), None)
         if b.get("on"):
