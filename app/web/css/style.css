@@ -132,7 +132,6 @@ body.has-titlebar .shell, body.has-titlebar .wiz { top: 34px; }
 
 /* ---------- the day's lessons ---------- */
 .paper { position: relative; background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
-.lesson.extra .no::after { content: "+"; color: var(--margin); }
 .paper.empty { padding: 1.6rem 1.5rem; min-height: 96px; }
 
 .date-head { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin-bottom: 1rem; }
@@ -421,44 +420,55 @@ h1, h2, h3, .top .brand b, h1 { letter-spacing: -.01em; }
 
 /* ---------- Today: the day as a ladder of lessons ---------- */
 
-.ladder { position: relative; display: grid; gap: .45rem; }
-.slot { display: grid; grid-template-columns: 4.5rem 1fr; gap: .5rem; align-items: stretch; --tone: var(--blue); }
-.slot-time { display: flex; flex-direction: column; justify-content: center; align-items: flex-end; text-align: end; line-height: 1.2; font-variant-numeric: tabular-nums; color: var(--ink-2); }
-.slot-time b { font-size: .98rem; color: var(--ink); }
-.slot-time span { font-size: .84rem; color: var(--muted); }
-[dir="rtl"] .slot-time { align-items: flex-start; }
-.lesson { position: relative; display: grid; grid-template-columns: 2.4rem minmax(0, 1fr) auto; align-items: center; min-height: 56px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; box-shadow: 0 1px 2px rgba(28,31,77,.05); }
-.lesson::before { content: ""; position: absolute; inset-block: -1px; inset-inline-start: -1px; width: 6px; background: var(--tone); border-start-start-radius: 12px; border-end-start-radius: 12px; }
-.lesson .no { position: relative; align-self: stretch; display: grid; place-items: center; margin-inline-start: 5px; font-family: var(--font-head); font-size: 1.15rem; font-weight: 800; color: var(--tone); background: color-mix(in srgb, var(--tone) 11%, white); }
-.lesson .what { padding: .3rem .7rem; min-width: 0; }
-.lesson .what b { font-size: 1.12rem; font-family: var(--font-head); }
+.ladder { position: relative; display: grid; gap: 0; }
+.slot { display: grid; grid-template-columns: var(--rw) minmax(0, 1fr); align-items: stretch; --tone: var(--blue); --rw: 108px; --lc: var(--green); --lg: #cfdbe6; }
+/* the line: a column of its own, so the dots and the line share one centre. Green up to now, grey after, creeping toward the next time (trackNow sets --tf / --bf) */
+.rail { position: relative; display: grid; place-items: center; }
+.rail::before, .rail::after { content: ""; position: absolute; left: 50%; width: 6px; transform: translateX(-50%); }
+.rail::before { top: 0; height: 50%; background: linear-gradient(to bottom, var(--lc) calc(var(--tf, 0) * 100%), var(--lg) 0); }
+.rail::after { bottom: 0; height: 50%; background: linear-gradient(to bottom, var(--lc) calc(var(--bf, 0) * 100%), var(--lg) 0); }
+.slot:first-child .rail::before, .slot:last-child .rail::after { display: none; }
+.slot-time { position: relative; z-index: 2; white-space: nowrap; min-width: 84px; padding: .28rem .5rem; text-align: center; border-radius: 999px; background: #fff; border: 3px solid var(--lg); font-size: .95rem; line-height: 1.2; font-variant-numeric: tabular-nums; color: var(--ink); }
+.slot-dot { position: relative; z-index: 2; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 4px solid var(--lg); }
+.slot.reached .slot-time { background: var(--green); border-color: var(--green); color: #fff; }
+.slot[data-state="now"] .slot-time { padding: .4rem .6rem; font-size: 1.05rem; border-color: #fff; box-shadow: 0 0 0 4px var(--green), 0 0 0 9px rgba(63,143,82,.22); }
+.lesson { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .3rem .8rem; min-height: 56px; padding: .35rem .5rem; border-bottom: 1px solid var(--rule); }
+.slot:last-child .lesson { border-bottom: 0; }
+.lesson .what { min-width: 0; }
 .lesson .l1 { display: flex; align-items: baseline; gap: .15rem .55rem; flex-wrap: wrap; }
-.lesson .l2 { display: flex; align-items: center; gap: .1rem .7rem; flex-wrap: wrap; font-size: .9rem; }
+.lesson .l1 b { font-family: var(--font-head); font-size: 1.2rem; font-weight: 800; border-inline-start: 5px solid var(--tone); padding-inline-start: .55rem; }
+.lesson .l2 { display: flex; align-items: center; gap: .1rem .8rem; flex-wrap: wrap; font-size: .9rem; padding-inline-start: calc(.55rem + 5px); }
 .lesson .l2 .last-log { margin: 0; display: flex; align-items: center; gap: .1rem .6rem; flex-wrap: wrap; }
 .lesson .l2 .last-log .progress { width: 64px; flex: none; }
 .lesson .l2 .remember { font-size: .82rem; padding: 0 .5rem; }
 .lesson .plan-line { margin: 0; }
-.lesson .acts { display: flex; align-items: center; gap: .4rem; padding-inline: .5rem .6rem; }
+.lesson .acts { display: flex; align-items: center; gap: .45rem; }
 .lesson .acts .until { margin: 0; }
-.lesson.extra .no::after { top: 1px; inset-inline-end: 3px; font-size: .8rem; line-height: 1; position: absolute; }
 .lesson .time { display: none; }
-.lesson.duty { --tone: var(--pencil); background: var(--pencil-wash); border-style: dashed; }
-.lesson.duty .no { color: #5d7a1c; background: transparent; }
-.lesson.cancelled { opacity: .72; background: repeating-linear-gradient(135deg, #fff, #fff 8px, #f6f8fa 8px, #f6f8fa 16px); --tone: var(--margin); }
-.slot[data-state="past"] .lesson { background: #f7f9fb; }
-.slot[data-state="past"] .lesson .no, .slot[data-state="past"] .lesson .what, .slot[data-state="past"] .lesson .acts > .btn { opacity: .7; filter: saturate(.45); }   /* not on the whole card: its open menu must stay solid */
-.slot[data-state="past"] .slot-time { opacity: .6; }
+.lesson .cd, .lesson .act-docs { display: none; }
+.cd { text-align: center; line-height: 1.15; padding: .4rem 1rem; border-radius: 14px; background: var(--green); color: #fff; }
+.cd b { display: block; font-size: 1.8rem; font-variant-numeric: tabular-nums; }
+.cd small { font-size: .8rem; }
+/* the lesson running now: a big card on the line, with the time left */
+.slot[data-state="now"] .lesson { margin: .5rem 0; padding: .9rem 1.1rem; border: 3px solid var(--green); border-radius: 16px; background: #f3faf4; box-shadow: 0 6px 18px rgba(63,143,82,.18); }
+.slot[data-state="now"] .lesson .l1 b { font-size: 1.55rem; }
+.slot[data-state="now"] .lesson .l2 { font-size: .95rem; }
+.slot[data-state="now"] .lesson .cd, .slot[data-state="now"] .lesson .act-docs { display: inline-flex; }
+.slot[data-state="now"] .lesson .cd { display: block; }
+.slot[data-state="now"] .lesson .until { display: none; }
+/* the break and late duties: a quiet colour of their own, so they read as "not a class" without shouting */
+.lesson.duty { --tone: #b9b6dc; min-height: 48px; margin: .35rem 0; border: 1px dashed #cbc8e6; border-radius: 12px; background: #f3f2fa; }
+.lesson.duty .l1 b { color: #55538a; }
+.lesson.cancelled { opacity: .72; margin: .2rem 0; border-radius: 12px; background: repeating-linear-gradient(135deg, #fff, #fff 8px, #f6f8fa 8px, #f6f8fa 16px); --tone: var(--margin); }
+.slot[data-state="past"] .lesson .what, .slot[data-state="past"] .lesson .acts > .btn { opacity: .65; filter: saturate(.45); }   /* not on the whole row: its open menu must stay solid */
 .slot.menu-open { position: relative; z-index: 8; }
-.slot[data-state="now"] .lesson { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(242,169,59,.22), 0 6px 18px rgba(28,31,77,.10); }
-.slot[data-state="now"] .slot-time b { color: #b36b00; }
-.slot > .lesson:only-child { grid-column: 2; }
 
 /* one reveal when the page opens: lessons settle in from the time side, in order */
 @media (prefers-reduced-motion: no-preference) {
   .ladder .slot { animation: slot-in .16s ease-out both; }
   @keyframes slot-in { from { opacity: 0; } }
 }
-@media (max-width: 640px) { .slot { grid-template-columns: 3.4rem 1fr; gap: .4rem; } .lesson { grid-template-columns: 2.2rem minmax(0, 1fr); } .lesson .acts { grid-column: 1 / -1; padding: 0 .6rem .4rem; justify-content: flex-end; flex-wrap: wrap; } }
+@media (max-width: 640px) { .slot { --rw: 74px; } .slot-time, .slot[data-state="now"] .slot-time { min-width: 60px; padding: .25rem .3rem; border-width: 2px; font-size: .8rem; } .slot[data-state="now"] .slot-time { box-shadow: 0 0 0 3px var(--green), 0 0 0 6px rgba(63,143,82,.22); } .lesson { grid-template-columns: 1fr; } .lesson .acts { justify-content: flex-end; flex-wrap: wrap; } }
 /* ---------- calmer surfaces ---------- */
 .panel { border-radius: 14px; box-shadow: 0 1px 2px rgba(28,31,77,.05); }
 .panel > h3 { font-size: var(--step-1); }

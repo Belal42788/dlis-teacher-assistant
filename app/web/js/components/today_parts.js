@@ -58,6 +58,22 @@ const mins = (hhmm) => { const m = /^(\d{1,2}):(\d{2})/.exec(hhmm || ""); return
 const nowMins = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
 
 const fmtLeft = (m) => { m = Math.max(0, Math.ceil(m)); if (m < 60) return t("td_min", { n: m }); const hh = Math.floor(m / 60), mm = m % 60; return mm ? t("td_hm", { h: hh, m: mm }) : t("td_h", { h: hh }); };
+// The line on the left of the day: green up to the lesson we are in, grey after it, and it creeps toward the next time as the minutes pass,
+// reaching it exactly when that lesson starts. Each row draws the two halves of the line that touch its dot (--tf above it, --bf below it, 0..1),
+// so the fill is shared between two rows by their real heights.
+function paintLine(n) {
+  const rows = [...document.querySelectorAll(".ladder .slot")];
+  const a = rows.map((el) => mins(el.dataset.a));
+  rows.forEach((el, i) => { el.classList.toggle("reached", a[i] !== null && n >= a[i]); el.style.setProperty("--tf", "0"); el.style.setProperty("--bf", "0"); });
+  for (let i = 0; i < rows.length - 1; i++) {
+    const j = i + 1;
+    if (a[i] === null || a[j] === null || a[j] <= a[i]) continue;
+    const f = Math.min(1, Math.max(0, (n - a[i]) / (a[j] - a[i])));
+    const lenB = rows[i].offsetHeight / 2, lenT = rows[j].offsetHeight / 2, px = f * (lenB + lenT);
+    rows[i].style.setProperty("--bf", String(lenB ? Math.min(1, px / lenB) : 1));
+    rows[j].style.setProperty("--tf", String(lenT ? Math.max(0, (px - lenB) / lenT) : 0));
+  }
+}
 // Marks the lesson that is running now, fades the ones that are over, writes the time left on each row and keeps the "next lesson" bar current
 // (re-checked every 15 seconds while the page is open).
 export function trackNow(items, nextBox) {
@@ -73,12 +89,15 @@ export function trackNow(items, nextBox) {
       el.dataset.state = st;
       const u = el.querySelector(".until");
       if (u && a !== null) { u.textContent = st === "past" ? t("td_done") : st === "now" ? t("td_now") : t("td_in", { x: fmtLeft(a - n) }); u.className = "until" + (st === "past" ? " done" : st === "now" || a - n <= 15 ? " soon" : ""); }
+      if (st === "now") { const big = Math.max(0, Math.ceil(b - n)); el.querySelector(".cd-n")?.replaceChildren(big < 60 ? String(big) : `${Math.floor(big / 60)}:${String(big % 60).padStart(2, "0")}`); el.querySelector(".cd-u")?.replaceChildren(big < 60 ? t("td_cd_min") : t("td_cd_h")); }
     });
+    paintLine(n);
     if (!nextBox) return;
     const cur = lessons.find((x) => n < mins(x.end));
     if (!cur) { nextBox.replaceChildren(); shown = null; return; }
-    if (cur !== shown) { shown = cur; nextBox.replaceChildren(cur.banner()); }
     const a = mins(cur.start), running = n >= a, left = running ? mins(cur.end) - n : a - n;
+    if (running) { nextBox.replaceChildren(); shown = null; return; }   // the lesson running now is the big card on the line, with its own countdown
+    if (cur !== shown) { shown = cur; nextBox.replaceChildren(cur.banner()); }
     const num = nextBox.querySelector(".nb-num"), unit = nextBox.querySelector(".nb-unit"), lab = nextBox.querySelector(".nb-lab");
     const big = Math.max(0, Math.ceil(left));
     if (num) { num.textContent = big < 60 ? String(big) : `${Math.floor(big / 60)}:${String(big % 60).padStart(2, "0")}`; unit.textContent = big < 60 ? t("td_unit_min") : t("td_unit_h"); }
@@ -87,5 +106,6 @@ export function trackNow(items, nextBox) {
   };
   const timer = setInterval(tick, 15000);
   setTimeout(tick, 0);
+  setTimeout(tick, 600);   // once more after the fonts have settled, so the line is measured on the final heights
   return lessons.length;
 }
