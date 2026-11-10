@@ -161,8 +161,9 @@ try:
         page.wait_for_selector(".shell"); page.wait_for_selector(".week-badge"); shot("08_today_ar")
         print("badge:", page.inner_text(".week-badge"))
         page.wait_for_timeout(700); shot("08_today_ar")
-        ys = page.evaluate("(() => { if (!document.querySelector('.slot-time b')) return [0, 1]; const b = document.querySelector('.slot-time b'), sp = document.querySelector('.slot-time span'); return [b.getBoundingClientRect().y, sp.getBoundingClientRect().y] })()")
-        assert ys[0] < ys[1], f"start time must be shown above the end time: {ys}"
+        pill = page.locator(".slot-time").first
+        if pill.count():
+            assert re.search(r"\d", pill.inner_text()) and " – " in (pill.get_attribute("title") or ""), "the time on the line must show the start, with the whole range as its tooltip"
 
         # start-up hint on Today: the AI hint leads to the AI help section
         page.wait_for_selector(".banner:has-text('المساعد الذكي لسه مش شغال')"); shot("08b_today_hints")

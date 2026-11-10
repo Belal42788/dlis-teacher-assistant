@@ -60,10 +60,12 @@ export async function renderToday(root) {
 
   const sessionLabel = (s, structure) => { const room = structure.rooms.find((r) => r.id === s.room_id); return room ? roomLabel(room, structure) : s.room_id; };
 
+  // one row of the day: the rail (the time, sitting on the line) and the lesson beside it. trackNow colours the line and fills the countdown.
   const slot = (x) => {
-    const until = x.live ? h("span", { class: "until" }) : null;   // "in 20 min" / "now" / "done": written by trackNow, shown inside the card
-    return h("div", { class: "slot", style: { "--tone": x.tone || "var(--blue)" }, "data-s": x.live ? x.start : "", "data-e": x.live ? x.end || "" : "" },
-      h("div", { class: "slot-time", dir: "ltr" }, x.start && x.start !== "99" ? [h("b", {}, fmt12(x.start)), x.end ? h("span", {}, fmt12(x.end)) : null] : null),
+    const until = x.live ? h("span", { class: "until" }) : null;   // "in 20 min" / "done": written by trackNow
+    const timed = x.start && x.start !== "99";
+    return h("div", { class: "slot", style: { "--tone": x.tone || "var(--blue)" }, "data-s": x.live ? x.start : "", "data-e": x.live ? x.end || "" : "", "data-a": timed ? x.start : "" },
+      h("div", { class: "rail" }, timed ? h("div", { class: "slot-time", dir: "ltr", title: x.end ? `${fmt12(x.start)} – ${fmt12(x.end)}` : fmt12(x.start) }, h("b", {}, fmt12(x.start))) : h("i", { class: "slot-dot" })),
       x.node(until));
   };
 
@@ -87,15 +89,16 @@ export async function renderToday(root) {
         const plan = s.plan && s.plan.topic ? h("span", { class: "plan-line small" }, icon("file"), " ", h("b", {}, s.plan.topic), s.plan.slides ? h("span", { class: "muted" }, ` · ${t("tn_slides_n", { n: s.plan.slides })}`) : null) : null;
         const last = lastLine(logInfo.last[s.room_id]);
         return h("div", { class: `lesson${s.extra ? " extra" : ""}` },
-          h("div", { class: "no" }, s.period),
           h("div", { class: "what" },
             h("div", { class: "l1" }, h("b", {}, room ? roomLabel(room, structure) : s.room_id),
-              s.kind ? h("span", { class: `kind ${s.kind}` }, t(`ch_kind_${s.kind}`)) : null,
-              h("span", { class: "muted small meta" }, t("students_n", { n: room?.student_count ?? 0 })),
-              s.note ? h("span", { class: "muted small" }, s.note) : null),
-            plan || last ? h("div", { class: "l2" }, plan, last) : null),
-          h("div", { class: "acts" }, until,
+              s.kind ? h("span", { class: `kind ${s.kind}` }, t(`ch_kind_${s.kind}`)) : null),
+            h("div", { class: "l2" }, h("span", { class: "muted small" }, t("ch_period_n", { n: s.period })), h("span", { class: "muted small meta" }, t("students_n", { n: room?.student_count ?? 0 })),
+              s.note ? h("span", { class: "muted small" }, s.note) : null, plan, last)),
+          h("div", { class: "acts" },
+            h("div", { class: "cd" }, h("b", { class: "cd-n" }), h("small", { class: "cd-u" })),   // the time left: shown only while this lesson runs
+            until,
             h("button", { class: "btn small primary", onClick: () => openLog(s) }, icon("file"), logged(s) ? t("log_edit") : t("log_lesson")),
+            h("a", { class: "btn small act-docs", href: `#/docs?room=${s.room_id}` }, icon("spark"), t("nav_docs")),   // also only while it runs
             moreMenu([menuItem(t("nav_docs"), null, { href: `#/docs?room=${s.room_id}`, icon: "file" }),
               isToday ? menuItem(t("ch_move"), () => moveDialog(d, structure, s), { icon: "timetable" }) : null,
               isToday ? menuItem(t("ch_cancel"), () => change({ action: "cancel", period: s.period }), { danger: true, icon: "trash" }) : null])));
@@ -103,16 +106,13 @@ export async function renderToday(root) {
       ...(d.cancelled || []).map((s) => ({ start: s.start || "99", node: () => {
         const room = structure.rooms.find((r) => r.id === s.room_id);
         return h("div", { class: "lesson cancelled" },
-          h("div", { class: "no" }, s.period),
           h("div", { class: "what" }, h("div", { class: "l1" }, h("b", {}, room ? roomLabel(room, structure) : s.room_id), h("span", { class: "kind cancelled" }, t("ch_cancelled")))),
           h("div", { class: "acts" }, h("button", { class: "btn small ghost", onClick: () => change({ action: "uncancel", period: s.period }) }, t("ch_undo"))));
       } })),
       ...(d.duties || []).map((u) => ({ start: u.start, end: u.end, live: true, tone: "var(--pencil)", label: t(`duty_${u.kind}`), node: (until) => h("div", { class: "lesson duty" },
-        h("div", { class: "no" }, icon("clock")),
         h("div", { class: "what" }, h("div", { class: "l1" }, h("b", {}, t(`duty_${u.kind}`)))),
         h("div", { class: "acts" }, until, isToday ? h("button", { class: "btn small ghost", onClick: () => change({ action: "cancel_duty", kind: u.kind }) }, t("duty_cancel")) : null)) })),
       ...(d.cancelled_duties || []).map((u) => ({ start: u.start, node: () => h("div", { class: "lesson cancelled" },
-        h("div", { class: "no" }, icon("clock")),
         h("div", { class: "what" }, h("div", { class: "l1" }, h("b", {}, t(`duty_${u.kind}`)), h("span", { class: "kind cancelled" }, t("duty_cancelled")))),
         h("div", { class: "acts" }, h("button", { class: "btn small ghost", onClick: () => change({ action: "restore_duty", kind: u.kind }) }, t("duty_restore")))) })),
     ].sort((a, b) => a.start.localeCompare(b.start));
