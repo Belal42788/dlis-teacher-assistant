@@ -144,6 +144,29 @@ class TestDocsAndTasks(unittest.TestCase):
         with self.assertRaises(AppError):
             self.svc.library_share({"rel": "../../etc/passwd", "class_id": "g4-a"})
 
+    def test_one_file_list_with_source_switch(self):
+        import base64
+        import io
+        from docx import Document
+        d = Document(); d.add_paragraph("Chapter one is about input devices such as the keyboard and the mouse, and how they send data to the computer."); buf = io.BytesIO(); d.save(buf)
+        book = self.svc.import_source({"filename": "Book 1.docx", "data_b64": base64.b64encode(buf.getvalue()).decode()})
+        self.assertTrue(book["rel"].startswith("Books/"))
+        quiz = self.svc.make_quiz({"grade_id": "g4", "trimester": 0, "week": 8, "number": 1, "text": "1. Q?\na) x\nb) y\nAnswer: a"})
+        lib = self.svc.library_list()
+        items = {x["name"]: x for x in lib["items"]}
+        b = items["Book 1.docx"]
+        self.assertEqual((b["kind"], b["source"]["id"], b["source_locked"]), ("book", book["id"], False))
+        self.assertIsNone(items[quiz["name"]]["source"])
+        on = {x["name"]: x for x in self.svc.library_source({"rel": quiz["rel"], "on": True})["items"]}
+        self.assertTrue(on[quiz["name"]]["source"])
+        self.assertEqual(len(self.svc.list_sources()["sources"]), 2)
+        off = {x["name"]: x for x in self.svc.library_source({"rel": quiz["rel"], "on": False})["items"]}
+        self.assertIsNone(off[quiz["name"]]["source"])
+        self.assertEqual(len(self.svc.list_sources()["sources"]), 1)
+        self.assertEqual(self.svc.library_list()["orphans"], [])
+        with self.assertRaises(AppError):
+            self.svc.library_source({"rel": "../../etc/passwd", "on": True})
+
     def test_scheme_of_work_round_trip_and_planned_source(self):
         d = self.svc.scheme_get("g4", 0)
         self.assertTrue(d["weeks"])

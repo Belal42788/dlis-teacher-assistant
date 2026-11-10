@@ -276,8 +276,8 @@ try:
         # my slides: import an image-only PDF, the app reads it with the (fake) vision AI, then the revision page can use it
         from PIL import Image as _I
         _I.new("RGB", (800, 450), (240, 240, 250)).save(str(Path(tempfile.gettempdir()) / "nlm.pdf"), "PDF")
-        page.click(".nav a[data-page=library]"); page.click("a.seg-btn[href='#/sources']"); page.wait_for_selector("text=أضف مصدر")
-        page.set_input_files("input[type=file]", str(Path(tempfile.gettempdir()) / "nlm.pdf")); page.wait_for_selector(".src-card:has-text('nlm'):has-text('Input devices')", timeout=20000); shot("17m_sources")
+        page.click(".nav a[data-page=library]"); page.wait_for_selector("details.add-src")
+        page.set_input_files("input[type=file]", str(Path(tempfile.gettempdir()) / "nlm.pdf")); page.wait_for_selector(".file-row:has-text('nlm'):has-text('Input devices')", timeout=20000); shot("17m_sources")
         page.click(".nav a[data-page=docs]"); wait_docs(page); pick_kind(page, "rv"); page.wait_for_selector(".src-pick select >> visible=true")
         page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", label=re.compile(r'nlm')) if False else page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", value=page.eval_on_selector(".panel:has(h3:text('ملف المراجعة')) .src-pick select", "s => [...s.options].find(o => o.textContent.includes('nlm')).value")); page.click("text=املا من سلايداتي")
         page.wait_for_function("[...document.querySelectorAll('textarea')].some(t => t.value === 'Mouse: points and clicks')")
@@ -290,7 +290,7 @@ try:
         page.evaluate("location.hash='#/seating'"); page.wait_for_selector("#main:not(.busy) .seat")
         page.click(".st-pool .chip >> nth=0"); page.click(".seat >> nth=0"); page.wait_for_selector(".seat.full", timeout=10000); shot("17p_seating")
         # teacher tools: pick a tool, fill its form, the (fake) AI writes, save as Word; a student tool offers the name picker
-        page.click(".nav a[data-page=tools]"); page.wait_for_selector(".tl-form")
+        page.click(".nav a[data-page=docs]"); page.click("a.seg-btn[href='#/tools']"); page.wait_for_selector(".tl-form")
         page.select_option("select[aria-label='اختار الأداة']", "rubric")
         for el in page.locator(".tl-form input, .tl-form textarea").all(): el.fill("4" if el.get_attribute("type") == "number" else "Poster project")
         page.click("button:has-text('اكتبها')"); page.wait_for_function("document.querySelector('.tl-out').value.includes('Clarity')", timeout=20000)
@@ -300,7 +300,7 @@ try:
         for el in page.locator(".tl-form input, .tl-form textarea").all(): el.fill("4" if el.get_attribute("type") == "number" else "Works hard")
         page.click("button:has-text('اكتبها')"); page.wait_for_function("document.querySelector('.tl-out').value.includes('[student]')", timeout=20000)
         page.wait_for_selector("button:has-text('حط الاسم')"); page.wait_for_selector(".tl-form ~ * .banner.ok, .main .banner.ok", state="detached"); assert page.locator(".main a:has-text('شارك')").count() == 0, page.locator("a:has-text('شارك')").all_inner_texts()
-        page.click(".nav a[data-page=docs]"); wait_docs(page); page.click(".nav a[data-page=tools]"); page.wait_for_selector(".tl-form")
+        page.click(".nav a[data-page=docs]"); wait_docs(page); page.click("a.seg-btn[href='#/tools']"); page.wait_for_selector(".tl-form")
         assert "[student]" in page.input_value(".tl-out")      # what was written stays while visiting another page
         # quick search: Ctrl+K lists recent files and pages, finds a tool by its Arabic name and opens it, and finds a saved file
         page.keyboard.press("Control+k"); page.wait_for_selector(".quick-input"); page.wait_for_selector(".quick-item")
@@ -335,7 +335,7 @@ try:
         page.reload(); page.wait_for_selector(".nav"); page.click(".nav a[data-page=map]"); page.wait_for_selector(".bld3-room:has-text('Test office')")
         # layout: sidebar fills the window height, and every page scrolls inside itself
         page.set_viewport_size({"width": 1280, "height": 500})
-        for name in ("today", "classes", "docs", "scheme", "tools", "library", "chat", "map", "tasks", "settings"):
+        for name in ("today", "classes", "docs", "scheme", "library", "chat", "map", "tasks", "settings"):
             page.click(f".nav a[data-page={name}]"); page.wait_for_timeout(500)
             m = page.evaluate("(() => { const m = document.querySelector('.main'), s = document.querySelector('.shell'); m.scrollTop = 0; return {side: s.getBoundingClientRect().height, win: innerHeight, sh: m.scrollHeight, ch: m.clientHeight, doc: document.documentElement.scrollHeight} })()")
             assert abs(m["side"] - m["win"]) < 2, (name, m)
@@ -359,10 +359,10 @@ try:
             go("docs")
             for tab_ in ("wk", "lp", "quiz", "rv", "sl", "gs", "ct"):
                 pick_kind(page, tab_); snap(f"files_{tab_}")
-            go("library"); page.click("a.seg-btn[href='#/sources']"); snap("library_sources")
+            go("library"); snap("library_files")
             go("scheme"); page.wait_for_selector(".sw-card"); snap("scheme")
             go("library"); page.wait_for_selector(".banner.info"); snap("library")
-            go("tools"); page.wait_for_selector(".tl-form"); snap("tools")
+            go("docs"); page.click("a.seg-btn[href='#/tools']"); page.wait_for_selector(".tl-form"); snap("tools")
             go("chat"); snap("chat")
             page.click(".chat-tool >> nth=0"); snap("chat_ready_requests")
             go("classes"); snap("classes")
@@ -409,7 +409,7 @@ try:
               const outside = (r.right > pr.right + 2 || r.left < pr.left - 2) && pcs.overflowX === 'visible' && cs.position !== 'absolute' && cs.position !== 'fixed' && pr.width > 0;
               if (clipped || outside) out.push((el.tagName + '.' + el.className).slice(0, 50) + ' | ' + el.textContent.trim().slice(0, 40) + ' | ' + Math.round(r.width) + ' vs ' + Math.round(pr.width) + ' in ' + p.tagName + '.' + p.className + ' ws=' + pcs.whiteSpace + ' disp=' + pcs.display + ' kids=' + [...p.children].map(k => Math.round(k.getBoundingClientRect().width) + '@' + Math.round(k.getBoundingClientRect().left)).join(',') + ' td@' + Math.round(pr.left) + ' pad=' + pcs.paddingLeft + '/' + pcs.paddingRight + ' minw=' + pcs.minWidth); }
               return out.slice(0, 12); }"""
-            for route in ("today", "timetable", "calendar", "tasks", "docs", "scheme", "tools", "library", "sources", "publish", "chat", "classes", "log", "progress", "parentweek", "map", "settings", "help"):
+            for route in ("today", "timetable", "calendar", "tasks", "docs", "scheme", "tools", "library", "publish", "chat", "classes", "log", "progress", "parentweek", "map", "settings", "help"):
                 page.evaluate(f"location.hash = '#/{route}'"); page.wait_for_timeout(700)
                 for r in page.evaluate(JS): print("SWEEP", route, "->", r)
                 shot(f"14_{route}_en")

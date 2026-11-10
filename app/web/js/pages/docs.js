@@ -1,3 +1,4 @@
+import { hubTabs } from "../components/hubtabs.js";
 import { h, icon } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { t } from "../i18n.js";
@@ -132,7 +133,7 @@ export async function renderDocs(root) {
   }
   showTab(panelList.some(([k]) => k === memoDocs.tab) ? memoDocs.tab : "wk");
   drawWeeks();
-  root.replaceChildren(h("div", { class: "page" },
+  root.replaceChildren(h("div", { class: "page" }, hubTabs("create", "docs"),
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_docs")), h("p", {}, t("docs_lead")))),
     stepBar, step1, step2, step3));
   go(memoDocs.step || 1);
