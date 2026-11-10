@@ -388,7 +388,8 @@ try:
         page.wait_for_selector("text=تم الحفظ"); shot("11_students")
         # reload: data persists and the app opens straight to the shell
         page.goto(url); page.wait_for_selector(".shell"); page.click(".nav a[data-page=classes]"); page.wait_for_selector(".students li")
-        assert page.locator(".students li").count() == 17
+        page.wait_for_function("document.querySelectorAll('.students li').length === 17", timeout=15000)
+        assert page.locator(".students li").count() == 17, page.locator(".students li").count()
         # english + unsaved-changes guard
         page.click(".nav a[data-page=settings]"); page.click(".seg-btn[data-tab=me]"); page.wait_for_selector("button[lang=en]"); page.click("button[lang=en]")
         page.wait_for_selector(".tab:has-text('My day')"); assert page.evaluate("document.documentElement.dir") == "ltr"
