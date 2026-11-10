@@ -60,9 +60,12 @@ export function timetableEditor({ timetable, structure, workingDays, onChange })
     return h("td", { class: "duty-cell" }, btn);
   }
 
+  const todayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date().getDay()];
+  const dayHead = (d) => h("th", { class: `d${d === todayName ? " now" : ""}`, scope: "row" }, dayName(d), d === todayName ? h("span", { class: "tt-now" }, t("tt_now")) : null);
+
   const table = h("table", { class: "grid" },
     h("thead", {}, h("tr", {}, h("th", { class: "d" }, t("day")), head)),
-    h("tbody", {}, workingDays.map((d) => h("tr", {}, h("th", { class: "d", scope: "row" }, dayName(d)), cols.map((c) => cell(d, c))))));
+    h("tbody", {}, workingDays.map((d) => h("tr", {}, dayHead(d), cols.map((c) => cell(d, c))))));
 
   const el = h("div", {},
     rooms.length ? null : h("div", { class: "banner warn" }, icon("warn"), h("div", {}, t("add_classes_first"))),

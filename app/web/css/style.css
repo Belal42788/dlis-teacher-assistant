@@ -158,24 +158,22 @@ body.has-titlebar .shell, body.has-titlebar .wiz { top: 34px; }
 
 /* ---------- tables (timetable, weeks) ---------- */
 .tt-tools { margin-bottom: .8rem; justify-content: space-between; }
-.tt-wrap { overflow-x: visible; border: 1px solid var(--rule); border-radius: 8px; }
+.tt-wrap { overflow-x: visible; }
 table.grid { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 0; table-layout: fixed; }
-table.grid th, table.grid td { padding: .3rem .35rem; border-bottom: 1px solid var(--rule); border-inline-end: 1px solid var(--rule); vertical-align: middle; }
+table.grid th, table.grid td { padding: .3rem .35rem; vertical-align: middle; }
 table.grid tr:last-child > * { border-bottom: 0; }
 table.grid th:last-child, table.grid td:last-child { border-inline-end: 0; }
 table.grid thead th { background: linear-gradient(180deg, #f4f9fc, #e9f2f8); font-weight: 700; text-align: center; font-size: .9rem; }
-table.grid th.d { width: 92px; overflow-wrap: anywhere; hyphens: auto; background: #f4f9fc; text-align: start; padding-inline: .7rem; font-size: .92rem; color: var(--indigo); }
+table.grid th.d { width: 92px; overflow-wrap: anywhere; hyphens: auto; background: #f4f9fc; font-size: .92rem; color: var(--indigo); }
 table.grid thead th.d { background: linear-gradient(180deg, #f4f9fc, #e9f2f8); }
 table.grid th.p { min-width: 0; padding-inline: .1rem; font-size: .82rem; }
 table.grid .pn { color: var(--indigo); }
-table.grid td select { min-height: 30px; width: 100%; min-width: 0; font-weight: 700; font-size: .85rem; padding: .2em 0; text-align: center; text-align-last: center; text-overflow: clip; appearance: none; -webkit-appearance: none; background-image: none; }
+table.grid td select { width: 100%; min-width: 0; font-size: .85rem; padding: .2em 0; text-align: center; text-align-last: center; text-overflow: clip; appearance: none; -webkit-appearance: none; }
 table.grid th.duty-h { background: linear-gradient(180deg, #f6faea, #ecf3d6); min-width: 0; }
 table.grid th.info-h { background: #eef1f6; color: var(--muted); min-width: 0; font-weight: 600; }
-table.grid td.info-cell { background: repeating-linear-gradient(135deg, #f3f5f9 0 6px, #eceff5 6px 12px); }
-table.grid td.duty-cell { text-align: center; background: #fafcf4; }
+table.grid td.duty-cell { text-align: center; }
 .duty-btn { width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--rule-strong); background: #fff; color: #fff; display: inline-grid; place-items: center; padding: 0; }
-.duty-btn.on { background: var(--green); border-color: var(--green); }
-table.grid .times { display: grid; gap: 0; margin-top: 2px; font-size: .78rem; font-weight: 500; color: var(--muted); text-align: center; }
+table.grid .times { display: grid; gap: 0; margin-top: 2px; font-size: .78rem; font-weight: 500; text-align: center; }
 table.weeks { width: 100%; border-collapse: collapse; }
 table.weeks th, table.weeks td { text-align: start; padding: .35rem .5rem; border-bottom: 1px solid var(--rule); }
 table.weeks th { color: var(--muted); font-weight: 600; font-size: var(--step--1); }
@@ -494,7 +492,6 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--b
 .tree button.room { display: flex; align-items: center; gap: .55rem; }
 .tree .dot { width: .6rem; height: .6rem; border-radius: 50%; flex: none; }
 .grow { flex: 1; min-width: 0; text-align: start; }
-table.grid td select.filled { --tone: var(--blue); background: color-mix(in srgb, var(--tone) 13%, white); border-color: color-mix(in srgb, var(--tone) 55%, white); border-inline-start: 4px solid var(--tone); color: var(--ink); font-weight: 700; }
 .bubble.user { background: color-mix(in srgb, var(--blue) 12%, white); }
 .bubble.assistant { background: #fff; border: 1px solid var(--rule); box-shadow: 0 1px 2px rgba(28,31,77,.05); }
 .page-head h1 { font-size: var(--step-4); }
@@ -750,14 +747,6 @@ html[dir="ltr"] .btn { white-space: normal; }
 /* ---------- Today: greeting, next-lesson bar with the time left, lessons on the left and everything else on the side ---------- */
 .page.wide { max-width: 1180px; }
 /* The timetable uses the whole width now that the menu is on top: bigger cells, bigger text */
-.page.full { max-width: 1680px; }
-.page.full table.grid th.d { width: 8.5rem; font-size: 1.05rem; padding-block: .5rem; }
-.page.full table.grid thead th { font-size: 1rem; padding-block: .55rem; }
-.page.full table.grid th.p { font-size: .95rem; }
-.page.full table.grid td { padding: .4rem .45rem; }
-.page.full table.grid td select { min-height: 46px; font-size: 1.05rem; border-radius: 9px; }
-.page.full table.grid .times { font-size: .85rem; }
-.page.full .duty-btn { width: 34px; height: 34px; }
 .today-head { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; margin-bottom: .6rem; padding: .45rem 1rem; border-radius: 16px; border: 1px solid #c3dbea; background: linear-gradient(100deg, #d6eaf6 0%, #e4f1f8 55%, #e8f3d3 100%); box-shadow: 0 1px 2px rgba(28,31,77,.06); }
 .today-head h1 { font-size: 1.55rem; line-height: 1.2; font-weight: 800; color: var(--indigo); }
 .today-head .today-sub { color: #3a4468; }
@@ -942,3 +931,29 @@ html[dir="ltr"] .btn { white-space: normal; }
 .mo-it.h .mo-date { background: var(--margin-wash); color: var(--margin); }
 .mo-it.tri .mo-date { background: var(--blue-wash); }
 @media (max-width: 1000px) { .mo-wrap { grid-template-columns: 1fr; } .mo-d { min-height: 58px; } }
+
+/* ---------- Timetable: a plain square table. Header row and day column in a calm blue, white cells with a thin stage stripe ---------- */
+.tt-wrap { --hd: #4f90b0; border: 1px solid #d5e1ea; border-radius: 10px; overflow: hidden; }
+table.grid th, table.grid td { border-bottom: 1px solid #d5e1ea; border-inline-end: 1px solid #d5e1ea; }
+table.grid thead th, table.grid thead th.d, table.grid th.d, table.grid thead th.duty-h, table.grid thead th.info-h { background: var(--hd); color: #fff; border-color: var(--hd); font-weight: 700; }
+table.grid thead th.info-h { background: var(--hd); color: #fff; }
+table.grid .pn, table.grid th.d { color: #fff; }
+table.grid .times { color: #e3eff6; }
+table.grid th.d { text-align: center; padding-inline: .4rem; }
+table.grid th.d.now { background: #3f7a96; }
+.tt-now { display: block; margin: .2rem auto 0; width: max-content; font-size: .78rem; font-weight: 700; color: #26330c; background: var(--pencil); border-radius: 999px; padding: 0 .6rem; }
+table.grid td.info-cell { background: repeating-linear-gradient(135deg, #fff 0 6px, #f1f4f7 6px 12px); }
+table.grid td.duty-cell { background: var(--blue-wash); }
+.duty-btn { border-color: #a9c4d4; }
+.duty-btn.on { background: var(--hd); border-color: var(--hd); }
+table.grid td { padding: .3rem; }
+table.grid td select { min-height: 44px; height: 100%; border-radius: 8px; background-color: #fff; border: 1px solid #e3ebf2; border-inline-start: 6px solid transparent; color: #b3bfcb; font-weight: 500; background-repeat: no-repeat; background-position: left .5rem bottom .4rem; background-size: .6rem; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%239fb0c1' stroke-width='1.4'/%3E%3C/svg%3E"); }
+table.grid td select.filled { --tone: var(--blue); background-color: #fff; border: 1px solid #e3ebf2; border-inline-start: 6px solid var(--tone); color: var(--ink); font-weight: 800; }
+.page.full { max-width: 1680px; }
+.page.full table.grid { height: max(28rem, calc(100vh - 22rem)); }
+.page.full table.grid th.d { width: 8.5rem; font-size: 1.15rem; }
+.page.full table.grid thead th { font-size: 1rem; padding-block: .6rem; }
+.page.full table.grid th.p { font-size: 1rem; }
+.page.full table.grid td select { font-size: 1.3rem; }
+.page.full table.grid .times { font-size: .85rem; }
+.page.full .duty-btn { width: 34px; height: 34px; }
