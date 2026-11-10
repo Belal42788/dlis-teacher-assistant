@@ -957,3 +957,11 @@ table.grid td select.filled { --tone: var(--blue); background-color: #fff; borde
 .page.full table.grid td select { font-size: 1.3rem; }
 .page.full table.grid .times { font-size: .85rem; }
 .page.full .duty-btn { width: 34px; height: 34px; }
+
+/* ---------- My files: one list; chips say what each file is (AI source / shared) ---------- */
+.file-chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+.file-more { flex-basis: 100%; }
+.file-ico.ext-pdf { background: #fbe6e4; color: #b23a31; } .file-ico.ext-link { background: var(--pencil-wash); color: #5c7a1c; }
+.add-src { margin-bottom: .8rem; }
+.add-src > summary { cursor: pointer; display: flex; align-items: center; gap: .5rem; color: var(--indigo); }
+.add-src[open] > summary { margin-bottom: .5rem; }

@@ -27,7 +27,7 @@ async function collect(pages) {
     files = lib.items.map((f) => ({ kind: "file", label: f.name, hint: f.folder || "", ico: "file", mtime: f.mtime, run: () => guarded(() => api.post("/api/open", { path: lib.root + "/" + f.rel })) }));
     out.push(...files);
   }
-  if (src) for (const s of src.sources) out.push({ kind: "source", label: s.topic ? `${s.name} — ${s.topic}` : s.name, hint: "", ico: "slides", run: go("#/sources") });
+  if (src) for (const s of src.sources) out.push({ kind: "source", label: s.topic ? `${s.name} — ${s.topic}` : s.name, hint: "", ico: "slides", run: go("#/library") });
   return { all: out, recent: files.slice(0, 6) };
 }
 

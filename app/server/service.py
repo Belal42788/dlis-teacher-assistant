@@ -136,7 +136,7 @@ class Service(BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, UpdateMixin, 
         return {"language": lang}
 
     # ------------------------------------------------------------ how the app is used (stays on this computer: page counts and the teacher's own notes, no names)
-    PAGE_IDS = ("today", "timetable", "calendar", "tasks", "reminders", "scheme", "docs", "tools", "library", "sources", "publish", "chat", "classes", "log", "progress", "grades",
+    PAGE_IDS = ("today", "timetable", "calendar", "tasks", "reminders", "scheme", "docs", "tools", "library", "publish", "chat", "classes", "log", "progress", "grades",
                 "behavior", "seating", "insights", "announcements", "bank", "parentweek", "followup", "map", "settings", "help")   # a test keeps this equal to the pages in main.js
 
     def record_usage(self, page: str) -> dict:

@@ -198,6 +198,7 @@ class Handler(BaseHTTPRequestHandler):
             ("PUT", r"/api/scheme", lambda m, b: svc.scheme_put(b)),
             ("GET", r"/api/library", lambda m, b: svc.library_list()),
             ("POST", r"/api/library/share", lambda m, b: svc.library_share(b)),
+            ("POST", r"/api/library/source", lambda m, b: svc.library_source(b)),
             ("POST", r"/api/library/public", lambda m, b: svc.library_set_public(b)),
             ("POST", r"/api/library/unshare", lambda m, b: svc.library_unshare(b)),
             ("GET", r"/api/coverage", lambda m, b: svc.coverage(q.get("today", ""))),

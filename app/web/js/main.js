@@ -14,7 +14,6 @@ import { renderTasks } from "./pages/tasks.js";
 import { renderLog } from "./pages/log.js";
 import { renderBehavior } from "./pages/behavior.js";
 import { renderSeating } from "./pages/seating.js";
-import { renderSources } from "./pages/sources.js";
 import { renderBank } from "./pages/bank.js";
 import { renderLibrary } from "./pages/library.js";
 import { renderScheme } from "./pages/scheme.js";
@@ -66,9 +65,8 @@ const PAGES = [
   { id: "reminders", nav: "tasks", render: renderReminders },
   { id: "scheme", icon: "list", group: "prepare", render: renderScheme },
   { id: "docs", icon: "file", group: "prepare", render: renderDocs },
-  { id: "tools", icon: "tool", group: "prepare", render: renderTools },
+  { id: "tools", nav: "docs", render: renderTools },
   { id: "library", icon: "folder", group: "prepare", render: renderLibrary },
-  { id: "sources", nav: "library", render: renderSources },
   { id: "publish", nav: "library", render: renderPublish },
   { id: "bank", nav: "library", render: renderBank },
   { id: "chat", icon: "spark", group: "prepare", render: renderChat },

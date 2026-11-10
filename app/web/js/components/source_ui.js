@@ -1,19 +1,13 @@
-import { hubTabs } from "../components/hubtabs.js";
 import { h, icon, toast, confirmBox, readFileB64 } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { t } from "../i18n.js";
-import { emptyState } from "../components/empty.js";
 
-export async function renderSources(root) {
-  const ai = await guarded(() => api.get("/api/ai")) || { ready: false };
+// Everything about a source for the AI that lives inside «My files»: adding a book or a web page, reading its pictures, sorting its content.
+// The page gives `reload` (draws the list again) and gets back the small pieces it puts in each row.
+export function sourceTools({ ai, reload }) {
   const status = h("div", { class: "muted small", "aria-live": "polite" });
-  const listBox = h("div", {});
   let working = false;
 
-  async function loadList() {
-    const { sources } = await api.get("/api/sources");
-    listBox.replaceChildren(sources.length ? sources.map(card) : emptyState({ icon: "slides", title: t("es_src_title"), text: t("src_empty") }));
-  }
   // read the picture pages (a few at a time), then let the AI sort what it found
   async function process(id) {
     working = true;
@@ -29,11 +23,18 @@ export async function renderSources(root) {
         await api.post(`/api/sources/${id}/digest`, {});
       }
       status.textContent = ""; toast(t("src_ready"));
-    } catch (e) { status.textContent = ""; throw e; } finally { working = false; await loadList(); }
+    } catch (e) { status.textContent = ""; throw e; } finally { working = false; await reload(); }
   }
   const run = (fn) => { if (working) return; return guarded(fn); };
 
-  function card(s) {
+  // the buttons of a source: read its pictures, sort its content
+  const buttons = (s) => [
+    s.pending ? h("button", { class: "btn small primary", onClick: () => run(() => process(s.id)) }, icon("spark"), t("src_read_pics", { n: s.pending })) : null,
+    s.chars && !s.has_digest && !s.pending ? h("button", { class: "btn small", disabled: !ai.ready, onClick: () => run(() => process(s.id)) }, icon("spark"), t("src_analyze")) : null,
+  ];
+
+  // what the app found inside it (opens on demand)
+  function details(s) {
     const detail = h("div", {});
     const open = h("details", { class: "more", onToggle: async () => {
       if (!open.open || detail.childNodes.length) return;
@@ -46,21 +47,18 @@ export async function renderSources(root) {
         d.questions?.length ? h("div", {}, h("b", {}, t("src_questions")), h("ul", {}, d.questions.map((x) => h("li", {}, `${x.q} → ${x.a}`)))) : null,
         h("details", { class: "more" }, h("summary", {}, t("src_text")), h("pre", { class: "pre small", style: { maxHeight: "16rem", overflow: "auto" } }, r.text || "—")));
     } }, h("summary", {}, t("src_details")), detail);
-    return h("div", { class: "panel src-card" },
-      h("div", { class: "row" }, h("h3", { class: "grow", style: { margin: 0 } }, s.name), s.made ? h("span", { class: "tag" }, t("src_made")) : null, s.read_model ? h("span", { class: "tag-model dir-ltr", title: t("src_model") }, s.read_model) : null,
-        s.pending ? h("button", { class: "btn small primary", onClick: () => run(() => process(s.id)) }, icon("spark"), t("src_read_pics", { n: s.pending })) : null,
-        s.chars && !s.has_digest && !s.pending ? h("button", { class: "btn small", disabled: !ai.ready, onClick: () => run(() => process(s.id)) }, icon("spark"), t("src_analyze")) : null,
-        h("button", { class: "btn small ghost", "aria-label": t("remove"), onClick: async () => { if (await confirmBox(t("src_delete_confirm"))) await guarded(async () => { await api.post(`/api/sources/${s.id}/delete`, {}); await loadList(); }); } }, icon("trash"))),
-      h("div", { class: "muted small" }, t("src_meta", { pages: s.pages, date: s.added }), s.topic ? " · " + s.topic : ""),
-      open);
+    return open;
   }
 
+  const removeButton = (s) => h("button", { class: "btn small ghost", "aria-label": t("remove"), onClick: async () => { if (await confirmBox(t("src_delete_confirm"))) await guarded(async () => { await api.post(`/api/sources/${s.id}/delete`, {}); await reload(); }); } }, icon("trash"));
+
+  // the panel to add a book / file / web page
   const file = h("input", { type: "file", accept: ".pdf,.pptx,.docx,.txt,.md", hidden: true, onChange: async () => {
     const f = file.files[0]; file.value = ""; if (!f || working) return;
     const r = await guarded(async () => {
       status.textContent = t("src_importing");
       const out = await api.post("/api/sources/import", { filename: f.name, data_b64: await readFileB64(f) });
-      await loadList(); return out;
+      await reload(); return out;
     });
     if (!r) { status.textContent = ""; return; }
     await guarded(() => process(r.id));
@@ -69,16 +67,16 @@ export async function renderSources(root) {
   const trBox = h("textarea", { rows: 4, placeholder: t("src_yt_ph"), "aria-label": t("src_yt"), style: { width: "100%" } });
   const urlBtn = h("button", { class: "btn", onClick: async () => {
     if (!urlBox.value.trim() || working) return;
-    const r = await guarded(async () => { status.textContent = t("src_importing"); const out = await api.post("/api/sources/url", { url: urlBox.value.trim(), transcript: trBox.value }); urlBox.value = ""; trBox.value = ""; await loadList(); return out; });
-    status.textContent = r ? "" : "";
+    const r = await guarded(async () => { status.textContent = t("src_importing"); const out = await api.post("/api/sources/url", { url: urlBox.value.trim(), transcript: trBox.value }); urlBox.value = ""; trBox.value = ""; await reload(); return out; });
+    status.textContent = "";
     if (r) await guarded(() => process(r.id));
   } }, icon("link"), t("src_add_url"));
-  const pick = h("button", { class: "btn primary", onClick: () => file.click() }, icon("upload"), t("src_choose"));
+  const adder = () => h("details", { class: "panel add-src" },
+    h("summary", {}, icon("upload"), h("b", {}, t("src_add_title"))),
+    h("p", { class: "muted small" }, t("src_add_lead")),
+    h("div", { class: "row" }, h("button", { class: "btn primary", onClick: () => file.click() }, icon("upload"), t("src_choose")), file),
+    h("div", { class: "row", style: { marginTop: ".5rem" } }, urlBox, urlBtn),
+    h("details", { style: { marginTop: ".4rem" } }, h("summary", { class: "muted small" }, t("src_yt")), trBox));
 
-  root.replaceChildren(h("div", { class: "page" }, hubTabs("library", "sources"),
-    h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_sources")), h("p", {}, t("src_lead")))),
-    ai.ready ? null : h("div", { class: "banner" }, icon("info"), h("div", { class: "small" }, t("src_need_ai"), " ", h("a", { href: "#/settings" }, t("ai_setup_link")))),
-    h("div", { class: "panel" }, h("h3", {}, t("src_add_title")), h("p", { class: "muted small" }, t("src_add_lead")), h("div", { class: "row" }, pick, file), h("div", { class: "row", style: { marginTop: ".5rem" } }, urlBox, urlBtn), h("details", { style: { marginTop: ".4rem" } }, h("summary", { class: "muted small" }, t("src_yt")), trBox), status),
-    listBox));
-  await loadList();
+  return { status, adder, buttons, details, removeButton, run, process };
 }

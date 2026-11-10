@@ -143,7 +143,7 @@ class SourceMixin:
         pending = sum(1 for p in pages if p.get("vision") and not p.get("done"))
         d = s.get("digest") or {}
         return {"id": s["id"], "name": s["name"], "added": s["added"], "pages": len(pages), "pending": pending,
-                "chars": sum(len(p["text"]) for p in pages), "topic": d.get("topic", ""), "has_digest": bool(d), "read_model": s.get("read_model", ""), "made": bool(s.get("made"))}
+                "chars": sum(len(p["text"]) for p in pages), "topic": d.get("topic", ""), "has_digest": bool(d), "read_model": s.get("read_model", ""), "made": bool(s.get("made")), "rel": s.get("file_rel", "")}
 
     def _made_id(self, path) -> str:
         import hashlib
@@ -183,6 +183,21 @@ class SourceMixin:
         s = self._src(sid)
         return {**self._src_brief(s), "digest": s.get("digest") or {}, "text": self._src_text(s, 60000)}
 
+    def _keep_original(self, name: str, raw: bytes) -> str:
+        """The book or file the teacher added stays in the 'Books' folder, so it can be opened and shared from My files."""
+        if not name.lower().endswith((".pdf", ".pptx", ".docx")):
+            return ""
+        folder = self._need_store().root / "Books"
+        folder.mkdir(parents=True, exist_ok=True)
+        safe = re.sub(r'[\\/:*?"<>|]+', "_", name).strip(" .") or "file"
+        stem, dot, ext = safe.rpartition(".")
+        p, n = folder / safe, 2
+        while p.exists():
+            p = folder / f"{stem} ({n}){dot}{ext}"
+            n += 1
+        p.write_bytes(raw)
+        return str(p.relative_to(self._need_store().root)).replace("\\", "/")
+
     def import_source(self, b: dict) -> dict:
         name = str(b.get("filename") or "slides").strip()[:120]
         try:
@@ -191,6 +206,9 @@ class SourceMixin:
             raise AppError("file_unreadable") from e
         if not raw:
             raise AppError("file_unreadable", "The file is empty.", status=400)
+        return self._import_bytes(name, raw, keep=True)
+
+    def _import_bytes(self, name: str, raw: bytes, keep: bool = False, file_rel: str = "") -> dict:
         pages = extract(name, raw)
         if not any(p["text"] or p.get("image") for p in pages):
             raise AppError("source_empty", "Nothing readable was found in this file.", status=400)
@@ -204,6 +222,9 @@ class SourceMixin:
                 (folder / f"p{i}.jpg").write_bytes(p["image"])
             out.append({"n": i, "text": p["text"], "notes": p.get("notes", ""), "vision": vision, "done": not vision})
         src = {"id": sid, "name": re.sub(r"\.(pdf|pptx|docx|txt|md)$", "", name, flags=re.I), "added": date.today().isoformat(), "pages": out}
+        rel = file_rel or (self._keep_original(name, raw) if keep else "")
+        if rel:
+            src["file_rel"] = rel
         self._src_save(src)
         return self._src_brief(src)
 

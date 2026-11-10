@@ -3,14 +3,15 @@ import { t } from "../i18n.js";
 
 // Pages that belong together share one menu entry and a small tab row at the top.
 const GROUPS = {
-  library: [["library", "lb_tab_files"], ["publish", "lb_tab_shared"], ["sources", "nav_sources"], ["bank", "nav_bank"]],
+  library: [["library", "lb_tab_files"], ["publish", "lb_tab_shared"], ["bank", "nav_bank"]],
+  create: [["docs", "cr_tab_docs"], ["tools", "nav_tools"]],
   classes: [["classes", "hub_students"], ["log", "nav_log"], ["progress", "nav_progress"], ["grades", "nav_grades"], ["behavior", "nav_behavior"], ["seating", "nav_seating"], ["insights", "nav_insights"]],
   parents: [["announcements", "an_tab"], ["parentweek", "nav_parentweek"]],
   tasks: [["tasks", "hub_tasks"], ["reminders", "hub_reminders"]],
 };
-// The library has four tabs that sound alike, so each one says what is in it and what you do there (hh_<tab>_has / _do),
+// «My files» has three tabs, so each one says what is in it and what you do there (hh_<tab>_has / _do),
 // and, where two tabs are easy to mix up, where the other thing lives (hh_<tab>_not + this link).
-const HINT_LINK = { library: ["sources", "nav_sources"], publish: ["library", "lb_tab_files"], sources: ["library", "lb_tab_files"] };
+const HINT_LINK = { publish: ["library", "lb_tab_files"] };
 
 export function hubTabs(group, active) {
   const tabs = h("div", { class: "seg", role: "tablist" }, GROUPS[group].map(([id, key]) =>
