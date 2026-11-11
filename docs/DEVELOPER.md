@@ -51,7 +51,7 @@ Feature files (each is a mixin of `Service`):
 | `GradesMixin` | `app/server/grades_service.py` | 264 |
 | `ToolsMixin` | `app/server/tools_service.py` | 65 |
 | `SchemeMixin` | `app/server/scheme_service.py` | 150 |
-| `LibraryMixin` | `app/server/library_service.py` | 230 |
+| `LibraryMixin` | `app/server/library_service.py` | 310 |
 | `ParentWeekMixin` | `app/server/parent_week_service.py` | 73 |
 | `CoverageMixin` | `app/server/coverage_service.py` | 117 |
 | `CloudMixin` | `app/server/cloud_service.py` | 420 |
@@ -75,7 +75,7 @@ Pages:
 <!-- AUTO:pages -->
 Menu pages: `today`, `timetable`, `calendar`, `tasks`, `scheme`, `docs`, `library`, `chat`, `classes`, `announcements`, `followup`, `map`, `settings`, `help`.
 
-Tabs inside a menu page: `reminders` (tab of `tasks`), `tools` (tab of `docs`), `publish` (tab of `library`), `bank` (tab of `library`), `log` (tab of `classes`), `progress` (tab of `classes`), `grades` (tab of `classes`), `behavior` (tab of `classes`), `seating` (tab of `classes`), `insights` (tab of `classes`), `parentweek` (tab of `announcements`).
+Tabs inside a menu page: `reminders` (tab of `tasks`), `tools` (tab of `docs`), `bank` (tab of `library`), `log` (tab of `classes`), `progress` (tab of `classes`), `grades` (tab of `classes`), `behavior` (tab of `classes`), `seating` (tab of `classes`), `insights` (tab of `classes`), `parentweek` (tab of `announcements`).
 <!-- /AUTO:pages -->
 
 Files in the teacher's data folder: <!-- AUTO:datafiles -->
@@ -166,6 +166,8 @@ The server listens on 127.0.0.1 only and every request carries the secret token 
 | PUT | `/api/scheme` | `scheme_put` |
 | GET | `/api/library` | `library_list` |
 | POST | `/api/library/share` | `library_share` |
+| POST | `/api/library/link` | `library_link_add` |
+| POST | `/api/library/link/delete` | `library_link_delete` |
 | POST | `/api/library/place` | `library_place` |
 | POST | `/api/library/place/add` | `library_place_add` |
 | POST | `/api/library/place/delete` | `library_place_delete` |

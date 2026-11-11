@@ -63,20 +63,11 @@ export function sourceTools({ ai, reload }) {
     if (!r) { status.textContent = ""; return; }
     await guarded(() => process(r.id));
   } });
-  const urlBox = h("input", { type: "url", dir: "ltr", placeholder: t("src_url_ph"), "aria-label": t("src_url"), style: { flex: "1", minWidth: "12em" } });
-  const trBox = h("textarea", { rows: 4, placeholder: t("src_yt_ph"), "aria-label": t("src_yt"), style: { width: "100%" } });
-  const urlBtn = h("button", { class: "btn", onClick: async () => {
-    if (!urlBox.value.trim() || working) return;
-    const r = await guarded(async () => { status.textContent = t("src_importing"); const out = await api.post("/api/sources/url", { url: urlBox.value.trim(), transcript: trBox.value }); urlBox.value = ""; trBox.value = ""; await reload(); return out; });
-    status.textContent = "";
-    if (r) await guarded(() => process(r.id));
-  } }, icon("link"), t("src_add_url"));
-  const adder = () => h("details", { class: "panel add-src" },
+  const adder = (extra) => h("details", { class: "panel add-src" },
     h("summary", {}, icon("upload"), h("b", {}, t("src_add_title"))),
     h("p", { class: "muted small" }, t("src_add_lead")),
     h("div", { class: "row" }, h("button", { class: "btn primary", onClick: () => file.click() }, icon("upload"), t("src_choose")), file),
-    h("div", { class: "row", style: { marginTop: ".5rem" } }, urlBox, urlBtn),
-    h("details", { style: { marginTop: ".4rem" } }, h("summary", { class: "muted small" }, t("src_yt")), trBox));
+    extra || null);
 
   return { status, adder, buttons, details, removeButton, run, process };
 }

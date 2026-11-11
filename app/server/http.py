@@ -198,6 +198,8 @@ class Handler(BaseHTTPRequestHandler):
             ("PUT", r"/api/scheme", lambda m, b: svc.scheme_put(b)),
             ("GET", r"/api/library", lambda m, b: svc.library_list()),
             ("POST", r"/api/library/share", lambda m, b: svc.library_share(b)),
+            ("POST", r"/api/library/link", lambda m, b: svc.library_link_add(b)),
+            ("POST", r"/api/library/link/delete", lambda m, b: svc.library_link_delete(b)),
             ("POST", r"/api/library/place", lambda m, b: svc.library_place(b)),
             ("POST", r"/api/library/place/add", lambda m, b: svc.library_place_add(b)),
             ("POST", r"/api/library/place/delete", lambda m, b: svc.library_place_delete(b)),

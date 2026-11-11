@@ -25,7 +25,6 @@ import { showWhatsNew } from "./components/whatsnew.js";
 import { drawAiBall, showAiBall } from "./components/ai_ball.js";
 import { renderMap } from "./pages/map.js";
 import { renderAnnouncements } from "./pages/announcements.js";
-import { renderPublish } from "./pages/publish.js";
 import { renderProgress } from "./pages/progress.js";
 import { renderParentWeek } from "./pages/parentweek.js";
 import { renderFollowup } from "./pages/followup.js";
@@ -67,7 +66,6 @@ const PAGES = [
   { id: "docs", icon: "file", group: "prepare", render: renderDocs },
   { id: "tools", nav: "docs", render: renderTools },
   { id: "library", icon: "folder", group: "prepare", render: renderLibrary },
-  { id: "publish", nav: "library", render: renderPublish },
   { id: "bank", nav: "library", render: renderBank },
   { id: "chat", icon: "spark", group: "prepare", render: renderChat },
   { id: "classes", icon: "classes", group: "school", render: renderClasses },

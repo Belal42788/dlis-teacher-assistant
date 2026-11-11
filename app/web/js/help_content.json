@@ -134,7 +134,7 @@
     "زرار **الأسابيع** بيخلّيك تنقل الملف لأسبوع تاني، أو تضيفه في أسبوع كمان (مثلاً نص السلايدز في الأسبوع الأول والباقي في التاني). كل أسبوع له ملاحظته وعلامة «للطلبة» بتاعته.",
     "علّم **للطلبة** على الملف عشان يتبعت. لو عندك فصل واحد بيتبعت على طول، ولو أكتر هتختار الفصل. الكويز لازم له تاريخ ظهور (بعد ما يخلص). ملفات الدرجات وخطط الدروس ما ينفعش تتشارك أبداً.",
     "زرار **اجعله مصدر للذكاء** بيخلّي الذكاء الاصطناعي يكتب من الملف ده وبس. تقدر تضيف كتب وملفات ورابط موقع من **أضف كتاب أو ملف أو رابط** فوق.",
-    "في تاب **اللي الطلبة شايفينه** تضيف رابط (فيديو أو موقع) أو ملف من جهازك، وتشوف كل اللي اتشارك. المشاركة محتاجة تسجيل دخول لسيرفر المدرسة."
+    "**الروابط** (فيديو أو بلاي ليست أو موقع) تضيفها من **أضف كتاب أو ملف أو رابط** وتبقى زي الملف: تحطها في أسبوع، وتكتب ملاحظة، وتعلّم «للطلبة»، وتخليها مصدر للذكاء (لو فيديو يوتيوب الصق نصه). المشاركة محتاجة تسجيل دخول لسيرفر المدرسة."
    ]
   },
   {
@@ -412,7 +412,7 @@
     "The **Weeks** button moves the file to another week, or puts it in one more week as well (for example half of the slides in week 1 and the rest in week 2). Each week has its own note and its own «For students» tick.",
     "Tick **For students** to send the file. With one class it is sent at once; with more you choose the class. A quiz needs a «show from» date (after it ends). Grading sheets and lesson plans can never be shared.",
     "**Make it an AI source** lets the AI write from that file only. You can add books, files and a web link from **Add a book, a file or a link** at the top.",
-    "In the **What students see** tab you add a link (video or site) or a file from your computer, and see everything that is shared. Sharing needs you to be signed in to the school server."
+    "**Links** (a video, a playlist or a site) are added from **Add a book, a file or a link** and work like a file: put them in a week, write a note, tick «For students», and make them an AI source (for a YouTube video, paste its text). Sharing needs you to be signed in to the school server."
    ]
   },
   {

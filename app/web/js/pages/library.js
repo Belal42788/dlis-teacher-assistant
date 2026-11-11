@@ -16,11 +16,15 @@ export async function renderLibrary(root) {
   const wanted = new URLSearchParams((location.hash.split("?")[1] || "")).get("share") || "";
   let filter = "all", openForm = wanted;
   const openGroups = new Set(["cur", "none"]);
-  const KINDS = ["all", "presentation", "quiz", "revision", "book", "other", "source"];
+  const KINDS = ["all", "presentation", "quiz", "revision", "book", "link", "other", "source"];
   const kindLabel = (k) => (k === "all" ? t("lb_all") : k === "source" ? t("lf_only_src") : t(`pb_k_${k}`));
   const canBeSource = (f) => /\.(pdf|docx|pptx)$/i.test(f.name) && !f.private;
   const tools = sourceTools({ ai, reload: () => load() });
-  const adder = tools.adder();
+  // a link (a video, a playlist, a site) joins the list like a file
+  const linkTitle = h("input", { type: "text", maxlength: 120, placeholder: t("lf_link_title_ph"), "aria-label": t("lf_link_title_ph"), style: { flex: "1", minWidth: "10em" } });
+  const linkUrl = h("input", { type: "url", dir: "ltr", placeholder: "https://…", "aria-label": t("src_url"), style: { flex: "2", minWidth: "12em" } });
+  const adder = tools.adder(h("div", { class: "row", style: { marginTop: ".6rem" } }, linkTitle, linkUrl,
+    h("button", { class: "btn", onClick: () => { if (!linkUrl.value.trim()) { linkUrl.focus(); return; } return guarded(async () => { const r = await api.post("/api/library/link", { title: linkTitle.value, url: linkUrl.value }); linkTitle.value = ""; linkUrl.value = ""; adder.open = false; toast(t("saved")); await load(); }); } }, icon("link"), t("lf_link_add"))));
 
   // the weeks of the year, for the pickers and the group titles
   const weeks = [];   // { t, w, start, end }
@@ -89,6 +93,15 @@ export async function renderLibrary(root) {
       return m;
     }
 
+    // a link becomes an AI source: a web page is read from the address; a video needs its text pasted
+    function linkSourceDialog(f) {
+      const text = h("textarea", { rows: 5, style: { width: "100%" }, placeholder: t("src_yt_ph"), "aria-label": t("src_yt") });
+      modal({ title: f.name, body: h("div", {}, h("p", { class: "muted small" }, t("lf_link_src_lead")), text),
+        actions: [{ label: t("cancel") }, { label: t("lf_link_src_go"), kind: "primary", onClick: () => tools.run(async () => {
+          const r = await api.post("/api/library/source", { rel: f.rel, on: true, transcript: text.value });
+          const s = r.items.find((x) => x.rel === f.rel)?.source; await load(); if (s) await tools.process(s.id); }) }] });
+    }
+
     const row = ({ f, p }) => {
       const note = h("input", { type: "text", maxlength: 300, class: "file-note", value: p.note || "", placeholder: t("lf_note_ph"), "aria-label": t("lf_note_ph"),
         onChange: () => guarded(async () => { await api.post("/api/library/place", { rel: f.rel, pid: p.id, note: note.value }); p.note = note.value; toast(t("lf_note_saved")); }) });
@@ -102,8 +115,8 @@ export async function renderLibrary(root) {
           } }), t("lf_for_students"));
       const mine = openForm === f.rel + "|" + p.id || (wanted && openForm === wanted && !p.shared && f.places[0] === p);
       return h("div", { class: "pub-row file-row" },
-        h("div", { class: "file-main" }, h("span", { class: `file-ico ext-${(f.name || "").split(".").pop().toLowerCase()}` }, icon("file")),
-          h("div", { style: { minWidth: 0 } }, h("b", {}, f.name), h("div", { class: "muted small" }, `${f.kind === "book" ? t("pb_k_book") : f.folder} · ${fmtDate(new Date(f.mtime * 1000).toISOString().slice(0, 10), { day: "numeric", month: "short" })}${f.source ? " · " + t("src_meta", { pages: f.source.pages, date: f.source.added }).split(" · ")[0] + (f.source.topic ? " · " + f.source.topic : "") : ""}`))),
+        h("div", { class: "file-main" }, h("span", { class: `file-ico ext-${f.kind === "link" ? "link" : (f.name || "").split(".").pop().toLowerCase()}` }, icon(f.kind === "link" ? "link" : "file")),
+          h("div", { style: { minWidth: 0 } }, h("b", {}, f.name), h("div", { class: "muted small" }, `${f.kind === "link" ? f.url.replace(/^https?:\/\/(www\.)?/, "").slice(0, 40) : f.kind === "book" ? t("pb_k_book") : f.folder} · ${fmtDate(new Date(f.mtime * 1000).toISOString().slice(0, 10), { day: "numeric", month: "short" })}${f.source ? " · " + t("src_meta", { pages: f.source.pages, date: f.source.added }).split(" · ")[0] + (f.source.topic ? " · " + f.source.topic : "") : ""}`))),
         h("div", { class: "file-chips" },
           f.source ? h("span", { class: "chip small on" }, t("lf_src")) : null,
           f.private ? h("span", { class: "chip small" }, t("lb_private")) : null,
@@ -113,10 +126,12 @@ export async function renderLibrary(root) {
           p.shared && !p.shared.public ? h("button", { class: "btn small primary", onClick: () => post("/api/library/public", { rel: f.rel, pid: p.id, public: true }) }, t("pb_approve")) : null,
           p.shared && p.shared.public ? h("button", { class: "btn small ghost", onClick: () => post("/api/library/public", { rel: f.rel, pid: p.id, public: false }) }, t("pb_unapprove")) : null,
           h("button", { class: "btn small", onClick: () => weeksDialog(f) }, icon("calendar"), t("lf_weeks_btn")),
-          h("button", { class: "btn small", onClick: () => guarded(() => api.post("/api/open", { path: lib.root + "/" + f.rel })) }, icon("file"), t("d_open_file")),
-          h("button", { class: "btn small ghost", title: t("d_open_folder"), "aria-label": t("d_open_folder"), onClick: () => guarded(() => api.post("/api/open", { path: lib.root + "/" + f.rel, folder: true })) }, icon("folder")),
+          f.kind === "link" ? h("a", { class: "btn small", href: f.url, target: "_blank", rel: "noopener noreferrer" }, icon("link"), t("lf_open_link")) : h("button", { class: "btn small", onClick: () => guarded(() => api.post("/api/open", { path: lib.root + "/" + f.rel })) }, icon("file"), t("d_open_file")),
+          f.kind === "link" ? h("button", { class: "btn small ghost", title: t("lf_link_del"), "aria-label": t("lf_link_del"), onClick: async () => { if (await confirmBox(t("lf_link_del_confirm"))) post("/api/library/link/delete", { rel: f.rel }); } }, icon("trash"))
+            : h("button", { class: "btn small ghost", title: t("d_open_folder"), "aria-label": t("d_open_folder"), onClick: () => guarded(() => api.post("/api/open", { path: lib.root + "/" + f.rel, folder: true })) }, icon("folder")),
           f.source && f.source_locked ? h("span", { class: "muted small" }, t("lf_src_auto"))
             : f.source ? h("button", { class: "btn small ghost", onClick: () => post("/api/library/source", { rel: f.rel, on: false }) }, t("lf_src_drop"))
+              : f.kind === "link" ? h("button", { class: "btn small", onClick: () => linkSourceDialog(f) }, icon("spark"), t("lf_src_make"))
               : canBeSource(f) ? h("button", { class: "btn small", onClick: () => tools.run(async () => { const r = await api.post("/api/library/source", { rel: f.rel, on: true }); const s = r.items.find((x) => x.rel === f.rel)?.source; await load(); if (s) await tools.process(s.id); }) }, icon("spark"), t("lf_src_make")) : null,
           f.source ? tools.buttons(f.source) : null),
         f.private ? null : h("div", { class: "file-note-row" }, note),

@@ -362,6 +362,8 @@ try:
             go("library"); snap("library_files")
             assert page.locator(".wk-group").count() >= 1 and page.locator(".file-note").count() >= 1   # files sit in weeks, each with a note for the students
             page.click("text=الأسابيع >> nth=0"); page.wait_for_selector(".modal select"); page.click(".modal header .btn.icon")
+            page.click("details.add-src > summary"); page.fill(".add-src input[type=url]", "https://www.youtube.com/playlist?list=PL1"); page.fill(".add-src input[maxlength='120']", "بلاي ليست")
+            page.click("text=ضيف الرابط"); page.wait_for_selector(".file-row:has-text('بلاي ليست') .file-note")   # a link is a file too: note, week, for-students tick
             go("scheme"); page.wait_for_selector(".sw-card"); snap("scheme")
             go("library"); page.wait_for_selector(".banner.info"); snap("library")
             go("docs"); page.click("a.seg-btn[href='#/tools']"); page.wait_for_selector(".tl-form"); snap("tools")
@@ -416,7 +418,7 @@ try:
               const outside = (r.right > pr.right + 2 || r.left < pr.left - 2) && pcs.overflowX === 'visible' && cs.position !== 'absolute' && cs.position !== 'fixed' && pr.width > 0;
               if (clipped || outside) out.push((el.tagName + '.' + el.className).slice(0, 50) + ' | ' + el.textContent.trim().slice(0, 40) + ' | ' + Math.round(r.width) + ' vs ' + Math.round(pr.width) + ' in ' + p.tagName + '.' + p.className + ' ws=' + pcs.whiteSpace + ' disp=' + pcs.display + ' kids=' + [...p.children].map(k => Math.round(k.getBoundingClientRect().width) + '@' + Math.round(k.getBoundingClientRect().left)).join(',') + ' td@' + Math.round(pr.left) + ' pad=' + pcs.paddingLeft + '/' + pcs.paddingRight + ' minw=' + pcs.minWidth); }
               return out.slice(0, 12); }"""
-            for route in ("today", "timetable", "calendar", "tasks", "docs", "scheme", "tools", "library", "publish", "chat", "classes", "log", "progress", "parentweek", "map", "settings", "help"):
+            for route in ("today", "timetable", "calendar", "tasks", "docs", "scheme", "tools", "library", "chat", "classes", "log", "progress", "parentweek", "map", "settings", "help"):
                 page.evaluate(f"location.hash = '#/{route}'"); page.wait_for_timeout(700)
                 for r in page.evaluate(JS): print("SWEEP", route, "->", r)
                 shot(f"14_{route}_en")

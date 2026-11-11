@@ -183,6 +183,44 @@ class TestDocsAndTasks(unittest.TestCase):
         old = places()
         self.assertEqual((old[0]["shared"]["class_id"], old[0]["w"]), ("g4-a", None))
 
+    def test_links_are_files_too(self):
+        pubs, asked = [], []
+        self.svc.list_publications = lambda: {"items": list(pubs)}
+        self.svc.add_publication = lambda b: pubs.append({"id": f"{len(pubs) + 1:036d}", **b})
+        self.svc.set_publication = lambda pid, b: next(x for x in pubs if x["id"] == pid).update(b)
+        self.svc.delete_publication = lambda pid: pubs.remove(next(x for x in pubs if x["id"] == pid))
+
+        def fake_import(b):
+            asked.append(b)
+            src = {"id": "abcdef1234", "name": "Video", "added": "2026-11-11", "pages": [{"n": 1, "text": "hello", "notes": "", "vision": False, "done": True}], "url": b["url"]}
+            self.svc._src_save(src)
+            return self.svc._src_brief(src)
+        self.svc.import_url = fake_import
+        with self.assertRaises(AppError):
+            self.svc.library_link_add({"url": "javascript:alert(1)"})
+        rel = self.svc.library_link_add({"title": "Keyboard playlist", "url": "https://www.youtube.com/playlist?list=PL1"})["added"]
+
+        def me():
+            return next(x for x in self.svc.library_list()["items"] if x["rel"] == rel)
+        self.assertEqual((me()["kind"], me()["name"], me()["source"], me()["places"][0]["w"]), ("link", "Keyboard playlist", None, None))
+        pid = me()["places"][0]["id"]
+        self.svc.library_place({"rel": rel, "pid": pid, "t": 0, "w": 9, "note": "Watch part 1"})
+        self.svc.library_share({"rel": rel, "pid": pid, "class_id": "g4-a", "public": True})
+        self.assertEqual((pubs[0]["kind"], pubs[0]["url"], pubs[0]["week"], pubs[0]["note"], pubs[0]["approved"]), ("link", "https://www.youtube.com/playlist?list=PL1", 9, "Watch part 1", True))
+        self.svc.library_source({"rel": rel, "on": True, "transcript": "pasted text"})
+        self.assertEqual((asked[0]["transcript"], me()["source"]["id"]), ("pasted text", "abcdef1234"))
+        self.svc.library_source({"rel": rel, "on": False})
+        self.assertIsNone(me()["source"])
+        self.svc.library_source({"rel": rel, "on": True})
+        # a web page added as a source before links existed becomes a link
+        self.svc._src_save({"id": "old0000001", "name": "Old page", "added": "2026-10-01", "pages": [{"n": 1, "text": "x", "notes": "", "vision": False, "done": True}], "url": "https://example.com/p"})
+        names = [x["name"] for x in self.svc.library_list()["items"]]
+        self.assertIn("Old page", names)
+        self.assertEqual(self.svc.library_list()["orphans"], [])
+        out = self.svc.library_link_delete({"rel": rel})   # takes it away from the students and drops its source
+        self.assertEqual((pubs, [x for x in out["items"] if x["rel"] == rel]), ([], []))
+        self.assertNotIn("abcdef1234", [x["id"] for x in self.svc.list_sources()["sources"]])
+
     def test_one_file_list_with_source_switch(self):
         import base64
         import io
