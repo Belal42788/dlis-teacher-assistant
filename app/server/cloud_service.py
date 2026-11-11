@@ -284,6 +284,18 @@ class CloudMixin:
             raise AppError("bad_value", "The date is not right.", status=400)
         return f"{v}T{'23:59:59' if end else '00:00:00'}+02:00"
 
+    @staticmethod
+    def _week_columns(b: dict) -> dict:
+        """The week a file belongs to and the teacher's note about it (what is in it, how far we got), shown to students next to the file."""
+        out = {}
+        if "note" in b:
+            out["note"] = " ".join(str(b.get("note") or "").split())[:300]
+        if "week" in b or "trimester" in b:
+            t, w = b.get("trimester"), b.get("week")
+            ok = isinstance(t, int) and isinstance(w, int) and 0 <= t <= 2 and 1 <= w <= 60
+            out["trimester"], out["week"] = (t, w) if ok else (None, None)
+        return out
+
     def add_publication(self, b: dict) -> dict:
         self._need_staff()
         class_id = str(b.get("class_id", ""))
@@ -294,7 +306,8 @@ class CloudMixin:
         if kind not in self.KINDS or not title:
             raise AppError("bad_value", "Write a title and choose the kind.", status=400)
         row = {"class_id": class_id, "kind": kind, "title": title, "approved": False,
-               "visible_from": self._stamp(b.get("visible_from")), "visible_until": self._stamp(b.get("visible_until"), True)}
+               "visible_from": self._stamp(b.get("visible_from")), "visible_until": self._stamp(b.get("visible_until"), True),
+               **self._week_columns(b)}
         if kind == "quiz" and not row["visible_from"]:
             raise AppError("quiz_needs_date", "A quiz must have a date to show from (after it ends).", status=400)
         c = self._cloud_client()
@@ -325,6 +338,7 @@ class CloudMixin:
             row["visible_from"] = self._stamp(b["visible_from"])
         if "visible_until" in b:
             row["visible_until"] = self._stamp(b["visible_until"], True)
+        row.update(self._week_columns(b))
         if row:
             self._cloud_client().update("publications", f"id=eq.{pid}", row)
         return self.list_publications()

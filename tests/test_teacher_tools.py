@@ -257,6 +257,13 @@ class TestAlarms(unittest.TestCase):
         self.assertEqual(weekly["days"], ["Tuesday"]); self.assertEqual(weekly["date"], "")
         r = svc.update_alarm(weekly["id"], {"enabled": False})
         self.assertFalse(next(a for a in r["items"] if a["id"] == weekly["id"])["enabled"])
+        r = svc.update_alarm(weekly["id"], {"text": "Staff meeting", "time": "14:15", "days": ["Monday", "Wednesday"]})
+        edited = next(a for a in r["items"] if a["id"] == weekly["id"])
+        self.assertEqual((edited["text"], edited["time"], edited["days"], edited["enabled"]), ("Staff meeting", "14:15", ["Monday", "Wednesday"], False))
+        with self.assertRaises(AppError):
+            svc.update_alarm(weekly["id"], {"text": "", "time": "14:15"})
+        r = svc.update_alarm(weekly["id"], {"text": "Once", "time": "09:00", "days": [], "date": "2026-11-20"})
+        self.assertEqual(next(a for a in r["items"] if a["id"] == weekly["id"])["date"], "2026-11-20")
         self.assertEqual(len(svc.delete_alarm(weekly["id"])["items"]), 1)
         d.cleanup()
 

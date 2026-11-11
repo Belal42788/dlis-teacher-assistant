@@ -965,3 +965,14 @@ table.grid td select.filled { --tone: var(--blue); background-color: #fff; borde
 .add-src { margin-bottom: .8rem; }
 .add-src > summary { cursor: pointer; display: flex; align-items: center; gap: .5rem; color: var(--indigo); }
 .add-src[open] > summary { margin-bottom: .5rem; }
+
+/* ---------- My files by week ---------- */
+.wk-group { margin: .8rem 0; border: 1px solid #d5e1ea; border-radius: 12px; background: #fff; overflow: hidden; }
+.wk-group > summary { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; padding: .7rem 1rem; cursor: pointer; background: #f3f7fa; font-size: 1.05rem; }
+.wk-group.cur > summary { background: #eaf4e6; }
+.wk-group > .pub-row { border-top: 1px solid #e3ebf2; border-radius: 0; margin: 0; }
+.file-note-row { flex-basis: 100%; }
+.file-note { width: 100%; }
+.share-tick { display: inline-flex; align-items: center; gap: .35rem; padding: .2rem .6rem; border: 1px solid #d5e1ea; border-radius: 999px; cursor: pointer; font-weight: 700; font-size: .92rem; }
+.share-tick.on { background: #eaf4e6; border-color: #a2c65a; }
+.wk-group > summary .chip { font-size: .8rem; padding: .05rem .6rem; min-height: 0; }

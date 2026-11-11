@@ -108,7 +108,7 @@
     "افتح **تحضير ← أدوات المعلم**. القايمة مقسمة: **تخطيط** (خطة وحدة، مشروع PBL، شرح بأكتر من طريقة، مفردات...) و**تقييم** (rubric، أسئلة على نص، تذكرة خروج، تشخيصي...) و**نصوص** (تبسيط، تلخيص، ترجمة، تدقيق...) و**تواصل** (تعليق شهادة، رد إيميل، نشرة...).",
     "اختار الأداة، واملا الفورم الصغير (الحقول اللي عليها * لازم). تقدر تختار الصف، ولغة الإجابة (عربي أو إنجليزي أو الاتنين).",
     "لو عاوز الذكاء الاصطناعي يلتزم بمادتك، اختار **اكتب من مصادري** وحدد أرقام السلايدز. وساعتها ما بيخرجش بره المصدر.",
-    "دوس **اكتبها**، وبعدين عدّل في النص زي ما تحب. **نسخ** يحط النص في الكليبورد، و**احفظ كملف Word** يعمله في فولدر الملفات (وتقدر تشاركه مع الطلبة من المكتبة).",
+    "دوس **اكتبها**، وبعدين عدّل في النص زي ما تحب. **نسخ** يحط النص في الكليبورد، و**احفظ كملف Word** يعمله في فولدر الملفات (وتقدر تشاركه مع الطلبة من «ملفاتي»).",
     "**تعليق الشهادة** و**ملاحظات على شغل طالب**: الذكاء الاصطناعي بيكتب [student] بدل الاسم، واختار الفصل والطالب وادوس **حط الاسم وانسخ**. أسماء الطلبة ما بتتبعتش للذكاء الاصطناعي أبداً، وملفات الأدوات دي مش بتتشارك.",
     "راجع المسودة وصلّحها دايماً قبل ما تستخدمها. اللي كتبته بيفضل لما تروح لصفحة تانية وترجع."
    ],
@@ -127,13 +127,14 @@
   },
   {
    "id": "library",
-   "title": "المكتبة والمشاركة مع الطلبة",
+   "title": "ملفاتي والمشاركة مع الطلبة",
    "steps": [
-    "افتح **تحضير ← المكتبة**. فيها 3 تبويبات: **ملفاتي** (كل الملفات والسلايدز اللي البرنامج عملها)، و**المشاركة مع الطلبة**، و**مصادري**.",
-    "في **ملفاتي** دوس «شاركه مع الطلبة» على أي ملف، واختار الفصل. وقرر هل الطلبة يشوفوه دلوقتي، أو يستنى لحد ما توافق. الكويز لازم له تاريخ ظهور (بعد ما يخلص).",
-    "تقدر توقف المشاركة أو تخفي الملف في أي وقت. ملفات الدرجات وخطط الدروس ما ينفعش تتشارك أبداً.",
-    "في **المشاركة مع الطلبة** تضيف رابط (فيديو أو موقع) أو ملف من جهازك، وتشوف كل اللي اتشارك.",
-    "المشاركة محتاجة تسجيل دخول لسيرفر المدرسة."
+    "افتح **تحضير ← ملفاتي**. كل ملفاتك في صفحة واحدة مقسّمة **أسابيع**: الأسبوع الحالي فوق. الملفات اللي البرنامج بيعملها (T1-W08…) بتنزل في أسبوعها لوحدها.",
+    "تحت كل ملف **ملاحظة للطلبة**: اكتب الملف فيه إيه وشرحنا منه لحد فين. الملاحظة بتظهر للطلبة جنب الملف.",
+    "زرار **الأسابيع** بيخلّيك تنقل الملف لأسبوع تاني، أو تضيفه في أسبوع كمان (مثلاً نص السلايدز في الأسبوع الأول والباقي في التاني). كل أسبوع له ملاحظته وعلامة «للطلبة» بتاعته.",
+    "علّم **للطلبة** على الملف عشان يتبعت. لو عندك فصل واحد بيتبعت على طول، ولو أكتر هتختار الفصل. الكويز لازم له تاريخ ظهور (بعد ما يخلص). ملفات الدرجات وخطط الدروس ما ينفعش تتشارك أبداً.",
+    "زرار **اجعله مصدر للذكاء** بيخلّي الذكاء الاصطناعي يكتب من الملف ده وبس. تقدر تضيف كتب وملفات ورابط موقع من **أضف كتاب أو ملف أو رابط** فوق.",
+    "في تاب **اللي الطلبة شايفينه** تضيف رابط (فيديو أو موقع) أو ملف من جهازك، وتشوف كل اللي اتشارك. المشاركة محتاجة تسجيل دخول لسيرفر المدرسة."
    ]
   },
   {
@@ -385,7 +386,7 @@
     "Open **Prepare → Teacher tools**. The list has groups: **Planning** (unit plan, PBL project, explain in several ways, vocabulary...), **Assessment** (rubric, questions on a text, exit ticket, diagnostic...), **Texts** (simplify, summarise, translate, proofread...) and **Communication** (report comment, email reply, newsletter...).",
     "Choose a tool and fill its small form (fields marked * are required). You can choose the grade and the language of the answer (Arabic, English or both).",
     "To keep the AI inside your own material, choose **Write from my sources** and give the slide numbers. It then stays inside that source.",
-    "Press **Write it**, then edit the text as you like. **Copy** puts it on the clipboard, **Save as Word** makes a file in your files folder (and you can share it with students from the Library).",
+    "Press **Write it**, then edit the text as you like. **Copy** puts it on the clipboard, **Save as Word** makes a file in your files folder (and you can share it with students from «My files»).",
     "**Report card comment** and **Feedback on student work**: the AI writes [student] instead of the name; choose the class and student and press **Put the name in and copy**. Student names are never sent to the AI, and these files cannot be shared.",
     "Always read and fix the draft before you use it. What you wrote stays when you visit another page and come back."
    ],
@@ -404,13 +405,14 @@
   },
   {
    "id": "library",
-   "title": "Library and sharing with students",
+   "title": "My files and sharing with students",
    "steps": [
-    "Open **Prepare → Library**. It has 3 tabs: **My files** (every file and slide deck the app made), **Shared with students** and **My sources**.",
-    "In **My files** press «Share with students» on a file and choose the class. Decide if students see it now or it waits until you approve it. A quiz needs a «show from» date (after it ends).",
-    "You can stop sharing or hide a file at any time. Grading sheets and lesson plans can never be shared.",
-    "In **Shared with students** you add a link (video or site) or a file from your computer, and see everything that is shared.",
-    "Sharing needs you to be signed in to the school server."
+    "Open **Prepare → My files**. All your files are on one page, split by **week**: this week is on top. Files the app makes (T1-W08…) go into their week by themselves.",
+    "Under each file there is a **note for the students**: what is in the file and how far we got. The students see it next to the file.",
+    "The **Weeks** button moves the file to another week, or puts it in one more week as well (for example half of the slides in week 1 and the rest in week 2). Each week has its own note and its own «For students» tick.",
+    "Tick **For students** to send the file. With one class it is sent at once; with more you choose the class. A quiz needs a «show from» date (after it ends). Grading sheets and lesson plans can never be shared.",
+    "**Make it an AI source** lets the AI write from that file only. You can add books, files and a web link from **Add a book, a file or a link** at the top.",
+    "In the **What students see** tab you add a link (video or site) or a file from your computer, and see everything that is shared. Sharing needs you to be signed in to the school server."
    ]
   },
   {

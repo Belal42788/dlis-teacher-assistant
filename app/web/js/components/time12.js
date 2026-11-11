@@ -10,6 +10,7 @@ export function timeInput12(initial = "08:00") {
   const ampm = h("select", { "aria-label": "AM/PM" }, h("option", { value: "am" }, t("time_am")), h("option", { value: "pm" }, t("time_pm")));
   hour.value = h0 % 12 || 12; min.value = m0; ampm.value = h0 >= 12 ? "pm" : "am";
   const box = h("span", { class: "time12", dir: "ltr" }, hour, ":", min, ampm);
-  Object.defineProperty(box, "value", { get() { return `${String((+hour.value % 12) + (ampm.value === "pm" ? 12 : 0)).padStart(2, "0")}:${String(+min.value).padStart(2, "0")}`; } });
+  const put = (v) => { const [a, b] = String(v).split(":").map(Number); hour.value = a % 12 || 12; min.value = b; ampm.value = a >= 12 ? "pm" : "am"; };
+  Object.defineProperty(box, "value", { set: put, get() { return `${String((+hour.value % 12) + (ampm.value === "pm" ? 12 : 0)).padStart(2, "0")}:${String(+min.value).padStart(2, "0")}`; } });
   return box;
 }
