@@ -136,13 +136,51 @@ class TestDocsAndTasks(unittest.TestCase):
         r2 = self.svc.make_lesson_plan({"grade_id": "g4", "trimester": 0, "week": 8, "content": {"topic": "Hardware"}})
         items = {x["name"]: x for x in self.svc.library_list()["items"]}
         q = items[r1["name"]]
-        self.assertEqual((q["kind"], q["private"], q["shared"]), ("quiz", False, None))
+        self.assertEqual((q["kind"], q["private"], [(x["t"], x["w"], x["shared"]) for x in q["places"]]), ("quiz", False, [(0, 8, None)]))
         self.assertTrue(items[r2["name"]]["private"])
         with self.assertRaises(AppError) as cm:
             self.svc.library_share({"rel": r2["rel"], "class_id": "g4-a", "public": True})
         self.assertEqual(cm.exception.code, "private_file")
         with self.assertRaises(AppError):
             self.svc.library_share({"rel": "../../etc/passwd", "class_id": "g4-a"})
+
+    def test_files_by_week_with_notes_and_sharing(self):
+        r1 = self.svc.make_quiz({"grade_id": "g4", "trimester": 0, "week": 8, "number": 1, "text": "1. Q?\na) x\nb) y\nAnswer: a"})
+        pubs = []
+        self.svc.list_publications = lambda: {"items": list(pubs)}
+        self.svc.add_publication = lambda b: pubs.append({"id": f"{len(pubs) + 1:036d}", **b})
+        self.svc.set_publication = lambda pid, b: next(x for x in pubs if x["id"] == pid).update(b)
+        self.svc.delete_publication = lambda pid: pubs.remove(next(x for x in pubs if x["id"] == pid))
+
+        def places():
+            return next(x for x in self.svc.library_list()["items"] if x["rel"] == r1["rel"])["places"]
+        self.assertEqual([(x["id"], x["t"], x["w"]) for x in places()], [("auto", 0, 8)])       # named T1-W08: it lands in its week
+        first = next(x for x in self.svc.library_place({"rel": r1["rel"], "pid": "auto", "note": "  Part 1   only "})["items"] if x["rel"] == r1["rel"])["places"][0]
+        self.assertNotEqual(first["id"], "auto"); self.assertEqual(first["note"], "Part 1 only")
+        self.svc.library_place_add({"rel": r1["rel"], "t": 0, "w": 9})
+        with self.assertRaises(AppError):
+            self.svc.library_place_add({"rel": r1["rel"], "t": 0, "w": 9})
+        with self.assertRaises(AppError):
+            self.svc.library_place({"rel": r1["rel"], "pid": first["id"], "t": 5, "w": 1})
+        second = places()[1]
+        self.svc.library_place({"rel": r1["rel"], "pid": second["id"], "note": "Part 2"})
+        self.svc.library_share({"rel": r1["rel"], "pid": second["id"], "class_id": "g4-a", "public": True, "visible_from": "2026-11-05"})
+        self.assertEqual((pubs[0]["note"], pubs[0]["trimester"], pubs[0]["week"], pubs[0]["approved"]), ("Part 2", 0, 9, True))
+        self.svc.library_place({"rel": r1["rel"], "pid": second["id"], "note": "Part 2: up to slide 20"})   # the students see the new note
+        self.assertEqual(pubs[0]["note"], "Part 2: up to slide 20")
+        self.svc.library_place({"rel": r1["rel"], "pid": second["id"], "t": 0, "w": 10})                      # moved to another week
+        self.assertEqual(pubs[0]["week"], 10)
+        self.assertEqual([bool(x["shared"]) for x in places()], [False, True])
+        self.svc.library_place_delete({"rel": r1["rel"], "pid": second["id"]})                              # taking it out of the week removes it from students too
+        self.assertEqual((pubs, len(places())), ([], 1))
+        only = self.svc.library_place_delete({"rel": r1["rel"], "pid": first["id"]})
+        self.assertEqual([(x["t"], x["w"]) for x in next(i for i in only["items"] if i["rel"] == r1["rel"])["places"]], [(None, None)])   # always keeps one place
+        # an older library.json (one share per file) is carried over
+        import json
+        path = self.svc._need_store().root / "library.json"
+        path.write_text(json.dumps({"shared": {r1["rel"]: {"id": "x" * 36, "class_id": "g4-a", "public": True, "at": 1}}}), encoding="utf-8")
+        old = places()
+        self.assertEqual((old[0]["shared"]["class_id"], old[0]["w"]), ("g4-a", None))
 
     def test_one_file_list_with_source_switch(self):
         import base64

@@ -56,6 +56,10 @@ create table if not exists publications (
   teacher_id uuid references auth.users default auth.uid(), created_at timestamptz not null default now()
 );
 
+alter table publications add column if not exists note text not null default '';
+alter table publications add column if not exists trimester int;
+alter table publications add column if not exists week int;
+
 -- the week plan shown to parents (homework, extra material, quiz alerts) - never the lesson plan
 create table if not exists week_plans (
   class_id text not null, trimester int not null, week int not null,

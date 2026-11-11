@@ -360,6 +360,8 @@ try:
             for tab_ in ("wk", "lp", "quiz", "rv", "sl", "gs", "ct"):
                 pick_kind(page, tab_); snap(f"files_{tab_}")
             go("library"); snap("library_files")
+            assert page.locator(".wk-group").count() >= 1 and page.locator(".file-note").count() >= 1   # files sit in weeks, each with a note for the students
+            page.click("text=الأسابيع >> nth=0"); page.wait_for_selector(".modal select"); page.click(".modal header .btn.icon")
             go("scheme"); page.wait_for_selector(".sw-card"); snap("scheme")
             go("library"); page.wait_for_selector(".banner.info"); snap("library")
             go("docs"); page.click("a.seg-btn[href='#/tools']"); page.wait_for_selector(".tl-form"); snap("tools")
@@ -377,7 +379,11 @@ try:
         page.wait_for_selector(".reminder"); shot("17c_reminder"); page.click(".reminder >> text=تمام")
         page.click(".nav a[data-page=tasks]"); page.click("a.seg-btn[href='#/reminders']"); page.wait_for_selector(".alarm-add")
         page.fill(".alarm-add input[type=text]", "اطبع الكويز"); assert page.locator(".alarm-add .time12 select").count() == 3  # 12-hour picker, 8:00 AM by default
-        page.click(".panel:has(.alarm-add) >> text=إضافة"); page.wait_for_selector("text=اطبع الكويز"); shot("17d_alarms"); page.wait_for_selector(".toast", state="detached", timeout=15000)
+        page.click(".panel:has(.alarm-add) >> text=إضافة"); page.wait_for_selector("text=اطبع الكويز"); shot("17d_alarms")
+        assert "هيرن بعد" in page.locator(".toast").inner_text() or "عدّى" in page.locator(".toast").inner_text()   # says how long until it rings
+        page.wait_for_selector(".toast", state="detached", timeout=15000)
+        page.click("tr:has-text('اطبع الكويز') button[aria-label='تعديل']"); page.fill(".alarm-add input[type=text]", "اطبع الكويز الثاني"); page.click("text=احفظ التعديل")
+        page.wait_for_selector("text=اطبع الكويز الثاني"); page.wait_for_selector(".toast", state="detached", timeout=15000)
         page.click("text=كل الأحد") if False else None
 
         # students: paste a list

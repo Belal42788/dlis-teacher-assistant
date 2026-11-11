@@ -6,13 +6,13 @@ const T = {
   ar: { brand: "بوابة أولياء الأمور · DLIS", login: "تسجيل الدخول", signup: "إنشاء حساب", email: "الإيميل", pass: "كلمة السر", code: "كود الطالب (من المدرسة)", haveAcc: "عندي حساب", noAcc: "أول مرة؟ أنشئ حساب", forgot: "نسيت كلمة السر", sent: "اتبعتلك رابط على الإيميل لو الحساب موجود.", out: "خروج", lang: "English",
     badLogin: "الإيميل أو كلمة السر مش صح.", badCode: "الكود مش صح أو اتستخدم قبل كده. اطلب كود جديد من المدرسة.", net: "مش قادر أوصل للسيرفر. اتأكد من النت.", notSet: "البوابة لسه ما اتظبطتش (عنوان السيرفر ناقص).",
     kids: "أبنائي", addKid: "إضافة ابن/ابنة بكود", add: "إضافة", grades: "الدرجات", files: "الملفات", week: "الأسبوع", news: "الإعلانات", noKids: "لسه ما ربطتش أي ابن. اكتب الكود اللي اتسلّمتهولك المدرسة.",
-    noGrades: "مفيش درجات متسجلة لسه.", noFiles: "مفيش ملفات متاحة دلوقتي.", noWeek: "خطة الأسبوع لسه ما اتنشرتش.", noNews: "مفيش إعلانات.", homework: "الواجبات", material: "مواد إضافية", quizzes: "تنبيهات الكويزات", trimester: "الفصل الدراسي", open: "فتح", pw8: "كلمة السر 8 حروف على الأقل.",
+    noGrades: "مفيش درجات متسجلة لسه.", noFiles: "مفيش ملفات متاحة دلوقتي.", moreFiles: "ملفات عامة", wkWord: "الأسبوع", noWeek: "خطة الأسبوع لسه ما اتنشرتش.", noNews: "مفيش إعلانات.", homework: "الواجبات", material: "مواد إضافية", quizzes: "تنبيهات الكويزات", trimester: "الفصل الدراسي", open: "فتح", pw8: "كلمة السر 8 حروف على الأقل.",
     kind: { presentation: "بريزنتيشن", quiz: "كويز", revision: "مراجعة", link: "رابط", other: "ملف" },
     items: { Behavior: "السلوك", Attendance: "الحضور", Classwork: "شغل الفصل", Homework: "الواجب", Quiz: "الكويز", Total: "المجموع" }, loading: "جارٍ التحميل…" },
   en: { brand: "Parents' portal · DLIS", login: "Sign in", signup: "Create account", email: "Email", pass: "Password", code: "Student code (from the school)", haveAcc: "I have an account", noAcc: "First time? Create an account", forgot: "Forgot password", sent: "If the account exists, a link was sent to your email.", out: "Sign out", lang: "العربية",
     badLogin: "The email or password is not right.", badCode: "The code is wrong or already used. Ask the school for a new one.", net: "Could not reach the server. Check the internet.", notSet: "The portal is not set up yet (server address missing).",
     kids: "My children", addKid: "Add a child with a code", add: "Add", grades: "Grades", files: "Files", week: "This week", news: "Announcements", noKids: "No child linked yet. Type the code the school gave you.",
-    noGrades: "No grades yet.", noFiles: "Nothing shared right now.", noWeek: "The week plan is not published yet.", noNews: "No announcements.", homework: "Homework", material: "Extra material", quizzes: "Quiz alerts", trimester: "Term", open: "Open", pw8: "Password must be at least 8 characters.",
+    noGrades: "No grades yet.", noFiles: "Nothing shared right now.", moreFiles: "General files", wkWord: "Week", noWeek: "The week plan is not published yet.", noNews: "No announcements.", homework: "Homework", material: "Extra material", quizzes: "Quiz alerts", trimester: "Term", open: "Open", pw8: "Password must be at least 8 characters.",
     kind: { presentation: "Presentation", quiz: "Quiz", revision: "Revision", link: "Link", other: "File" },
     items: { Behavior: "Behavior", Attendance: "Attendance", Classwork: "Classwork", Homework: "Homework", Quiz: "Quiz", Total: "Total" }, loading: "Loading…" },
 };
@@ -110,12 +110,21 @@ const VIEWS = {
       h("table", {}, list.map((r) => h("tr", {}, h("td", {}, r.week ? `${t("week")} ${r.week}` : ""), h("td", {}, (t("items") || {})[r.item] || r.item), h("td", { dir: "ltr" }, `${r.score ?? "—"} / ${r.max_score ?? "—"}`)))))));
   },
   async files(k, box) {
-    const rows = await api("GET", `/rest/v1/publications?select=id,kind,title,url,file_path,created_at&class_id=eq.${encodeURIComponent(k.class_id)}&order=created_at.desc`);
+    const rows = await api("GET", `/rest/v1/publications?select=id,kind,title,url,file_path,created_at,note,trimester,week&class_id=eq.${encodeURIComponent(k.class_id)}&order=created_at.desc`);
     if (!rows.length) return box.replaceChildren(h("p", { class: "muted" }, t("noFiles")));
-    box.replaceChildren(...rows.map((p) => h("div", { class: "card" }, h("span", { class: "chip" }, t("kind")[p.kind] || p.kind), " ", h("b", {}, p.title), h("br"),
+    const card = (p) => h("div", { class: "card" }, h("span", { class: "chip" }, t("kind")[p.kind] || p.kind), " ", h("b", {}, p.title), h("br"),
+      p.note ? h("p", { class: "muted", style: "white-space:pre-wrap;margin:.3rem 0" }, p.note) : null,
       p.url ? h("a", { href: safeUrl(p.url), target: "_blank", rel: "noopener noreferrer" }, t("open"))
         : h("button", { class: "btn ghost", onclick: async (ev) => { const b = ev.currentTarget; try { const j = await api("POST", "/storage/v1/object/sign/files/" + p.file_path.split("/").map(encodeURIComponent).join("/"), { expiresIn: 600 });
-          window.open(CFG.url + "/storage/v1" + j.signedURL, "_blank", "noopener"); } catch { b.textContent = t("net"); } } }, t("open")))));
+          window.open(CFG.url + "/storage/v1" + j.signedURL, "_blank", "noopener"); } catch { b.textContent = t("net"); } } }, t("open")));
+    // by week, newest week first; files with no week at the end
+    const groups = new Map();
+    rows.forEach((p) => { const key = p.week ? `${p.trimester}|${p.week}` : "none"; (groups.get(key) || groups.set(key, []).get(key)).push(p); });
+    const keys = [...groups.keys()].filter((x) => x !== "none").sort((a, b) => { const [ta, wa] = a.split("|").map(Number), [tb, wb] = b.split("|").map(Number); return tb - ta || wb - wa; });
+    if (groups.has("none")) keys.push("none");
+    box.replaceChildren(...keys.flatMap((key) => [
+      h("h2", { style: "margin:1rem 0 .4rem" }, key === "none" ? t("moreFiles") : `${t("trimester")} ${+key.split("|")[0] + 1} · ${t("wkWord")} ${key.split("|")[1]}`),
+      ...groups.get(key).map(card)]));
   },
   async week(k, box) {
     const rows = await api("GET", `/rest/v1/week_plans?select=trimester,week,subject,homework,material,quiz_alerts&class_id=eq.${encodeURIComponent(k.class_id)}&order=trimester.desc,week.desc&limit=30`);
