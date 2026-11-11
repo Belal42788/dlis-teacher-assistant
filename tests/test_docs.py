@@ -146,6 +146,7 @@ class TestDocsAndTasks(unittest.TestCase):
 
     def test_files_by_week_with_notes_and_sharing(self):
         r1 = self.svc.make_quiz({"grade_id": "g4", "trimester": 0, "week": 8, "number": 1, "text": "1. Q?\na) x\nb) y\nAnswer: a"})
+        r1 = {**r1, "rel": r1["rel"].replace("\\", "/")}
         pubs = []
         self.svc.list_publications = lambda: {"items": list(pubs)}
         self.svc.add_publication = lambda b: pubs.append({"id": f"{len(pubs) + 1:036d}", **b})
