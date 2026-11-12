@@ -10,12 +10,13 @@ import time
 import webbrowser
 
 from .core import paths
-from .server.http import AppServer
+
+paths.startup_mark("launcher loaded")
 
 IDLE_SECONDS = 45  # browser mode: quit when the page has not pinged for this long
 
 
-def _wait_for_browser_close(server: AppServer) -> None:
+def _wait_for_browser_close(server) -> None:
     print(f"\n  {paths.APP_NAME} is running at {server.url}")
     print("  Close the browser tab to quit (or press Ctrl+C).\n")
     started = time.time()
@@ -334,7 +335,7 @@ def _drag_window(window) -> None:
         paths.log_error("could not move the window:\n" + traceback.format_exc())
 
 
-def _run_app_window(server: AppServer, args) -> int:
+def _run_app_window(server, args) -> int:
     """The app window (pywebview) with the tray icon, reminders ringing and the window controls. Raises if there is no web view
     on this computer, and the caller then falls back to the browser."""
     import webview  # pywebview: a real app window, no browser bars
@@ -475,6 +476,7 @@ def _run_app_window(server: AppServer, args) -> int:
         start_tray()
     start_hidden = bool(args.background and state["tray"])
 
+    paths.startup_mark("creating the window")
     window = webview.create_window(paths.APP_NAME, server.url, width=1320, height=860, min_size=(960, 640), hidden=start_hidden,
                                    frameless=frameless, easy_drag=False, js_api=WindowControls())
     holder["window"] = window
@@ -489,7 +491,7 @@ def _run_app_window(server: AppServer, args) -> int:
         return None
 
     window.events.closing += on_closing
-    window.events.shown += lambda: (_keep_taskbar_visible(window), _enable_taskbar_minimize(window), _set_window_icon(window))
+    window.events.shown += lambda: (paths.startup_mark("window shown"), _keep_taskbar_visible(window), _enable_taskbar_minimize(window), _set_window_icon(window))
 
     def native_folder_dialog(start: str = ""):
         kind = getattr(getattr(webview, "FileDialog", None), "FOLDER", None) or webview.FOLDER_DIALOG
@@ -530,8 +532,26 @@ def _main(argv: list[str] | None = None) -> int:
     ap.add_argument("--selftest", metavar="FILE", help="check that the packaged program is complete, write the result to FILE and quit (used by the build)")
     args = ap.parse_args(argv)
 
-    server = AppServer(port=args.port)
+    # Loading the program's own files and the window library are both slow on Windows (every file is scanned): do them at the same time.
+    loaded: dict = {}
+
+    def load_app():
+        from .server.http import AppServer
+        loaded["AppServer"] = AppServer
+        paths.startup_mark("program files loaded")
+
+    loader = threading.Thread(target=load_app, daemon=True)
+    loader.start()
+    if not (args.browser or args.no_window or args.selftest) and sys.platform in ("win32", "darwin"):
+        try:
+            import webview  # noqa: F401  (loaded here, used when the window is made)
+            paths.startup_mark("window library loaded")
+        except Exception:
+            pass   # _run_app_window reports it and falls back to the browser
+    loader.join()
+    server = loaded["AppServer"](port=args.port)
     server.start_in_thread()
+    paths.startup_mark("server ready")
     if args.selftest:
         return _selftest(server, args.selftest)
 

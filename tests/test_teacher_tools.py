@@ -267,6 +267,22 @@ class TestAlarms(unittest.TestCase):
         self.assertEqual(len(svc.delete_alarm(weekly["id"])["items"]), 1)
         d.cleanup()
 
+    def test_finished_and_missing_alarms(self):
+        from app.server.service import Service
+        d = tempfile.TemporaryDirectory()
+        svc = Service(); svc.store = DataStore(d.name)
+        svc.add_alarm({"text": "Past", "time": "08:00", "date": "2020-01-01"})
+        svc.add_alarm({"text": "Future", "time": "08:00", "date": "2099-01-01"})
+        r = svc.add_alarm({"text": "Weekly", "time": "08:00", "days": ["Sunday"]})
+        done = {a["text"]: a["done"] for a in r["items"]}
+        self.assertEqual(done, {"Past": True, "Future": False, "Weekly": False})   # only a one-time reminder in the past is finished
+        r = svc.clear_done_alarms()
+        self.assertEqual(sorted(a["text"] for a in r["items"]), ["Future", "Weekly"])
+        with self.assertRaises(AppError) as ctx:   # deleted while it was open for editing
+            svc.update_alarm("abcdef1234", {"text": "x", "time": "09:00", "date": "2099-01-01"})
+        self.assertEqual(ctx.exception.code, "alarm_not_found")
+        d.cleanup()
+
     def test_background_prefs(self):
         home = tempfile.TemporaryDirectory(); os.environ["DLIS_APP_HOME"] = home.name
         try:

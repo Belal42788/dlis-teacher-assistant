@@ -107,6 +107,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(403, {"error": "bad_host"})
             url = urlparse(self.path)
             path = unquote(url.path)
+            if path in ("/", "/index.html"):
+                paths.startup_mark("page requested")
+            elif path in ("/api/bootstrap", "/api/today"):
+                paths.startup_mark(f"first {path}")
             if path.startswith("/api/"):
                 if self.headers.get("X-DLIS-Token") != self.server.token:
                     return self._json(403, {"error": "bad_token"})
@@ -133,6 +137,19 @@ class Handler(BaseHTTPRequestHandler):
                 pass
 
     # ------------------------------------------------------------ static files
+    _preload_cache: bytes | None = None
+
+    @classmethod
+    def _preload_links(cls) -> bytes:
+        """Tell the browser about every script up front. Otherwise it finds them one level at a time (main.js, then what main.js
+        imports, then what those import ...) and each level waits for the one before: slow on a computer that scans every file."""
+        if cls._preload_cache is None:
+            root = paths.web_dir()
+            rows = [f'<link rel="modulepreload" href="/js/{p.relative_to(root / "js").as_posix()}">' for p in sorted((root / "js").rglob("*.js"))]
+            rows.append('<link rel="preload" href="/fonts/arabic.ttf" as="font" type="font/ttf" crossorigin>')
+            cls._preload_cache = "\n  ".join(rows).encode()
+        return cls._preload_cache
+
     def _static(self, path: str):
         if path in ("", "/"):
             path = "/index.html"
@@ -148,7 +165,7 @@ class Handler(BaseHTTPRequestHandler):
         data = f.read_bytes()
         ctype = _TYPES.get(f.suffix.lower()) or mimetypes.guess_type(f.name)[0] or "application/octet-stream"
         if f.name == "index.html":
-            data = data.replace(b"__TOKEN__", self.server.token.encode())
+            data = data.replace(b"__TOKEN__", self.server.token.encode()).replace(b"<!--PRELOAD-->", self._preload_links())
         if ctype.startswith("text/") or ctype in ("application/javascript", "image/svg+xml", "application/json"):
             ctype += "; charset=utf-8"
         etag = f'"{f.stat().st_mtime_ns:x}-{len(data):x}"' if f.name != "index.html" else ""
@@ -236,6 +253,7 @@ class Handler(BaseHTTPRequestHandler):
             ("PUT", r"/api/background", lambda m, b: svc.put_background(b)),
             ("GET", r"/api/alarms", lambda m, b: svc.list_alarms()),
             ("POST", r"/api/alarms", lambda m, b: svc.add_alarm(b)),
+            ("POST", r"/api/alarms/clear-done", lambda m, b: svc.clear_done_alarms()),
             ("POST", r"/api/alarms/([a-z0-9_-]+)/update", lambda m, b: svc.update_alarm(m.group(1), b)),
             ("POST", r"/api/alarms/([a-z0-9_-]+)/delete", lambda m, b: svc.delete_alarm(m.group(1))),
             ("GET", r"/api/school-calendar", lambda m, b: svc.school_calendar()),

@@ -77,6 +77,28 @@ def bell_schedule() -> dict:
     return json.loads((resources_dir() / "bell_schedule.json").read_text(encoding="utf-8"))
 
 
+_T0 = __import__("time").perf_counter()   # when this program's files started loading
+_MARKS_DONE: set = set()
+
+
+def startup_mark(name: str, once: bool = True) -> None:
+    """Write how many seconds after the start something happened to startup.log (replaced on every start), so a slow start
+    shows where the time went. Each name is written only once per run."""
+    try:
+        import time
+
+        if once and name in _MARKS_DONE:
+            return
+        _MARKS_DONE.add(name)
+        log = app_support_dir() / "startup.log"
+        log.parent.mkdir(parents=True, exist_ok=True)
+        first = not _MARKS_DONE - {name}
+        with log.open("w" if first else "a", encoding="utf-8") as f:
+            f.write(f"{time.perf_counter() - _T0:6.2f} s  {name}\n")
+    except Exception:
+        pass
+
+
 def log_error(text: str) -> None:
     """Append to error.log (a windowed .exe has no console, so printing would itself fail)."""
     try:

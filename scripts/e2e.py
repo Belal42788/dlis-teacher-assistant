@@ -386,7 +386,21 @@ try:
         page.wait_for_selector(".toast", state="detached", timeout=15000)
         page.click("tr:has-text('اطبع الكويز') button[aria-label='تعديل']"); page.fill(".alarm-add input[type=text]", "اطبع الكويز الثاني"); page.click("text=احفظ التعديل")
         page.wait_for_selector("text=اطبع الكويز الثاني"); page.wait_for_selector(".toast", state="detached", timeout=15000)
-        page.click("text=كل الأحد") if False else None
+        # no name: it says so instead of doing nothing
+        page.fill(".alarm-add input[type=text]", ""); page.click(".panel:has(.alarm-add) >> text=إضافة")
+        page.wait_for_selector(".toast.warn:has-text('اسم التنبيه')"); assert page.locator(".alarm-add input.bad").count() == 1
+        # a one-time reminder in the past is shown as finished (not ticked), apart from the active ones
+        page.evaluate("""async () => { const tok = document.querySelector('meta[name=dlis-token]').content;
+          const post = (b) => fetch('/api/alarms', { method: 'POST', headers: { 'X-DLIS-Token': tok, 'Content-Type': 'application/json' }, body: JSON.stringify(b) });
+          await post({ text: 'تنبيه قديم', time: '08:00', days: [], date: '2020-01-01' });
+          await post({ text: 'تنبيه للحذف', time: '08:00', days: [], date: '2099-01-01' }); }""")
+        page.reload(); page.wait_for_selector(".alarm-add")
+        assert page.locator(".alarm-row.done:has-text('تنبيه قديم')").count() == 1 and page.locator(".alarm-row.done input:checked").count() == 0
+        assert page.locator(".alarm-row.on:has-text('تنبيه للحذف')").count() == 1 and page.locator("text=امسح المنتهية").count() == 1
+        # deleting the reminder that is open for editing closes the form
+        page.click("tr:has-text('تنبيه للحذف') button[aria-label='تعديل']"); page.wait_for_selector(".alarm-form.editing")
+        page.click("tr:has-text('تنبيه للحذف') button[aria-label='حذف']"); page.wait_for_selector("tr:has-text('تنبيه للحذف')", state="detached")
+        assert page.locator(".alarm-form.editing").count() == 0 and page.input_value(".alarm-add input[type=text]") == ""
 
         # students: paste a list
         page.click(".nav a[data-page=classes]"); page.wait_for_selector(".students, .banner.info")

@@ -346,7 +346,25 @@ h3.sec { display: flex; align-items: center; gap: .5rem; }
 .reminder { background: #fff; border: 1px solid var(--rule-strong); border-inline-start: 5px solid var(--pencil); border-radius: 10px; padding: .8rem .9rem; box-shadow: 0 10px 34px rgba(28,31,77,.28); }
 .rem-head { display: flex; gap: .5rem; align-items: flex-start; margin-bottom: .6rem; }
 .rem-actions { display: flex; flex-wrap: wrap; gap: .4rem; }
-.alarm-add { display: grid; grid-template-columns: 1fr 130px; gap: .5rem; }
+.alarm-add { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.alarm-add input[type=text] { flex: 1 1 16rem; min-width: 0; }
+.alarm-add .time12 { flex: none; }
+.alarm-sec { display: flex; align-items: center; gap: .5rem; margin: .9rem 0 .4rem; font-size: 1rem; }
+.alarm-count { background: var(--blue-wash); color: var(--blue-dark); border-radius: 999px; padding: 0 .6em; font-size: .8rem; font-weight: 700; }
+.alarm-next { color: #2d7a43; font-weight: 600; }
+.alarm-tag { display: inline-block; border-radius: 999px; padding: 0 .7em; font-size: .78rem; font-weight: 700; border: 1px solid var(--rule); background: #fff; color: var(--muted); white-space: nowrap; }
+.alarm-tag.on { background: #e4f3e7; border-color: #8cc79a; color: #2d7a43; }
+.alarm-tag.done { background: #eef1f5; color: var(--muted); }
+.alarm-row.off td, .alarm-row.done td { background: #f6f8fa; }
+.alarm-row.off b, .alarm-row.done b { color: var(--muted); font-weight: 600; }
+.alarm-row.done b { text-decoration: line-through; }
+.alarm-row.now-editing td { background: var(--blue-wash); }
+.alarm-form { margin-top: 1rem; padding: .9rem 1rem; border: 1px solid var(--rule); border-radius: 12px; background: #fbfdfe; display: grid; gap: .6rem; }
+.alarm-form.editing { background: var(--blue-wash); border-color: var(--blue); box-shadow: 0 0 0 3px rgba(47,130,168,.15); }
+.alarm-form .alarm-sec { margin: 0; }
+.alarm-edit-head { display: flex; align-items: center; gap: .5rem; color: var(--blue-dark); }
+.alarm-days { display: grid; gap: .35rem; }
+.alarm-add input.bad { border-color: var(--margin); box-shadow: 0 0 0 3px var(--margin-wash); }
 .bg-box { margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--rule); display: grid; gap: .4rem; }
 .about { display: grid; justify-items: center; gap: .4rem; padding: 1rem 0 .5rem; }
 .about img { width: 190px; height: auto; }
@@ -430,8 +448,7 @@ h1, h2, h3, .top .brand b, h1 { letter-spacing: -.01em; }
 .slot-dot { position: relative; z-index: 2; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 4px solid var(--lg); }
 .slot.reached .slot-time { background: var(--green); border-color: var(--green); color: #fff; }
 .slot[data-state="now"] .slot-time { padding: .4rem .6rem; font-size: 1.05rem; border-color: #fff; box-shadow: 0 0 0 4px var(--green), 0 0 0 9px rgba(63,143,82,.22); }
-.lesson { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .3rem .8rem; min-height: 56px; padding: .35rem .5rem; border-bottom: 1px solid var(--rule); }
-.slot:last-child .lesson { border-bottom: 0; }
+.lesson { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .3rem .8rem; min-height: 56px; margin: .3rem 0; padding: .45rem .8rem; background: var(--sheet); border: 1px solid var(--rule-strong); border-radius: 14px; box-shadow: var(--shadow); }   /* each lesson is a white card, so it reads against the page background */
 .lesson .what { min-width: 0; }
 .lesson .l1 { display: flex; align-items: baseline; gap: .15rem .55rem; flex-wrap: wrap; }
 .lesson .l1 b { font-family: var(--font-head); font-size: 1.2rem; font-weight: 800; border-inline-start: 5px solid var(--tone); padding-inline-start: .55rem; }
@@ -455,8 +472,8 @@ h1, h2, h3, .top .brand b, h1 { letter-spacing: -.01em; }
 .slot[data-state="now"] .lesson .cd { display: block; }
 .slot[data-state="now"] .lesson .until { display: none; }
 /* the break and late duties: a quiet colour of their own, so they read as "not a class" without shouting */
-.lesson.duty { --tone: #b9b6dc; min-height: 48px; margin: .35rem 0; border: 1px dashed #cbc8e6; border-radius: 12px; background: #f3f2fa; }
-.lesson.duty .l1 b { color: #55538a; }
+.lesson.duty { --tone: #8fb6cc; min-height: 48px; margin: .3rem 0; border: 1px dashed #9cc3d8; border-radius: 12px; background: var(--blue-wash); box-shadow: none; }
+.lesson.duty .l1 b { color: var(--blue-dark); }
 .lesson.cancelled { opacity: .72; margin: .2rem 0; border-radius: 12px; background: repeating-linear-gradient(135deg, #fff, #fff 8px, #f6f8fa 8px, #f6f8fa 16px); --tone: var(--margin); }
 .slot[data-state="past"] .lesson .what, .slot[data-state="past"] .lesson .acts > .btn { opacity: .65; filter: saturate(.45); }   /* not on the whole row: its open menu must stay solid */
 .slot.menu-open { position: relative; z-index: 8; }
