@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from datetime import date
+from datetime import date, datetime
 
 from ..core.errors import AppError
 from ..core.models import is_safe_id
@@ -25,8 +25,14 @@ class AlarmsMixin:
         data.setdefault("items", [])
         return data
 
+    @staticmethod
+    def _is_done(a: dict, now: datetime) -> bool:
+        """A one-time reminder whose moment has passed will never ring again."""
+        return not a.get("days") and bool(a.get("date")) and f"{a['date']}T{a['time']}" < now.strftime("%Y-%m-%dT%H:%M")
+
     def list_alarms(self) -> dict:
-        return {"items": self._alarms_data()["items"], "today": date.today().isoformat()}
+        now = datetime.now()
+        return {"items": [{**a, "done": self._is_done(a, now)} for a in self._alarms_data()["items"]], "today": now.date().isoformat()}
 
     @staticmethod
     def _clean_alarm(b: dict) -> dict:
@@ -59,7 +65,7 @@ class AlarmsMixin:
         data = self._alarms_data()
         a = next((x for x in data["items"] if x["id"] == alarm_id), None)
         if not a:
-            raise AppError("task_not_found", status=404)
+            raise AppError("alarm_not_found", "That reminder is not in the list any more.", status=404)
         if "text" in b or "time" in b:
             a.update(self._clean_alarm({**a, **b}))
         if "enabled" in b:
@@ -70,5 +76,13 @@ class AlarmsMixin:
     def delete_alarm(self, alarm_id: str) -> dict:
         data = self._alarms_data()
         data["items"] = [x for x in data["items"] if x["id"] != alarm_id]
+        self._need_store().write_json(self._alarms_path(), data)
+        return self.list_alarms()
+
+    def clear_done_alarms(self) -> dict:
+        """Remove the one-time reminders that have already passed."""
+        now = datetime.now()
+        data = self._alarms_data()
+        data["items"] = [x for x in data["items"] if not self._is_done(x, now)]
         self._need_store().write_json(self._alarms_path(), data)
         return self.list_alarms()

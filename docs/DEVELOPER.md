@@ -59,7 +59,7 @@ Feature files (each is a mixin of `Service`):
 | `AiMixin` | `app/server/ai_service.py` | 374 |
 | `AiChatMixin` | `app/server/ai_chat_service.py` | 101 |
 | `ChatsMixin` | `app/server/chats_service.py` | 62 |
-| `AlarmsMixin` | `app/server/alarms_service.py` | 74 |
+| `AlarmsMixin` | `app/server/alarms_service.py` | 88 |
 | `ChangesMixin` | `app/server/changes_service.py` | 97 |
 | `LogMixin` | `app/server/log_service.py` | 86 |
 | `SlidesMixin` | `app/server/slides_service.py` | 373 |
@@ -204,6 +204,7 @@ The server listens on 127.0.0.1 only and every request carries the secret token 
 | PUT | `/api/background` | `put_background` |
 | GET | `/api/alarms` | `list_alarms` |
 | POST | `/api/alarms` | `add_alarm` |
+| POST | `/api/alarms/clear-done` | `clear_done_alarms` |
 | POST | `/api/alarms/([a-z0-9_-]+)/update` | `update_alarm` |
 | POST | `/api/alarms/([a-z0-9_-]+)/delete` | `delete_alarm` |
 | GET | `/api/school-calendar` | `school_calendar` |

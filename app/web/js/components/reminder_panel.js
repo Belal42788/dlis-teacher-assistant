@@ -69,49 +69,78 @@ const WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", 
 export function alarmsPanel() {
   const box = h("div", { class: "panel" });
   let data = null;
-  const text = h("input", { type: "text", maxlength: 160, placeholder: t("alarm_text_ph"), "aria-label": t("alarm_text_ph") });
+  const text = h("input", { type: "text", maxlength: 160, placeholder: t("alarm_text_ph"), "aria-label": t("alarm_text_ph"), onInput: () => text.classList.remove("bad") });
   const time = timeInput12("08:00");
   const date = dateField({ label: t("alarm_date"), value: todayIso() });
   const days = new Set();
-  const dayBtns = WEEK.slice(0, 5).concat([]).map((d) => h("button", { type: "button", class: "chip", "aria-pressed": "false", onClick: (e) => {
+  const dayBtns = WEEK.slice(0, 5).map((d) => h("button", { type: "button", class: "chip", "aria-pressed": "false", onClick: (e) => {
     days.has(d) ? days.delete(d) : days.add(d); e.currentTarget.classList.toggle("on", days.has(d)); e.currentTarget.setAttribute("aria-pressed", String(days.has(d)));
     date.style.display = days.size ? "none" : "";
   } }, t(`day_${d}`)));
   let editing = null;   // the reminder being changed (the same form is used)
-  const reset = () => { editing = null; text.value = ""; days.clear(); dayBtns.forEach((b) => { b.classList.remove("on"); b.setAttribute("aria-pressed", "false"); }); date.style.display = ""; };
+  const reset = () => { editing = null; text.value = ""; text.classList.remove("bad"); days.clear(); dayBtns.forEach((b) => { b.classList.remove("on"); b.setAttribute("aria-pressed", "false"); }); date.style.display = ""; };
+  const reload = async () => { const r = await guarded(() => api.get("/api/alarms")); if (r) data = r; };
   const add = async () => {
-    if (!text.value.trim()) { text.focus(); return; }
+    if (!text.value.trim()) { text.classList.add("bad"); text.focus(); toast(t("alarm_need_text"), "warn"); return; }
     const body = { text: text.value, time: time.value, days: [...days], date: date.value };
-    const r = await guarded(() => (editing ? api.post(`/api/alarms/${editing}/update`, body) : api.post("/api/alarms", body)));
-    if (!r) return;
-    const a = editing ? r.items.find((x) => x.id === editing) : r.items.find((x) => x.text === body.text.replace(/\s+/g, " ").trim() && x.time === body.time);
+    const wasEditing = editing;
+    const r = await guarded(() => (wasEditing ? api.post(`/api/alarms/${wasEditing}/update`, body) : api.post("/api/alarms", body)));
+    if (!r) {   // e.g. the reminder was deleted while it was open: close the form and show what is really there
+      if (wasEditing) { await reload(); reset(); draw(); }
+      return;
+    }
+    const a = wasEditing ? r.items.find((x) => x.id === wasEditing) : r.items.find((x) => x.text === body.text.replace(/\s+/g, " ").trim() && x.time === body.time);
     data = r; reset(); draw();
-    const ms = a ? msUntilRing(a) : null;
+    const ms = a && !a.done ? msUntilRing(a) : null;
     toast(ms === null ? t("alarm_rings_past") : t("alarm_rings_in", { when: howLong(ms) }), ms === null ? "warn" : "ok");
   };
   const edit = (a) => {
-    editing = a.id; text.value = a.text; time.value = a.time; days.clear(); a.days.forEach((d) => days.add(d)); date.value = a.date || todayIso();
+    editing = a.id; text.value = a.text; text.classList.remove("bad"); time.value = a.time; days.clear(); a.days.forEach((d) => days.add(d));
+    date.value = a.done || !a.date ? todayIso() : a.date;   // a finished one gets today's date, so saving it brings it back
     dayBtns.forEach((b, i) => { const on = days.has(WEEK[i]); b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); }); date.style.display = days.size ? "none" : "";
     draw(); text.focus();
   };
-  const act = async (fn) => { const r = await guarded(fn); if (r) { data = r; draw(); } };
+  const act = async (fn, id) => {
+    const r = await guarded(fn);
+    if (!r) return;
+    data = r;
+    if (id && editing === id && !r.items.some((x) => x.id === id)) reset();   // the one being edited was just deleted
+    draw();
+  };
   const when = (a) => a.days.length ? t("alarm_every", { days: a.days.map((d) => t(`day_${d}`)).join("، ") }) : t("alarm_on", { date: a.date });
 
-  function draw() {
-    const items = [...data.items].sort((a, b) => a.time.localeCompare(b.time));
-    box.replaceChildren(h("h3", {}, t("alarm_title")), h("p", { class: "muted" }, t("alarm_lead")),
-      items.length ? h("div", { class: "paper", style: { marginBottom: ".8rem" } }, h("table", { class: "tasks-table" }, h("tbody", {}, items.map((a) =>
-        h("tr", { class: a.enabled ? "" : "done" },
-          h("td", { class: "c-chk" }, h("input", { type: "checkbox", checked: a.enabled, "aria-label": t("alarm_on_off"), onChange: (e) => act(() => api.post(`/api/alarms/${a.id}/update`, { enabled: e.target.checked })) })),
-          h("td", {}, h("b", {}, a.text), h("div", { class: "small muted" }, when(a))),
-          h("td", { dir: "ltr", style: { fontWeight: 700 } }, fmt12(a.time)),
-          h("td", { class: "c-act" }, h("button", { class: "btn icon ghost", "aria-label": t("alarm_edit"), title: t("alarm_edit"), onClick: () => edit(a) }, icon("edit")), h("button", { class: "btn icon ghost", "aria-label": t("remove"), onClick: () => act(() => api.post(`/api/alarms/${a.id}/delete`, {})) }, icon("trash")))))))) : h("p", { class: "muted small" }, t("alarm_none")),
-      editing ? h("div", { class: "banner info" }, icon("info"), h("div", {}, t("alarm_editing"))) : null,
-      h("div", { class: "alarm-add" }, text, time),
-      h("div", { class: "row", style: { margin: ".6rem 0" } }, h("span", { class: "muted small" }, t("alarm_repeat")), dayBtns, date),
-      h("div", { class: "row" }, h("button", { class: "btn primary", onClick: add }, icon(editing ? "check" : "plus"), editing ? t("alarm_save") : t("t_add")),
-        editing ? h("button", { class: "btn ghost", onClick: () => { reset(); draw(); } }, t("cancel")) : null));
+  function row(a) {
+    const state = a.done ? "done" : a.enabled ? "on" : "off";
+    const ms = state === "on" ? msUntilRing(a) : null;
+    return h("tr", { class: `alarm-row ${state}${editing === a.id ? " now-editing" : ""}` },
+      h("td", { class: "c-chk" }, h("input", { type: "checkbox", checked: state === "on", disabled: state === "done", "aria-label": t("alarm_on_off"),
+        onChange: (e) => act(() => api.post(`/api/alarms/${a.id}/update`, { enabled: e.target.checked })) })),
+      h("td", {}, h("b", {}, a.text), h("div", { class: "small muted" }, when(a), ms !== null ? h("span", { class: "alarm-next" }, ` · ${t("alarm_rings_in", { when: howLong(ms) })}`) : null)),
+      h("td", {}, h("span", { class: `alarm-tag ${state}` }, t(state === "on" ? "alarm_live" : state === "done" ? "alarm_done" : "alarm_off"))),
+      h("td", { dir: "ltr", style: { fontWeight: 700 } }, fmt12(a.time)),
+      h("td", { class: "c-act" }, h("button", { class: "btn icon ghost", "aria-label": t("alarm_edit"), title: t("alarm_edit"), onClick: () => edit(a) }, icon("edit")),
+        h("button", { class: "btn icon ghost", "aria-label": t("remove"), onClick: () => act(() => api.post(`/api/alarms/${a.id}/delete`, {}), a.id) }, icon("trash"))));
   }
-  guarded(() => api.get("/api/alarms")).then((r) => { if (r) { data = r; draw(); } });
+  const table = (list) => h("div", { class: "paper" }, h("table", { class: "tasks-table" }, h("tbody", {}, list.map(row))));
+
+  function draw() {
+    const live = data.items.filter((a) => a.enabled && !a.done).sort((a, b) => (msUntilRing(a) ?? 9e15) - (msUntilRing(b) ?? 9e15));
+    const rest = data.items.filter((a) => !(a.enabled && !a.done)).sort((a, b) => a.time.localeCompare(b.time));
+    const editedText = editing ? data.items.find((x) => x.id === editing)?.text || "" : "";
+    box.replaceChildren(h("h3", {}, t("alarm_title")), h("p", { class: "muted" }, t("alarm_lead")),
+      h("h4", { class: "alarm-sec" }, t("alarm_sec_on"), h("span", { class: "alarm-count" }, String(live.length))),
+      live.length ? table(live) : h("p", { class: "muted small" }, t("alarm_none")),
+      rest.length ? h("div", { class: "alarm-rest" },
+        h("h4", { class: "alarm-sec" }, t("alarm_sec_rest"), h("span", { class: "alarm-count" }, String(rest.length)), h("span", { class: "grow" }),
+          rest.some((a) => a.done) ? h("button", { class: "btn small ghost", onClick: () => act(() => api.post("/api/alarms/clear-done", {})) }, icon("trash"), t("alarm_clear_done")) : null),
+        table(rest)) : null,
+      h("div", { class: `alarm-form${editing ? " editing" : ""}` },
+        editing ? h("div", { class: "alarm-edit-head" }, icon("edit"), h("b", {}, t("alarm_editing", { what: editedText }))) : h("h4", { class: "alarm-sec" }, t("alarm_new")),
+        h("div", { class: "alarm-add" }, text, time),
+        h("div", { class: "alarm-days" }, h("span", { class: "muted small" }, t("alarm_repeat")), h("div", { class: "row" }, dayBtns, date)),
+        h("div", { class: "row" }, h("button", { class: "btn primary", onClick: add }, icon(editing ? "check" : "plus"), editing ? t("alarm_save") : t("t_add")),
+          editing ? h("button", { class: "btn ghost", onClick: () => { reset(); draw(); } }, t("cancel")) : null)));
+  }
+  reload().then(() => { if (data) draw(); });
   return box;
 }
