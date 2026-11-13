@@ -23,6 +23,7 @@ import { renderInsights } from "./pages/insights.js";
 import { openQuick } from "./components/quick.js";
 import { showWhatsNew } from "./components/whatsnew.js";
 import { drawAiBall, showAiBall } from "./components/ai_ball.js";
+import { mailDeveloper } from "./components/dev_mail.js";
 import { renderMap } from "./pages/map.js";
 import { renderAnnouncements } from "./pages/announcements.js";
 import { renderProgress } from "./pages/progress.js";
@@ -168,6 +169,7 @@ function feedbackDialog() {
   modal({ title: t("fb_title"), body: h("div", {}, h("p", { class: "muted small" }, t("fb_lead")), text),
     actions: [
       { label: t("fb_export"), onClick: async () => { const r = await guarded(() => api.post("/api/feedback/export", {})); if (r) await guarded(() => api.post("/api/open", { path: r.path })); return false; }, close: false },
+      { label: t("fb_mail"), onClick: async () => { await mailDeveloper(text.value, page); return false; }, close: false },
       { label: t("save"), kind: "primary", onClick: async () => { if (!text.value.trim()) return false; const r = await guarded(() => api.post("/api/feedback", { page, text: text.value })); if (!r) return false; toast(t("saved")); } }] });
 }
 

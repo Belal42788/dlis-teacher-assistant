@@ -21,7 +21,8 @@ export function drawAiBall(host, goTo) {
       h("button", { class: "btn small ghost", onClick: () => { pageChat.id = ball.id; pageChat.messages = ball.messages.slice(); close(); goTo("chat"); } }, t("ab_full")),
       h("button", { class: "btn icon ghost", "aria-label": t("close"), onClick: () => close() }, "✕")),
     log, off, h("div", { class: "ab-box" }, input, sendBtn));
-  const btn = h("button", { class: "ai-ball", id: "ai-ball", type: "button", "aria-label": t("ab_title"), "aria-expanded": "false", "aria-controls": "ab-panel", title: t("ab_title"), onClick: () => (panel.hidden ? open() : close()) }, icon("spark"));
+  const btn = h("button", { class: "ai-ball", id: "ai-ball", type: "button", "aria-label": t("ab_title"), "aria-expanded": "false", "aria-controls": "ab-panel", title: t("ab_title"), onClick: () => { if (moved) { moved = false; return; } panel.hidden ? open() : close(); } }, icon("spark"));
+  let moved = false;
 
   function draw() {
     log.replaceChildren(...(ball.messages.length ? ball.messages.map((m) => h("div", { class: `bubble ${m.role}${m.error ? " err" : ""}` }, h("div", { class: "bubble-text" }, m.content),
@@ -32,7 +33,7 @@ export function drawAiBall(host, goTo) {
     sendBtn.disabled = ball.busy || ball.ready === false;
   }
   async function open() {
-    panel.hidden = false; btn.setAttribute("aria-expanded", "true"); btn.classList.add("on");
+    panel.hidden = false; btn.setAttribute("aria-expanded", "true"); btn.classList.add("on"); placePanel();
     try { ball.ready = !!(await api.get("/api/ai")).ready; } catch { ball.ready = null; }
     off.hidden = ball.ready !== false; log.hidden = ball.ready === false; input.disabled = ball.ready === false;
     draw(); if (ball.ready !== false) input.focus();
@@ -55,6 +56,52 @@ export function drawAiBall(host, goTo) {
       try { const s = await (ball.id ? api.put(`/api/chats/${ball.id}`, body) : api.post("/api/chats", body)); if (s && s.id) ball.id = s.id; } catch { /* saving is best-effort */ }
     }
   }
+
+  // The ball can be dragged anywhere (it may sit over something the teacher needs); the place is remembered on this computer.
+  const KEY = "ai-ball-pos", SIZE = 52, EDGE = 8;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  function saved() { try { const p = JSON.parse(localStorage.getItem(KEY) || "null"); return p && Number.isFinite(p.x) && Number.isFinite(p.y) ? p : null; } catch { return null; } }
+  function put(x, y) {   // x/y are fractions of the free space, so the ball stays in view when the window changes size
+    const W = window.innerWidth - SIZE - EDGE * 2, H = window.innerHeight - SIZE - EDGE * 2;
+    btn.style.insetInlineEnd = "auto"; btn.style.bottom = "auto";
+    btn.style.left = EDGE + clamp(x, 0, 1) * W + "px"; btn.style.top = EDGE + clamp(y, 0, 1) * H + "px";
+    btn.classList.add("moved");
+  }
+  function placePanel() {
+    if (!btn.classList.contains("moved")) { panel.style.cssText = ""; return; }
+    const r = btn.getBoundingClientRect(), pw = Math.min(390, window.innerWidth - 28);
+    const above = r.top - 18, below = window.innerHeight - r.bottom - 18, down = below >= above;   // open on the side with more room, never over the ball
+    const ph = Math.max(200, Math.min(520, down ? below : above));
+    const top = clamp(down ? r.bottom + 10 : r.top - 10 - ph, 8, Math.max(8, window.innerHeight - ph - 8));
+    const left = clamp(r.left + SIZE / 2 - pw / 2, 8, window.innerWidth - pw - 8);
+    Object.assign(panel.style, { insetInlineEnd: "auto", bottom: "auto", left: left + "px", top: top + "px", height: ph + "px" });   // "auto" first: in a right-to-left page inline-end IS left
+  }
+  const start = saved(); if (start) put(start.x, start.y);
+  let from = null;
+  btn.addEventListener("pointerdown", (e) => { if (e.button) return; const r = btn.getBoundingClientRect(); from = { x: e.clientX, y: e.clientY, dx: e.clientX - r.left, dy: e.clientY - r.top, on: false }; btn.setPointerCapture(e.pointerId); });
+  btn.addEventListener("pointermove", (e) => {
+    if (!from) return;
+    if (!from.on && Math.hypot(e.clientX - from.x, e.clientY - from.y) < 6) return;   // a small shake while pressing is still a press
+    from.on = true; moved = true; btn.classList.add("drag");
+    const W = window.innerWidth - SIZE - EDGE * 2, H = window.innerHeight - SIZE - EDGE * 2;
+    put((e.clientX - from.dx - EDGE) / W, (e.clientY - from.dy - EDGE) / H); placePanel();
+  });
+  const letGo = () => {
+    if (!from) return;
+    if (from.on) { const r = btn.getBoundingClientRect(), W = window.innerWidth - SIZE - EDGE * 2, H = window.innerHeight - SIZE - EDGE * 2;
+      try { localStorage.setItem(KEY, JSON.stringify({ x: (r.left - EDGE) / W, y: (r.top - EDGE) / H })); } catch { /* still moved for this session */ }
+      setTimeout(() => { moved = false; }, 0); }   // the click that follows the release is not a press
+    btn.classList.remove("drag"); from = null;
+  };
+  btn.addEventListener("pointerup", letGo); btn.addEventListener("pointercancel", letGo);
+  btn.addEventListener("keydown", (e) => {   // the same from the keyboard: arrows move it, Home puts it back
+    if (e.key === "Home") { try { localStorage.removeItem(KEY); } catch {} btn.removeAttribute("style"); btn.classList.remove("moved"); placePanel(); return; }
+    const d = { ArrowLeft: [-.04, 0], ArrowRight: [.04, 0], ArrowUp: [0, -.04], ArrowDown: [0, .04] }[e.key]; if (!d) return;
+    e.preventDefault(); const r = btn.getBoundingClientRect(), W = window.innerWidth - SIZE - EDGE * 2, H = window.innerHeight - SIZE - EDGE * 2;
+    const x = clamp((r.left - EDGE) / W + d[0], 0, 1), y = clamp((r.top - EDGE) / H + d[1], 0, 1); put(x, y); placePanel();
+    try { localStorage.setItem(KEY, JSON.stringify({ x, y })); } catch {}
+  });
+  window.addEventListener("resize", () => { const p = saved(); if (p) { put(p.x, p.y); placePanel(); } });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !panel.hidden) { close(); btn.focus(); } });
   host.append(panel, btn);
 }

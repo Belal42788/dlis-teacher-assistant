@@ -235,6 +235,9 @@ class AiMixin:
         allowed = {p["key_url"] for p in registry() if p.get("key_url")} | {"https://notebooklm.google.com/", "https://dash.cloudflare.com/profile/api-tokens", "https://dash.cloudflare.com/"}
         if url == getattr(self, "_update_url", None) and url.startswith("https://"):
             allowed.add(url)   # the page of the newer version, announced by the school's own update address
+        mail = f"mailto:{paths.DEV_EMAIL}"
+        if url == mail or (url.startswith(mail + "?") and "\n" not in url and len(url) < 1800):
+            allowed.add(url)   # a problem report to the developer: the address is ours, the subject and text are the teacher's
         if url not in allowed:
             raise AppError("bad_url", "That address is not allowed.", status=403)
         if not os.environ.get("DLIS_NO_OPEN"):

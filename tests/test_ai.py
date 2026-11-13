@@ -273,6 +273,13 @@ class TestAi(AiCase):
         with self.assertRaises(AppError):
             self.svc.open_url("https://evil.example.com")
         self.assertTrue(self.svc.open_url("https://aistudio.google.com/app/apikey")["ok"])
+        # a problem report to the developer is the one mail address the program opens; any other address or a line break is refused
+        from app.core import paths
+        self.assertEqual(paths.DEV_EMAIL, "belal4278@gmail.com")
+        self.assertTrue(self.svc.open_url(f"mailto:{paths.DEV_EMAIL}?subject=Problem&body=Hello%0D%0Athere")["ok"])
+        for bad in ("mailto:someone@else.com", f"mailto:{paths.DEV_EMAIL}.evil.com", f"mailto:{paths.DEV_EMAIL}?subject=a\nb"):
+            with self.assertRaises(AppError):
+                self.svc.open_url(bad)
 
 
 class TestAiModels(AiCase):
