@@ -81,6 +81,11 @@ export async function renderToday(root) {
         h("a", { class: "btn small", href: `#/docs?room=${s.room_id}` }, icon("spark"), t("nav_docs"))));
   };
 
+  // the banner for a break duty: how long until it starts, or how long is left of it
+  const dutyBanner = (u) => h("div", { class: "nextbar" },
+    h("div", { class: "nb-cd" }, h("b", { class: "nb-num" }, "—"), h("small", { class: "nb-unit" })),
+    h("div", { class: "nb-txt" }, h("div", { class: "nb-lab" }), h("h2", {}, t(`duty_${u.kind}`))));
+
   const coverOut = h("div", {});
   function sessionsView(d, structure, isToday, nextBox) {
     const items = [
@@ -109,9 +114,9 @@ export async function renderToday(root) {
           h("div", { class: "what" }, h("div", { class: "l1" }, h("b", {}, room ? roomLabel(room, structure) : s.room_id), h("span", { class: "kind cancelled" }, t("ch_cancelled")))),
           h("div", { class: "acts" }, h("button", { class: "btn small ghost", onClick: () => change({ action: "uncancel", period: s.period }) }, t("ch_undo"))));
       } })),
-      ...(d.duties || []).map((u) => ({ start: u.start, end: u.end, live: true, tone: "var(--pencil)", label: t(`duty_${u.kind}`), node: (until) => h("div", { class: "lesson duty" },
+      ...(d.duties || []).map((u) => ({ start: u.start, end: u.end, live: true, tone: "var(--pencil)", label: t(`duty_${u.kind}`), banner: () => dutyBanner(u), node: (until) => h("div", { class: "lesson duty" },
         h("div", { class: "what" }, h("div", { class: "l1" }, h("b", {}, t(`duty_${u.kind}`)))),
-        h("div", { class: "acts" }, until, isToday ? h("button", { class: "btn small ghost", onClick: () => change({ action: "cancel_duty", kind: u.kind }) }, t("duty_cancel")) : null)) })),
+        h("div", { class: "acts" }, h("div", { class: "cd" }, h("b", { class: "cd-n" }), h("small", { class: "cd-u" })), until, isToday ? h("button", { class: "btn small ghost", onClick: () => change({ action: "cancel_duty", kind: u.kind }) }, t("duty_cancel")) : null)) })),
       ...(d.cancelled_duties || []).map((u) => ({ start: u.start, node: () => h("div", { class: "lesson cancelled" },
         h("div", { class: "what" }, h("div", { class: "l1" }, h("b", {}, t(`duty_${u.kind}`)), h("span", { class: "kind cancelled" }, t("duty_cancelled")))),
         h("div", { class: "acts" }, h("button", { class: "btn small ghost", onClick: () => change({ action: "restore_duty", kind: u.kind }) }, t("duty_restore")))) })),

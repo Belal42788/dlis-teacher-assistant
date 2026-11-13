@@ -206,7 +206,7 @@ def _report_crash() -> None:
         try:
             import ctypes
 
-            ctypes.windll.user32.MessageBoxW(0, f"The program could not start.\n\nDetails were saved here:\n{where}\n\n{text[-600:]}",
+            ctypes.windll.user32.MessageBoxW(0, f"The program could not start.\n\nPlease send the file below to {paths.DEV_EMAIL}:\n{where}\n\n{text[-600:]}",
                                              "DLIS Teacher Assistant", 0x10)
         except Exception:
             pass
@@ -335,6 +335,16 @@ def _drag_window(window) -> None:
         paths.log_error("could not move the window:\n" + traceback.format_exc())
 
 
+def _window_state(window):
+    """0 = normal, 1 = minimised, 2 = maximised (Windows only; None when it cannot be known)."""
+    if sys.platform != "win32":
+        return None
+    try:
+        return int(window.native.WindowState)
+    except Exception:
+        return None
+
+
 def _run_app_window(server, args) -> int:
     """The app window (pywebview) with the tray icon, reminders ringing and the window controls. Raises if there is no web view
     on this computer, and the caller then falls back to the browser."""
@@ -342,7 +352,7 @@ def _run_app_window(server, args) -> int:
 
     frameless = sys.platform == "win32" and args.custom_titlebar and not args.native_titlebar  # the normal title bar gives Windows 11 snap layouts (hover on maximize, Win+Z)
     svc = server.service
-    state = {"tray": None, "quitting": False, "hidden": False}
+    state = {"tray": None, "quitting": False, "hidden": False, "was_max": bool(paths.read_prefs().get("window_max"))}
     holder: dict = {}
 
     ring_stop = threading.Event()
@@ -359,7 +369,17 @@ def _run_app_window(server, args) -> int:
                 ring_stop.wait(1.8)
         threading.Thread(target=run, daemon=True).start()
 
-    def show_window():
+    def remember_max():
+        """Remember whether the window was full screen, so it comes back the same way after being hidden or after a restart."""
+        st = _window_state(holder.get("window"))
+        if st in (0, 2):
+            state["was_max"] = st == 2
+            try:
+                paths.write_prefs(window_max=state["was_max"])
+            except OSError:
+                pass
+
+    def show_window(force_max: bool = False):
         w = holder.get("window")
         if w:
             try:
@@ -371,8 +391,11 @@ def _run_app_window(server, args) -> int:
                         minimized = int(w.native.WindowState) == 1  # FormWindowState.Minimized
                     except Exception:
                         minimized = True
-                if minimized or state["hidden"]:
+                was_away = minimized or state["hidden"]
+                if was_away:
                     w.restore()
+                    if force_max or state["was_max"]:   # coming back from the tray or the taskbar: full screen, like it was
+                        w.maximize()
                 state["hidden"] = False
             except Exception:
                 pass
@@ -406,6 +429,7 @@ def _run_app_window(server, args) -> int:
             state["tray"] = None
 
     def quit_app():
+        remember_max()
         state["quitting"] = True
         stop_tray()
         try:
@@ -417,6 +441,7 @@ def _run_app_window(server, args) -> int:
 
     def close_clicked():
         if state["tray"] and not state["quitting"]:
+            remember_max()
             holder["window"].hide()
             state["hidden"] = True
         else:
@@ -428,9 +453,14 @@ def _run_app_window(server, args) -> int:
 
         def toggle_maximize(self):
             _keep_taskbar_visible(holder["window"])
-            state_max = getattr(self, "_max", False)
+            state_max = getattr(self, "_max", state["was_max"])
             (holder["window"].restore if state_max else holder["window"].maximize)()
             self._max = not state_max
+            state["was_max"] = self._max
+            try:
+                paths.write_prefs(window_max=self._max)
+            except OSError:
+                pass
 
         def start_drag(self):
             """Move the window while the mouse button is held (our own title bar; works on every Windows version)."""
@@ -448,7 +478,7 @@ def _run_app_window(server, args) -> int:
             was_hidden = state["hidden"]
             if sound:
                 start_ring(int(seconds or 0))
-            show_window()
+            show_window(force_max=True)
             if was_hidden and state["tray"]:
                 try:
                     state["tray"].notify(str(text)[:200], paths.APP_NAME)
@@ -485,13 +515,26 @@ def _run_app_window(server, args) -> int:
 
     def on_closing():  # the system close button / Alt+F4: hide near the clock instead of quitting
         if state["tray"] and not state["quitting"]:
+            remember_max()
             window.hide()
             state["hidden"] = True
             return False
+        remember_max()
         return None
 
     window.events.closing += on_closing
-    window.events.shown += lambda: (paths.startup_mark("window shown"), _keep_taskbar_visible(window), _enable_taskbar_minimize(window), _set_window_icon(window))
+    def on_shown():
+        paths.startup_mark("window shown")
+        _keep_taskbar_visible(window)
+        _enable_taskbar_minimize(window)
+        _set_window_icon(window)
+        if state["was_max"] and not state["hidden"] and _window_state(window) == 0:
+            try:
+                window.maximize()
+            except Exception:
+                pass
+
+    window.events.shown += on_shown
 
     def native_folder_dialog(start: str = ""):
         kind = getattr(getattr(webview, "FileDialog", None), "FOLDER", None) or webview.FOLDER_DIALOG

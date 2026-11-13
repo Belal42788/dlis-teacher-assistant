@@ -56,7 +56,7 @@ Feature files (each is a mixin of `Service`):
 | `CoverageMixin` | `app/server/coverage_service.py` | 117 |
 | `CloudMixin` | `app/server/cloud_service.py` | 420 |
 | `DocsMixin` | `app/server/docs_service.py` | 418 |
-| `AiMixin` | `app/server/ai_service.py` | 374 |
+| `AiMixin` | `app/server/ai_service.py` | 377 |
 | `AiChatMixin` | `app/server/ai_chat_service.py` | 101 |
 | `ChatsMixin` | `app/server/chats_service.py` | 62 |
 | `AlarmsMixin` | `app/server/alarms_service.py` | 88 |

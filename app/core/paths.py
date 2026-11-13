@@ -8,6 +8,7 @@ from pathlib import Path
 
 APP_NAME = "DLIS Teacher Assistant"
 VERSION = "1.0.0"
+DEV_EMAIL = "belal4278@gmail.com"   # where a teacher sends a problem report
 
 
 def app_support_dir() -> Path:

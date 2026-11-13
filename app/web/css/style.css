@@ -89,7 +89,7 @@ label.field { display: block; margin-bottom: .8em; }
 label.field > span.label, .label { display: block; font-weight: 600; font-size: .92rem; color: var(--ink-2); margin-bottom: .25em; }
 .hint { display: block; color: var(--muted); font-size: var(--step--1); margin-top: .2em; }
 input[type=text], input[type=url], input[type=email], input[type=password], input[type=search], input[type=number], input[type=date], input[type=time], select, textarea {
-  font: inherit; color: var(--ink); width: 100%; min-height: 34px; padding: .25em .6em;
+  font: inherit; color: var(--ink); width: 100%; min-height: 38px; padding: .25em .6em;
   border: 1px solid var(--rule-strong); border-radius: var(--radius); background: #fff;
 }
 input[type=date], input[type=time], input[type=number] { direction: ltr; text-align: start; }
@@ -491,6 +491,42 @@ h1, h2, h3, .top .brand b, h1 { letter-spacing: -.01em; }
 .btn:active { transform: translateY(1px); }
 input[type=text], input[type=url], input[type=email], input[type=number], input[type=search], input[type=password], select, textarea { transition: border-color .12s, box-shadow .12s; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(47,130,168,.18); }
+
+/* ---------- dropdowns: one look and one size everywhere ---------- */
+select {
+  --arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1.5 1.5l4.5 4.5 4.5-4.5' fill='none' stroke='%232f82a8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  -webkit-appearance: none; appearance: none; cursor: pointer; max-width: 100%; min-height: 38px; padding-block: .3em; padding-inline: .8em 2.4em;
+  border-radius: 10px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4;
+  background: #fff var(--arrow) no-repeat right .8rem center / .8rem; }
+[dir="rtl"] select { background-position: left .8rem center; }
+select:hover { border-color: var(--blue); }
+select:disabled { cursor: not-allowed; opacity: .6; background-color: #f3f6f9; }
+select[multiple], select[size]:not([size="1"]) { background-image: none; padding-inline-end: .8em; cursor: default; white-space: normal; }
+select option { font-weight: 500; }
+
+/* Where the window can draw the list itself (Windows and Chrome), the open list gets the same calm look as the rest of the program;
+   everywhere else the computer's own list opens, with the closed box above. */
+@supports (appearance: base-select) {
+  select:not([multiple], [size]) { appearance: base-select; background-image: none; padding-inline: .8em .6em; display: inline-flex; align-items: center; justify-content: space-between; gap: .5em; }
+  select:not([multiple], [size])::picker-icon { content: ""; flex: none; width: .8rem; height: .55rem; background: var(--arrow) center / contain no-repeat; transition: rotate .15s; }
+  select:not([multiple], [size]):open::picker-icon { rotate: 180deg; }
+  select:not([multiple], [size]) selectedcontent { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: start; }
+  ::picker(select) { appearance: base-select; box-sizing: border-box; border: 1px solid var(--rule-strong); border-radius: 12px; padding: .3rem; margin-block: 4px; background: #fff; color: var(--ink);
+    box-shadow: 0 14px 34px rgba(28,31,77,.22); max-block-size: min(22rem, 60vh); min-inline-size: anchor-size(self-inline); font: inherit; }
+  select:not([multiple], [size]) option { display: flex; align-items: center; gap: .5em; padding: .5em .75em; border-radius: 8px; font: inherit; font-weight: 500; white-space: nowrap; cursor: pointer; min-height: 2.3rem; }
+  select:not([multiple], [size]) option:hover, select:not([multiple], [size]) option:focus-visible { background: var(--blue-wash); outline: none; }
+  select:not([multiple], [size]) option:checked { background: var(--blue-wash); color: var(--blue-dark); font-weight: 700; }
+  select:not([multiple], [size]) option::checkmark { content: "✓"; order: 2; margin-inline-start: auto; color: var(--blue); font-weight: 800; }
+  select:not([multiple], [size]) option:disabled { opacity: .5; cursor: not-allowed; }
+  table.grid td select { appearance: base-select; display: flex; align-items: center; justify-content: center; padding-inline: .3em; }
+  table.grid td select::picker-icon { display: none; }
+  table.grid td select selectedcontent { text-align: center; overflow: hidden; text-overflow: clip; }
+  table.grid td select option { justify-content: center; font-size: 1.05rem; font-weight: 700; }
+  select:not([multiple], [size]) optgroup { font-weight: 800; color: var(--muted); font-size: .85rem; padding: .4em .75em .1em; }
+  select:not([multiple], [size]) optgroup option { padding-inline-start: 1.4em; }
+}
+.time12 select { padding-inline-end: 2.2em; }
+@supports (appearance: base-select) { .time12 select:not([multiple], [size]) { padding-inline-end: .6em; } }
 .toast { background: #fff; color: var(--ink); border: 1px solid var(--rule-strong); border-inline-start: 5px solid var(--pencil); box-shadow: 0 8px 28px rgba(28,31,77,.18); }
 .toast.error { background: #fff; color: var(--margin); border-inline-start-color: var(--margin); }
 .toast.ok::before { content: "✓ "; color: #5d7a1c; }
@@ -888,6 +924,9 @@ html[dir="ltr"] .btn { white-space: normal; }
   background: radial-gradient(circle at 30% 25%, #5bb4d8, var(--blue) 55%, var(--indigo)); box-shadow: 0 6px 18px rgba(28,31,77,.32); transition: transform .12s, box-shadow .12s; }
 .ai-ball:hover { transform: scale(1.07); box-shadow: 0 8px 22px rgba(28,31,77,.4); }
 .ai-ball.on { background: var(--indigo); }
+.ai-ball { touch-action: none; }
+.ai-ball.moved { cursor: grab; }
+.ai-ball.drag { cursor: grabbing; transform: scale(1.1); transition: none; box-shadow: 0 10px 26px rgba(28,31,77,.42); }
 .ai-ball .i { width: 1.5rem; height: 1.5rem; }
 .ai-ball[hidden], .ab-panel[hidden], .ab-off[hidden], .ab-log[hidden] { display: none; }
 .ab-panel { position: fixed; bottom: 118px; inset-inline-end: 14px; z-index: 31; width: min(390px, calc(100vw - 28px)); height: min(520px, calc(100vh - 150px)); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; background: #fff; border: 1px solid var(--rule-strong); border-radius: 16px; box-shadow: 0 16px 44px rgba(28,31,77,.28); overflow: hidden; }
@@ -993,3 +1032,12 @@ table.grid td select.filled { --tone: var(--blue); background-color: #fff; borde
 .share-tick { display: inline-flex; align-items: center; gap: .35rem; padding: .2rem .6rem; border: 1px solid #d5e1ea; border-radius: 999px; cursor: pointer; font-weight: 700; font-size: .92rem; }
 .share-tick.on { background: #eaf4e6; border-color: #a2c65a; }
 .wk-group > summary .chip { font-size: .8rem; padding: .05rem .6rem; min-height: 0; }
+
+/* ---------- help page: write to the developer ---------- */
+.support { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; background: var(--blue-wash); border-color: #b9d8e8; margin-bottom: 1rem; }
+.support-ic { width: 46px; height: 46px; border-radius: 12px; background: var(--blue); color: #fff; display: grid; place-items: center; flex: none; }
+.support-ic .i { width: 1.5rem; height: 1.5rem; }
+.support h2 { margin: 0 0 .15rem; font-size: 1.1rem; }
+.support p { margin: 0 0 .3rem; }
+.support-mail { font-weight: 700; color: var(--blue-dark); user-select: all; text-align: start; }
+.support-acts { display: flex; gap: .5rem; flex-wrap: wrap; }

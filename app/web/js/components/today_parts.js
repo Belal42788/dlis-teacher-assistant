@@ -77,7 +77,9 @@ function paintLine(n) {
 // Marks the lesson that is running now, fades the ones that are over, writes the time left on each row and keeps the "next lesson" bar current
 // (re-checked every 15 seconds while the page is open).
 export function trackNow(items, nextBox) {
-  const lessons = items.filter((x) => x.lesson && mins(x.start) !== null && mins(x.end) !== null);
+  const timed = (x) => mins(x.start) !== null && mins(x.end) !== null;
+  const lessons = items.filter((x) => x.lesson && timed(x));
+  const timeline = items.filter((x) => x.banner && timed(x));   // lessons and break duties: the next one of either gets the banner
   let shown = null;
   const tick = () => {
     const rows = document.querySelectorAll(".slot[data-s]");
@@ -93,10 +95,10 @@ export function trackNow(items, nextBox) {
     });
     paintLine(n);
     if (!nextBox) return;
-    const cur = lessons.find((x) => n < mins(x.end));
+    const cur = timeline.find((x) => n < mins(x.end));
     if (!cur) { nextBox.replaceChildren(); shown = null; return; }
     const a = mins(cur.start), running = n >= a, left = running ? mins(cur.end) - n : a - n;
-    if (running) { nextBox.replaceChildren(); shown = null; return; }   // the lesson running now is the big card on the line, with its own countdown
+    if (running && cur.lesson) { nextBox.replaceChildren(); shown = null; return; }   // the lesson running now is the big card on the line, with its own countdown
     if (cur !== shown) { shown = cur; nextBox.replaceChildren(cur.banner()); }
     const num = nextBox.querySelector(".nb-num"), unit = nextBox.querySelector(".nb-unit"), lab = nextBox.querySelector(".nb-lab");
     const big = Math.max(0, Math.ceil(left));

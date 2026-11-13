@@ -84,11 +84,11 @@ async function loadDay() {
 }
 
 // The teacher's own reminders ("print the quiz"): always on, at the exact time.
-async function alarmsTick() {
+let alarmsList = [];
+function alarmsCheck() {
   const n = nowMin(), today = todayIso(), dow = new Date().getDay();
   const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const { items } = await api.get("/api/alarms");
-  for (const a of items) {
+  for (const a of alarmsList) {
     if (!a.enabled) continue;
     const key = `alarm|${today}|${a.id}`;
     if (handled.has(key) || alarmSnooze.has(key)) continue;
@@ -133,55 +133,71 @@ async function tomorrowTick() {
 
 // Every school day, when the prayer break starts.
 let prayerAt = null;
-async function prayerTick() {
-  if (cfg?.prayer === false) return;
+async function loadPrayer() {
   const today = todayIso();
-  if (!prayerAt || prayerAt.date !== today) {
-    const [d, tt] = await Promise.all([api.get(`/api/today?date=${today}`), api.get("/api/timetable")]);
-    prayerAt = { date: today, time: d.school_day && tt.bell && tt.bell.prayer ? tt.bell.prayer.start : "" };
-  }
-  const n = nowMin(), key = `prayer|${today}`;
-  if (!prayerAt.time || handled.has(key) || n < toMin(prayerAt.time) || n >= toMin(prayerAt.time) + 5) return;
+  if (prayerAt && prayerAt.date === today) return;
+  const [d, tt] = await Promise.all([api.get(`/api/today?date=${today}`), api.get("/api/timetable")]);
+  prayerAt = { date: today, time: d.school_day && tt.bell && tt.bell.prayer ? tt.bell.prayer.start : "" };
+}
+function prayerCheck() {
+  if (cfg?.prayer === false || !prayerAt) return;
+  const today = todayIso(), n = nowMin(), key = `prayer|${today}`;
+  if (prayerAt.date !== today || !prayerAt.time || handled.has(key) || n < toMin(prayerAt.time) || n >= toMin(prayerAt.time) + 5) return;
   handled.add(key);
   show({ alarm: true, label: t("rem_prayer"), start: prayerAt.time }, key, 0);
 }
 
 let seenDate = todayIso();
-async function tick() {
+// Every 20 seconds: fetch what the checks need (settings, reminders, today's lessons). Every second: compare the clock with what was fetched,
+// so a reminder shows at its minute and not up to 20 seconds late.
+async function refresh() {
   if (seenDate !== todayIso()) {      // the app was left open overnight: show the new day
     seenDate = todayIso();
     if (["", "#/today", "#/"].includes(location.hash)) window.dispatchEvent(new HashChangeEvent("hashchange"));
   }
-  try { cfg = await api.get("/api/reminders"); await alarmsTick(); await eventsEveTick(); await tomorrowTick(); await prayerTick(); } catch { /* try again in a moment */ }
   try {
-    if (!cfg.enabled || cfg.muted_date === todayIso()) return;
-    const { items, date } = await loadDay();
-    const n = nowMin();
-    items.forEach((it, i) => {
-      const key = `${date}|${it.start}|${it.label}`;
-      const start = toMin(it.start);
-      if (handled.has(key)) return;
-      const wake = snoozed.get(key);
-      if (wake) {                       // the teacher asked to be reminded again
-        if (n >= start + 2) { snoozed.delete(key); handled.add(key); return; }
-        if (Date.now() < wake) return;
-        snoozed.delete(key); show(it, key, start - n); return;
-      }
-      if (n < start - cfg.minutes || n >= start + 2) return;
-      handled.add(key);                 // shown once
-      // Coming straight from another lesson or duty: the teacher is already on the move.
-      const prev = items[i - 1];
-      if (cfg.skip_back_to_back && prev && start - toMin(prev.end) <= 10) return;
-      show(it, key, start - n);
-    });
-  } catch { /* stay quiet; try again in a moment */ }
+    cfg = await api.get("/api/reminders");
+    alarmsList = (await api.get("/api/alarms")).items;
+    await eventsEveTick(); await tomorrowTick(); await loadPrayer();
+    if (cfg.enabled && cfg.muted_date !== todayIso()) await loadDay();
+  } catch { /* try again in a moment */ }
+  check();
+}
+
+function check() {
+  if (!cfg) return;
+  try { alarmsCheck(); prayerCheck(); lessonsCheck(); } catch { /* stay quiet; try again in a second */ }
+}
+
+function lessonsCheck() {
+  if (!cfg.enabled || cfg.muted_date === todayIso() || !day || day.date !== todayIso()) return;
+  const { items, date } = day;
+  const n = nowMin();
+  items.forEach((it, i) => {
+    const key = `${date}|${it.start}|${it.label}`;
+    const start = toMin(it.start);
+    if (handled.has(key)) return;
+    const wake = snoozed.get(key);
+    if (wake) {                       // the teacher asked to be reminded again
+      if (n >= start + 2) { snoozed.delete(key); handled.add(key); return; }
+      if (Date.now() < wake) return;
+      snoozed.delete(key); show(it, key, start - n); return;
+    }
+    if (n < start - cfg.minutes || n >= start + 2) return;
+    handled.add(key);                 // shown once
+    // Coming straight from another lesson or duty: the teacher is already on the move.
+    const prev = items[i - 1];
+    if (cfg.skip_back_to_back && prev && start - toMin(prev.end) <= 10) return;
+    show(it, key, start - n);
+  });
 }
 
 export function startReminders() {
   if (timer) return;
-  window.__dlisTick = tick;
-  timer = setInterval(tick, 20000);
-  setTimeout(tick, 1500);
+  window.__dlisTick = refresh;
+  timer = setInterval(refresh, 20000);
+  setInterval(check, 1000);
+  setTimeout(refresh, 1500);
 }
 
 export function forgetDay() { day = null; }

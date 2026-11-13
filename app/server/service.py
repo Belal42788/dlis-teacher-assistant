@@ -82,6 +82,7 @@ class Service(BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, UpdateMixin, 
         prefs = paths.read_prefs()
         out = {
             "version": paths.VERSION,
+            "dev_email": paths.DEV_EMAIL,
             "frameless": bool(getattr(self, "frameless", False)),
             "native_dialog": bool(getattr(self, "native_folder_dialog", None)),
             "platform": sys.platform,

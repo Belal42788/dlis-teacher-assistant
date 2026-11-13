@@ -376,6 +376,34 @@ try:
                 page.click(f".seg-btn[data-tab={tab_}]"); snap(f"settings_{tab_}")
             go("help"); snap("help")
             page.set_viewport_size({"width": 1280, "height": 860})
+        # help page: the developer's address and the two buttons next to it
+        page.click(".nav a[data-page=help]"); page.wait_for_selector(".support")
+        assert "belal4278@gmail.com" in page.inner_text(".support") and page.locator(".support .btn").count() == 2
+        # the AI ball: a drag moves it and is not a click, the place is remembered, Home puts it back
+        page.click(".nav a[data-page=today]"); page.wait_for_selector("#ai-ball"); page.evaluate("localStorage.removeItem('ai-ball-pos')")
+        page.reload(); page.wait_for_selector("#ai-ball"); page.wait_for_timeout(400)
+        b0 = page.locator("#ai-ball").bounding_box()
+        page.mouse.move(b0["x"] + 26, b0["y"] + 26); page.mouse.down(); page.mouse.move(b0["x"] + 226, b0["y"] - 274, steps=8); page.mouse.up(); page.wait_for_timeout(200)
+        b1 = page.locator("#ai-ball").bounding_box()
+        assert abs(b1["x"] - b0["x"]) > 150 and abs(b1["y"] - b0["y"]) > 150, (b0, b1)
+        assert page.evaluate("document.getElementById('ab-panel').hidden"), "a drag must not open the chat"
+        page.reload(); page.wait_for_selector("#ai-ball"); page.wait_for_timeout(400)
+        b2 = page.locator("#ai-ball").bounding_box(); assert abs(b2["x"] - b1["x"]) < 4 and abs(b2["y"] - b1["y"]) < 4, (b1, b2)
+        page.click("#ai-ball"); page.wait_for_timeout(300)
+        pb = page.locator("#ab-panel").bounding_box(); bb = page.locator("#ai-ball").bounding_box()
+        assert not (pb["x"] < bb["x"] + bb["width"] and bb["x"] < pb["x"] + pb["width"] and pb["y"] < bb["y"] + bb["height"] and bb["y"] < pb["y"] + pb["height"]), "the chat must not cover the ball"
+        page.click("#ab-panel >> text=✕") if page.locator("#ab-panel >> text=✕").count() else page.keyboard.press("Escape")
+        page.locator("#ai-ball").focus(); page.keyboard.press("Home"); page.wait_for_timeout(200)
+        b3 = page.locator("#ai-ball").bounding_box(); assert abs(b3["x"] - b0["x"]) < 4 and abs(b3["y"] - b0["y"]) < 4, (b0, b3)
+        # dropdown: the open list is drawn by the program (where the window can) and choosing an item changes the value
+        page.click(".nav a[data-page=docs]"); page.wait_for_selector("select"); sel = page.locator("select").first
+        before = sel.evaluate("e => e.value"); sel.click(); page.wait_for_timeout(300)
+        if page.evaluate("CSS.supports('appearance','base-select')"):
+            assert sel.evaluate("e => e.matches(':open')"), "the list should be open"
+            page.keyboard.press("ArrowDown"); page.keyboard.press("Enter"); page.wait_for_timeout(200)
+            assert sel.evaluate("e => e.value") != before or sel.evaluate("e => e.options.length") == 1
+        else:
+            page.keyboard.press("Escape")
         # reminders: the test button shows a pop-up
         page.click(".nav a[data-page=settings]"); page.click(".seg-btn[data-tab=rem]"); page.wait_for_selector("text=جرّب تنبيه"); page.click("text=جرّب تنبيه")
         page.wait_for_selector(".reminder"); shot("17c_reminder"); page.click(".reminder >> text=تمام")
