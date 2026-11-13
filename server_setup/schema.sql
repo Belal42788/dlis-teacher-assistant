@@ -59,6 +59,7 @@ create table if not exists publications (
 alter table publications add column if not exists note text not null default '';
 alter table publications add column if not exists trimester int;
 alter table publications add column if not exists week int;
+alter table publications add column if not exists body text not null default '';
 
 -- the week plan shown to parents (homework, extra material, quiz alerts) - never the lesson plan
 create table if not exists week_plans (

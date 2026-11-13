@@ -7,6 +7,7 @@ import io
 import json
 import secrets
 import re
+import urllib.parse
 import uuid
 from datetime import date
 
@@ -257,14 +258,14 @@ class CloudMixin:
         return self.list_announcements()
 
     # ------------------------------------------------------------ files and links for parents (only after the teacher approves)
-    KINDS = ("presentation", "quiz", "revision", "link", "other")
+    KINDS = ("presentation", "quiz", "revision", "link", "other", "message")
 
     def list_publications(self) -> dict:
         cfg = self._cloud_cfg()
         if not (cfg["url"] and cfg["key"] and cfg["refresh"]):
             return {"connected": False, "role": "", "items": []}
         try:
-            rows = self._cloud_client().select("publications", "select=id,class_id,kind,title,url,file_path,approved,visible_from,visible_until,created_at&order=created_at.desc&limit=200")
+            rows = self._cloud_client().select("publications", "select=id,class_id,kind,title,url,file_path,approved,visible_from,visible_until,created_at,note,trimester,week,body&order=created_at.desc&limit=500")
         except AppError as e:
             if e.code in ("cloud_offline", "cloud_error", "cloud_signed_out", "cloud_bad_login"):
                 return {"connected": False, "role": cfg["role"], "items": [], "problem": e.code}
@@ -297,34 +298,44 @@ class CloudMixin:
         return out
 
     def add_publication(self, b: dict) -> dict:
+        """Put a file, a link or a short message where the students of a class (or of several classes: class_ids) can see it.
+        One file is uploaded once and shared by the items of all the classes."""
         self._need_staff()
-        class_id = str(b.get("class_id", ""))
-        if not re.fullmatch(r"[a-z0-9_-]{1,40}", class_id):
+        ids = [str(x) for x in (b.get("class_ids") or [b.get("class_id", "")])]
+        if not ids or len(ids) > 40 or not all(re.fullmatch(r"[a-z0-9_-]{1,40}", x) for x in ids):
             raise AppError("bad_value", "Choose the class.", status=400)
         kind = b.get("kind")
         title = " ".join(str(b.get("title", "")).split())[:120]
         if kind not in self.KINDS or not title:
             raise AppError("bad_value", "Write a title and choose the kind.", status=400)
-        row = {"class_id": class_id, "kind": kind, "title": title, "approved": False,
-               "visible_from": self._stamp(b.get("visible_from")), "visible_until": self._stamp(b.get("visible_until"), True),
-               **self._week_columns(b)}
-        if kind == "quiz" and not row["visible_from"]:
+        base = {"kind": kind, "title": title, "approved": bool(b.get("approved")),
+                "visible_from": self._stamp(b.get("visible_from")), "visible_until": self._stamp(b.get("visible_until"), True),
+                **self._week_columns(b)}
+        if kind == "quiz" and not base["visible_from"]:
             raise AppError("quiz_needs_date", "A quiz must have a date to show from (after it ends).", status=400)
         c = self._cloud_client()
         f = b.get("file")
-        if isinstance(f, dict) and f.get("data_b64"):
+        path = ""
+        if kind == "message":
+            body = "\n".join(" ".join(x.split()) for x in str(b.get("body", "")).strip().splitlines())[:600].strip()
+            if not body:
+                raise AppError("bad_value", "Write the message.", status=400)
+            base["body"] = body
+        elif isinstance(f, dict) and f.get("data_b64"):
             raw = base64.b64decode(f["data_b64"])
             if len(raw) > 15 * 1024 * 1024:
                 raise AppError("file_too_big", "The file is bigger than 15 MB. Share a link instead.", status=400)
             name = re.sub(r"[^A-Za-z0-9._-]", "_", str(f.get("filename") or "file"))[-60:]
-            row["file_path"] = f"{class_id}/{uuid.uuid4().hex[:10]}-{name}"
-            c.upload("files", row["file_path"], raw, "application/octet-stream")
+            path = f"{ids[0]}/{uuid.uuid4().hex[:10]}-{name}"
+            c.upload("files", path, raw, "application/octet-stream")
+            base["file_path"] = path
         else:
             link = str(b.get("url", "")).strip()
             if not re.fullmatch(r"https?://\S{3,500}", link):
                 raise AppError("bad_value", "Add a file or a link that starts with https://", status=400)
-            row["url"] = link
-        c.insert("publications", row)
+            base["url"] = link
+        for cid in ids:
+            c.insert("publications", {"class_id": cid, **base})
         return self.list_publications()
 
     def set_publication(self, pid: str, b: dict) -> dict:
@@ -338,6 +349,10 @@ class CloudMixin:
             row["visible_from"] = self._stamp(b["visible_from"])
         if "visible_until" in b:
             row["visible_until"] = self._stamp(b["visible_until"], True)
+        if "body" in b:
+            row["body"] = "\n".join(" ".join(x.split()) for x in str(b["body"]).strip().splitlines())[:600].strip()
+        if "title" in b:
+            row["title"] = " ".join(str(b["title"]).split())[:120]
         row.update(self._week_columns(b))
         if row:
             self._cloud_client().update("publications", f"id=eq.{pid}", row)
@@ -348,10 +363,12 @@ class CloudMixin:
         if not re.fullmatch(r"[0-9a-f-]{36}", pid):
             raise AppError("bad_value", "Unknown item.", status=400)
         c = self._cloud_client()
-        for r in c.select("publications", f"select=file_path&id=eq.{pid}"):
-            if r.get("file_path"):
-                c.remove_object("files", r["file_path"])
+        rows = c.select("publications", f"select=file_path&id=eq.{pid}")
         c.delete("publications", f"id=eq.{pid}")
+        for r in rows:   # the same uploaded file may serve the other classes of the grade: it goes only with its last item
+            path = r.get("file_path")
+            if path and not c.select("publications", f"select=id&file_path=eq.{urllib.parse.quote(path)}&limit=1"):
+                c.remove_object("files", path)
         return self.list_publications()
 
     # ------------------------------------------------------------ activation codes: one per student, printed for the parent

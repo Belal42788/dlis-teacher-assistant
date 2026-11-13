@@ -162,6 +162,18 @@ class TestCloud(unittest.TestCase):
                 self.assertTrue(any(x[0] == "up" and "/object/files/g4-a/" in x[1] for x in log))
                 svc.set_publication("22222222-2222-2222-2222-222222222222", {"approved": True})
                 self.assertEqual([x for x in log if x[0] == "patch"][-1][2], {"approved": True})
+                # one file for all the classes of a grade: uploaded once, one item per class, visible at once
+                ups = len([x for x in log if x[0] == "up"])
+                svc.add_publication({"class_ids": ["g4-a", "g4-b"], "kind": "presentation", "title": "Deck", "approved": True, "file": {"filename": "d.pptx", "data_b64": base64.b64encode(b"x" * 50).decode()}})
+                self.assertEqual(len([x for x in log if x[0] == "up"]), ups + 1)
+                two = [x[1][0] for x in log if x[0] == "ins"][-2:]
+                self.assertEqual(([x["class_id"] for x in two], two[0]["file_path"] == two[1]["file_path"], {x["approved"] for x in two}), (["g4-a", "g4-b"], True, {True}))
+                # a short message for the students: words, no file or link
+                svc.add_publication({"class_id": "g4-a", "kind": "message", "title": "Hi", "body": "  Bring   a pen\nand the book ", "week": 9, "trimester": 0})
+                msg = [x[1][0] for x in log if x[0] == "ins"][-1]
+                self.assertEqual((msg["body"], msg["week"], "url" in msg, "file_path" in msg), ("Bring a pen\nand the book", 9, False, False))
+                with self.assertRaises(AppError):
+                    svc.add_publication({"class_id": "g4-a", "kind": "message", "title": "Hi", "body": "  "})
                 # announcement picture: big photo becomes a small jpeg
                 im = Image.new("RGB", (4000, 3000), (200, 30, 30)); buf = io.BytesIO(); im.save(buf, "PNG")
                 from app.server.cloud_service import _small_jpeg

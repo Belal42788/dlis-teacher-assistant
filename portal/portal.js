@@ -7,13 +7,13 @@ const T = {
     badLogin: "الإيميل أو كلمة السر مش صح.", badCode: "الكود مش صح أو اتستخدم قبل كده. اطلب كود جديد من المدرسة.", net: "مش قادر أوصل للسيرفر. اتأكد من النت.", notSet: "البوابة لسه ما اتظبطتش (عنوان السيرفر ناقص).",
     kids: "أبنائي", addKid: "إضافة ابن/ابنة بكود", add: "إضافة", grades: "الدرجات", files: "الملفات", week: "الأسبوع", news: "الإعلانات", noKids: "لسه ما ربطتش أي ابن. اكتب الكود اللي اتسلّمتهولك المدرسة.",
     noGrades: "مفيش درجات متسجلة لسه.", noFiles: "مفيش ملفات متاحة دلوقتي.", moreFiles: "ملفات عامة", wkWord: "الأسبوع", noWeek: "خطة الأسبوع لسه ما اتنشرتش.", noNews: "مفيش إعلانات.", homework: "الواجبات", material: "مواد إضافية", quizzes: "تنبيهات الكويزات", trimester: "الفصل الدراسي", open: "فتح", pw8: "كلمة السر 8 حروف على الأقل.",
-    kind: { presentation: "بريزنتيشن", quiz: "كويز", revision: "مراجعة", link: "رابط", other: "ملف" },
+    kind: { presentation: "بريزنتيشن", quiz: "كويز", revision: "مراجعة", link: "رابط", other: "ملف", message: "رسالة من المدرس" },
     items: { Behavior: "السلوك", Attendance: "الحضور", Classwork: "شغل الفصل", Homework: "الواجب", Quiz: "الكويز", Total: "المجموع" }, loading: "جارٍ التحميل…" },
   en: { brand: "Parents' portal · DLIS", login: "Sign in", signup: "Create account", email: "Email", pass: "Password", code: "Student code (from the school)", haveAcc: "I have an account", noAcc: "First time? Create an account", forgot: "Forgot password", sent: "If the account exists, a link was sent to your email.", out: "Sign out", lang: "العربية",
     badLogin: "The email or password is not right.", badCode: "The code is wrong or already used. Ask the school for a new one.", net: "Could not reach the server. Check the internet.", notSet: "The portal is not set up yet (server address missing).",
     kids: "My children", addKid: "Add a child with a code", add: "Add", grades: "Grades", files: "Files", week: "This week", news: "Announcements", noKids: "No child linked yet. Type the code the school gave you.",
     noGrades: "No grades yet.", noFiles: "Nothing shared right now.", moreFiles: "General files", wkWord: "Week", noWeek: "The week plan is not published yet.", noNews: "No announcements.", homework: "Homework", material: "Extra material", quizzes: "Quiz alerts", trimester: "Term", open: "Open", pw8: "Password must be at least 8 characters.",
-    kind: { presentation: "Presentation", quiz: "Quiz", revision: "Revision", link: "Link", other: "File" },
+    kind: { presentation: "Presentation", quiz: "Quiz", revision: "Revision", link: "Link", other: "File", message: "Message from the teacher" },
     items: { Behavior: "Behavior", Attendance: "Attendance", Classwork: "Classwork", Homework: "Homework", Quiz: "Quiz", Total: "Total" }, loading: "Loading…" },
 };
 let lang = localStorage.getItem("lang") || "ar";
@@ -110,9 +110,9 @@ const VIEWS = {
       h("table", {}, list.map((r) => h("tr", {}, h("td", {}, r.week ? `${t("week")} ${r.week}` : ""), h("td", {}, (t("items") || {})[r.item] || r.item), h("td", { dir: "ltr" }, `${r.score ?? "—"} / ${r.max_score ?? "—"}`)))))));
   },
   async files(k, box) {
-    const rows = await api("GET", `/rest/v1/publications?select=id,kind,title,url,file_path,created_at,note,trimester,week&class_id=eq.${encodeURIComponent(k.class_id)}&order=created_at.desc`);
+    const rows = await api("GET", `/rest/v1/publications?select=id,kind,title,url,file_path,created_at,note,trimester,week,body&class_id=eq.${encodeURIComponent(k.class_id)}&order=created_at.desc`);
     if (!rows.length) return box.replaceChildren(h("p", { class: "muted" }, t("noFiles")));
-    const card = (p) => h("div", { class: "card" }, h("span", { class: "chip" }, t("kind")[p.kind] || p.kind), " ", h("b", {}, p.title), h("br"),
+    const card = (p) => p.kind === "message" ? h("div", { class: "card msg" }, h("span", { class: "chip" }, t("kind").message), h("p", { class: "msg-text" }, p.body || p.title)) : h("div", { class: "card" }, h("span", { class: "chip" }, t("kind")[p.kind] || p.kind), " ", h("b", {}, p.title), h("br"),
       p.note ? h("p", { class: "muted", style: "white-space:pre-wrap;margin:.3rem 0" }, p.note) : null,
       p.url ? h("a", { href: safeUrl(p.url), target: "_blank", rel: "noopener noreferrer" }, t("open"))
         : h("button", { class: "btn ghost", onclick: async (ev) => { const b = ev.currentTarget; try { const j = await api("POST", "/storage/v1/object/sign/files/" + p.file_path.split("/").map(encodeURIComponent).join("/"), { expiresIn: 600 });

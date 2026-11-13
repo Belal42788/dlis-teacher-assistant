@@ -127,6 +127,8 @@ class SourceMixin:
         return data if isinstance(data, list) else []
 
     def _src(self, sid: str) -> dict:
+        if sid.startswith(("file:", "link:")):   # a file or link of My files: it is read the first time it is used
+            return self._materialize_source(sid)
         for s in self._srcs():
             if s["id"] == sid:
                 return s
@@ -178,6 +180,16 @@ class SourceMixin:
     def list_sources(self) -> dict:
         self._sync_made_decks()
         return {"sources": sorted((self._src_brief(s) for s in self._srcs()), key=lambda x: x["added"], reverse=True)}
+
+    def list_pickable_sources(self) -> dict:
+        """What the source selector offers: the sources already read, and every other file or link of My files (read when chosen)."""
+        real = self.list_sources()["sources"]
+        return {"sources": real + self.library_sources()}
+
+    def use_source(self, b: dict) -> dict:
+        """Choosing a file or link of My files in a selector: it is read now, and from then on it is an ordinary source."""
+        sid = str(b.get("id") or "")
+        return self._src_brief(self._src(sid))
 
     def get_source(self, sid: str) -> dict:
         s = self._src(sid)
@@ -491,7 +503,9 @@ class SourceMixin:
             return ""
         try:
             text = self._src_text(self._src(sid), pages=pages)
-        except AppError:
+        except AppError as e:
+            if e.code != "source_missing":   # a picture-only file, an unreadable page: say so, never answer without the source
+                raise
             return ""
         rule = (" After every fact you take from the material, write its slide number in square brackets exactly like [Slide 3] (or [Slide 3, 4]). "
                 "If the material does not answer the question, say so plainly and do not guess.") if cite else ""
