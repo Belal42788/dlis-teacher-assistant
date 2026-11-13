@@ -22,7 +22,7 @@ _TYPES = {".js": "application/javascript", ".mjs": "application/javascript", ".c
           ".ico": "image/x-icon", ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf", ".otf": "font/otf"}
 
 
-_SLOW = re.compile(r"/api/ai/(chat|test|models|lesson|quiz|trimester|revision)|/api/tools/run|/api/grades/upload|/api/slides/(source|plan|image|image-test)|/api/cloud/(login|test|backup)|/api/announcements|/api/publications|/api/library/|/api/codes/prepare|/api/inspection-pack|/api/parent-week/|/api/status/|/api/sources/(import|url|[0-9a-f]+/(read|digest))")
+_SLOW = re.compile(r"/api/ai/(chat|test|models|lesson|quiz|trimester|revision)|/api/tools/run|/api/grades/upload|/api/slides/(source|plan|image|image-test)|/api/sources/use|/api/cloud/(login|test|backup)|/api/announcements|/api/publications|/api/library/|/api/codes/prepare|/api/inspection-pack|/api/parent-week/|/api/status/|/api/sources/(import|url|[0-9a-f]+/(read|digest))")
 
 
 class AppServer(ThreadingHTTPServer):
@@ -184,6 +184,8 @@ class Handler(BaseHTTPRequestHandler):
             ("POST", r"/api/data-folder", lambda m, b: svc.set_data_folder(b.get("path", ""))),
             ("GET", r"/api/reminders", lambda m, b: svc.get_reminders()),
             ("GET", r"/api/sources", lambda m, b: svc.list_sources()),
+            ("GET", r"/api/sources/pick", lambda m, b: svc.list_pickable_sources()),
+            ("POST", r"/api/sources/use", lambda m, b: svc.use_source(b)),
             ("POST", r"/api/sources/import", lambda m, b: svc.import_source(b)),
             ("POST", r"/api/sources/url", lambda m, b: svc.import_url(b)),
             ("GET", r"/api/sources/([0-9a-f]{10})", lambda m, b: svc.get_source(m.group(1))),
@@ -215,6 +217,11 @@ class Handler(BaseHTTPRequestHandler):
             ("PUT", r"/api/scheme", lambda m, b: svc.scheme_put(b)),
             ("GET", r"/api/library", lambda m, b: svc.library_list()),
             ("POST", r"/api/library/share", lambda m, b: svc.library_share(b)),
+            ("POST", r"/api/library/visible", lambda m, b: svc.library_visible(b)),
+            ("POST", r"/api/library/upload", lambda m, b: svc.library_upload(b)),
+            ("POST", r"/api/library/message", lambda m, b: svc.library_message_add(b)),
+            ("POST", r"/api/library/message/set", lambda m, b: svc.library_message_set(b)),
+            ("POST", r"/api/library/message/delete", lambda m, b: svc.library_message_delete(b)),
             ("POST", r"/api/library/link", lambda m, b: svc.library_link_add(b)),
             ("POST", r"/api/library/link/delete", lambda m, b: svc.library_link_delete(b)),
             ("POST", r"/api/library/place", lambda m, b: svc.library_place(b)),

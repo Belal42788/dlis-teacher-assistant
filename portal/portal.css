@@ -21,3 +21,6 @@ table { width: 100%; border-collapse: collapse; } td, th { padding: .45rem .5rem
 .pic { max-width: 100%; border-radius: 10px; margin: .4rem 0; }
 .chip { display: inline-block; padding: .05rem .6rem; border-radius: 99px; background: #e1effc; font-size: .78rem; }
 a { color: var(--blue); }
+
+.card.msg { border-inline-start: 5px solid #3f8f52; background: #f3f8f4; }
+.msg-text { font-size: 1.08rem; line-height: 1.7; font-weight: 600; white-space: pre-wrap; margin: .4rem 0 0; }

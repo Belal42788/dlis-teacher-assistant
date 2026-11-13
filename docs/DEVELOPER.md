@@ -50,11 +50,11 @@ Feature files (each is a mixin of `Service`):
 | `InsightsMixin` | `app/server/grades_service.py` | 264 |
 | `GradesMixin` | `app/server/grades_service.py` | 264 |
 | `ToolsMixin` | `app/server/tools_service.py` | 65 |
-| `SchemeMixin` | `app/server/scheme_service.py` | 150 |
-| `LibraryMixin` | `app/server/library_service.py` | 310 |
+| `SchemeMixin` | `app/server/scheme_service.py` | 152 |
+| `LibraryMixin` | `app/server/library_service.py` | 592 |
 | `ParentWeekMixin` | `app/server/parent_week_service.py` | 73 |
 | `CoverageMixin` | `app/server/coverage_service.py` | 117 |
-| `CloudMixin` | `app/server/cloud_service.py` | 420 |
+| `CloudMixin` | `app/server/cloud_service.py` | 437 |
 | `DocsMixin` | `app/server/docs_service.py` | 418 |
 | `AiMixin` | `app/server/ai_service.py` | 377 |
 | `AiChatMixin` | `app/server/ai_chat_service.py` | 101 |
@@ -65,7 +65,7 @@ Feature files (each is a mixin of `Service`):
 | `SlidesMixin` | `app/server/slides_service.py` | 373 |
 | `RevisionMixin` | `app/server/revision_service.py` | 104 |
 | `MapMixin` | `app/server/map_service.py` | 97 |
-| `SourceMixin` | `app/server/source_service.py` | 499 |
+| `SourceMixin` | `app/server/source_service.py` | 513 |
 | `WeekMixin` | `app/server/week_service.py` | 62 |
 | `WeeklyMixin` | `app/server/weekly_service.py` | 70 |
 <!-- /AUTO:features -->
@@ -135,6 +135,8 @@ The server listens on 127.0.0.1 only and every request carries the secret token 
 | POST | `/api/data-folder` | `set_data_folder` |
 | GET | `/api/reminders` | `get_reminders` |
 | GET | `/api/sources` | `list_sources` |
+| GET | `/api/sources/pick` | `list_pickable_sources` |
+| POST | `/api/sources/use` | `use_source` |
 | POST | `/api/sources/import` | `import_source` |
 | POST | `/api/sources/url` | `import_url` |
 | GET | `/api/sources/([0-9a-f]{10})` | `get_source` |
@@ -166,6 +168,11 @@ The server listens on 127.0.0.1 only and every request carries the secret token 
 | PUT | `/api/scheme` | `scheme_put` |
 | GET | `/api/library` | `library_list` |
 | POST | `/api/library/share` | `library_share` |
+| POST | `/api/library/visible` | `library_visible` |
+| POST | `/api/library/upload` | `library_upload` |
+| POST | `/api/library/message` | `library_message_add` |
+| POST | `/api/library/message/set` | `library_message_set` |
+| POST | `/api/library/message/delete` | `library_message_delete` |
 | POST | `/api/library/link` | `library_link_add` |
 | POST | `/api/library/link/delete` | `library_link_delete` |
 | POST | `/api/library/place` | `library_place` |

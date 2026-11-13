@@ -183,6 +183,112 @@ class TestDocsAndTasks(unittest.TestCase):
         old = places()
         self.assertEqual((old[0]["shared"]["class_id"], old[0]["w"]), ("g4-a", None))
 
+    def _fake_cloud(self):
+        """A server that keeps its items in a list; one add can serve several classes (class_ids), as the real one does."""
+        pubs = []
+
+        def add(b):
+            for cid in (b.get("class_ids") or [b["class_id"]]):
+                pubs.append({"id": f"{len(pubs) + 1:036d}", "class_id": cid, **{k: v for k, v in b.items() if k not in ("class_id", "class_ids")}})
+        self.svc.list_publications = lambda: {"items": list(pubs)}
+        self.svc.add_publication = add
+        self.svc.set_publication = lambda pid, b: next(x for x in pubs if x["id"] == pid).update(b)
+        self.svc.delete_publication = lambda pid: pubs.remove(next(x for x in pubs if x["id"] == pid))
+        return pubs
+
+    def _item(self, rel):
+        return next(x for x in self.svc.library_list()["items"] if x["rel"] == rel)
+
+    def test_files_sit_in_grades_and_show_to_every_class_of_the_grade(self):
+        self.svc.build_structure({"g4": ["A", "B"], "g5": ["A"]})
+        pubs = self._fake_cloud()
+        q = self.svc.make_quiz({"grade_id": "g4", "trimester": 0, "week": 8, "number": 1, "text": "1. Q?\na) x\nb) y\nAnswer: a"})
+        rel = q["rel"].replace("\\", "/")
+        p = self._item(rel)["places"][0]
+        self.assertEqual((p["g"], p["t"], p["w"]), ("g4", 0, 8))   # the folder is named after the grade
+        r = self.svc.library_visible({"rel": rel, "pid": p["id"], "on": True, "visible_from": "2026-11-05"})
+        self.assertEqual(sorted(x["class_id"] for x in pubs), ["g4-a", "g4-b"])
+        self.assertTrue(all(x["approved"] and x["week"] == 8 and x["kind"] == "quiz" for x in pubs))
+        sh = next(i for i in r["items"] if i["rel"] == rel)["places"][0]["shared"]
+        self.assertEqual((sh["public"], sorted(sh["ids"])), (True, ["g4-a", "g4-b"]))
+        pid = next(i for i in r["items"] if i["rel"] == rel)["places"][0]["id"]
+        self.svc.library_place({"rel": rel, "pid": pid, "note": "Chapter 1"})          # every class sees the new note
+        self.assertEqual({x["note"] for x in pubs}, {"Chapter 1"})
+        moved = self.svc.library_place({"rel": rel, "pid": pid, "g": "g5"})            # another grade: other classes, so it is taken back
+        self.assertEqual((pubs, moved["unshared"]), ([], True))
+        self.svc.library_visible({"rel": rel, "pid": pid, "on": True, "visible_from": "2026-11-05"})
+        self.assertEqual([x["class_id"] for x in pubs], ["g5-a"])
+        self.svc.library_visible({"rel": rel, "pid": pid, "on": False})
+        self.assertEqual(pubs, [])
+        self.svc.library_place({"rel": rel, "pid": pid, "g": None})                    # no grade: nobody to show it to
+        with self.assertRaises(AppError) as cm:
+            self.svc.library_visible({"rel": rel, "pid": pid, "on": True, "visible_from": "2026-11-05"})
+        self.assertEqual(cm.exception.code, "no_grade")
+        self.svc.library_place({"rel": rel, "pid": pid, "g": "*"})                     # a book for every grade
+        self.svc.library_visible({"rel": rel, "pid": pid, "on": True, "visible_from": "2026-11-05"})
+        self.assertEqual(sorted(x["class_id"] for x in pubs), sorted(r["id"] for r in self.svc.get_structure()["rooms"]))   # every class of the school
+        with self.assertRaises(AppError):
+            self.svc.library_place({"rel": rel, "pid": pid, "g": "g99"})
+
+    def test_messages_for_students(self):
+        self.svc.build_structure({"g4": ["A", "B"]})
+        pubs = self._fake_cloud()
+        with self.assertRaises(AppError):
+            self.svc.library_message_add({"text": "   "})
+        rel = self.svc.library_message_add({"text": "  Bring   the book\nand a pen ", "g": "g4", "t": 0, "w": 9})["added"]
+        it = self._item(rel)
+        self.assertEqual((it["kind"], it["text"], it["name"]), ("message", "Bring the book\nand a pen", "Bring the book and a pen"))
+        p = it["places"][0]
+        self.assertEqual((p["g"], p["t"], p["w"]), ("g4", 0, 9))
+        self.svc.library_visible({"rel": rel, "pid": p["id"], "on": True})
+        self.assertEqual(sorted((x["class_id"], x["kind"], x["body"], x["week"]) for x in pubs), [("g4-a", "message", "Bring the book\nand a pen", 9), ("g4-b", "message", "Bring the book\nand a pen", 9)])
+        self.svc.library_message_set({"rel": rel, "text": "Quiz on Sunday"})   # the students see the new words
+        self.assertEqual({x["body"] for x in pubs}, {"Quiz on Sunday"})
+        with self.assertRaises(AppError):
+            self.svc.library_message_set({"rel": "../x", "text": "no"})
+        self.svc.library_message_delete({"rel": rel})
+        self.assertEqual(pubs, [])
+        self.assertNotIn(rel, [x["rel"] for x in self.svc.library_list()["items"]])
+
+    def test_upload_and_files_as_ai_sources(self):
+        import base64
+        from docx import Document
+        self.svc.build_structure({"g4": ["A"], "g5": ["A"]})
+        with self.assertRaises(AppError):
+            self.svc.library_upload({"filename": "virus.exe", "data_b64": base64.b64encode(b"x").decode()})
+        d = Document(); d.add_paragraph("Photosynthesis makes food from light."); import io; buf = io.BytesIO(); d.save(buf)
+        r = self.svc.library_upload({"filename": "Plants worksheet.docx", "data_b64": base64.b64encode(buf.getvalue()).decode(), "g": "g5", "t": 0, "w": 2})
+        rel = r["added"]
+        self.assertTrue(rel.startswith("Uploads/Grade 5/"), rel)
+        p = self._item(rel)["places"][0]
+        self.assertEqual((p["g"], p["t"], p["w"]), ("g5", 0, 2))
+        again = self.svc.library_upload({"filename": "Plants worksheet.docx", "data_b64": base64.b64encode(buf.getvalue()).decode()})["added"]
+        self.assertNotEqual(again, rel)   # the same name is kept as a second file, nothing is overwritten
+        # a file with no week is simply put in the week the teacher picks
+        self.svc.library_place_add({"rel": again, "g": "g4", "t": 0, "w": 3})
+        self.assertEqual([(x["g"], x["t"], x["w"]) for x in self._item(again)["places"]], [("g4", 0, 3)])
+        # an uploaded file is read for the AI at once; a file that only sits in the folder is read the first time it is chosen
+        real = [x for x in self.svc.list_sources()["sources"] if x["rel"] == rel]
+        self.assertEqual(len(real), 1)
+        self.assertIn(real[0]["id"], {x["id"] for x in self.svc.list_pickable_sources()["sources"]})
+        plan = self.svc.make_lesson_plan({"grade_id": "g4", "trimester": 0, "week": 8, "content": {"topic": "Hardware"}})
+        ids = {x["id"] for x in self.svc.list_pickable_sources()["sources"]}
+        self.assertNotIn("file:" + plan["rel"].replace("\\", "/"), ids)   # plans hold the teacher's own work
+        (self.svc._need_store().root / "Uploads").mkdir(exist_ok=True)
+        (self.svc._need_store().root / "Uploads" / "Hand placed.docx").write_bytes(buf.getvalue())
+        hand = "Uploads/Hand placed.docx"
+        self.svc.library_place_add({"rel": hand, "g": "g4", "t": 0, "w": 4})
+        ids = {x["id"] for x in self.svc.list_pickable_sources()["sources"]}
+        self.assertIn("file:" + hand, ids)
+        n0 = len(self.svc.list_sources()["sources"])
+        self.assertIn("Photosynthesis", self.svc.source_block("file:" + hand))
+        got = [x for x in self.svc.list_sources()["sources"] if x["rel"] == hand]
+        self.assertEqual((len(got), len(self.svc.list_sources()["sources"])), (1, n0 + 1))
+        self.assertNotIn("file:" + hand, {x["id"] for x in self.svc.list_pickable_sources()["sources"]})   # now an ordinary source
+        self.assertEqual(self.svc.use_source({"id": "file:" + hand})["id"], got[0]["id"])
+        with self.assertRaises(AppError):
+            self.svc.use_source({"id": "file:" + plan["rel"].replace("\\", "/")})
+
     def test_links_are_files_too(self):
         pubs, asked = [], []
         self.svc.list_publications = lambda: {"items": list(pubs)}

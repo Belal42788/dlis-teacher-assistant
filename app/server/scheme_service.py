@@ -26,7 +26,7 @@ class SchemeMixin:
                           "topic": titles.get(n, ""), "pages": extra.get(n, {}).get("pages", ""), "source_id": extra.get(n, {}).get("source_id", ""),
                           "unit": extra.get(n, {}).get("unit", ""), "objectives": extra.get(n, {}).get("objectives", ""),
                           "has_plan": f"{grade.id}|{tri}|{w['number']}" in data["lesson"], "taught": taught})
-        return {"weeks": weeks, "sources": [{"id": s["id"], "title": s.get("name") or s["id"]} for s in self.list_sources().get("sources", [])]}
+        return {"weeks": weeks, "sources": [{"id": s["id"], "title": s.get("name") or s["id"]} for s in self.list_pickable_sources().get("sources", [])]}
 
     def scheme_put(self, b: dict) -> dict:
         grade = self._grade(str(b.get("grade_id", "")))
@@ -34,7 +34,7 @@ class SchemeMixin:
         valid = {w["number"] for w in self._calendar_service().trimester_weeks(tri)}
         if not valid:
             raise AppError("week_not_found", "Set the trimester dates in the Calendar first.", status=409)
-        known = {s["id"] for s in self.list_sources().get("sources", [])}
+        known = {s["id"] for s in self.list_pickable_sources().get("sources", [])}
         titles, extra = {}, {}
         for r in (b.get("weeks") or [])[:60]:
             n = int(r.get("week", 0))
@@ -43,6 +43,8 @@ class SchemeMixin:
             topic = " ".join(str(r.get("topic", "")).split())[:160]
             pages = " ".join(str(r.get("pages", "")).split())[:60]
             sid = str(r.get("source_id", "")) if str(r.get("source_id", "")) in known else ""
+            if sid.startswith(("file:", "link:")):   # a file of My files: it is read now and kept as a real source
+                sid = self._materialize_source(sid)["id"]
             if topic:
                 titles[str(n)] = topic
             unit = " ".join(str(r.get("unit", "")).split())[:80]

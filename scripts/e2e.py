@@ -276,8 +276,11 @@ try:
         # my slides: import an image-only PDF, the app reads it with the (fake) vision AI, then the revision page can use it
         from PIL import Image as _I
         _I.new("RGB", (800, 450), (240, 240, 250)).save(str(Path(tempfile.gettempdir()) / "nlm.pdf"), "PDF")
-        page.click(".nav a[data-page=library]"); page.wait_for_selector("details.add-src")
-        page.set_input_files("input[type=file]", str(Path(tempfile.gettempdir()) / "nlm.pdf")); page.wait_for_selector(".file-row:has-text('nlm'):has-text('Input devices')", timeout=20000); shot("17m_sources")
+        page.click(".nav a[data-page=library]"); page.wait_for_selector(".fx-lay")
+        page.click(".fx-head .btn.primary"); page.click(".fx-tile >> nth=0")   # add → file → bring a new one: the app imports it and reads its pictures by itself
+        page.set_input_files(".modal input[type=file]", str(Path(tempfile.gettempdir()) / "nlm.pdf")); page.wait_for_selector(".fx-box:has-text('nlm')", timeout=20000)
+        page.wait_for_function("!document.querySelector('.fx-box .btn.primary')", timeout=20000)
+        shot("17m_sources")
         page.click(".nav a[data-page=docs]"); wait_docs(page); pick_kind(page, "rv"); page.wait_for_selector(".src-pick select >> visible=true")
         page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", label=re.compile(r'nlm')) if False else page.select_option(".panel:has(h3:text('ملف المراجعة')) .src-pick select", value=page.eval_on_selector(".panel:has(h3:text('ملف المراجعة')) .src-pick select", "s => [...s.options].find(o => o.textContent.includes('nlm')).value")); page.click("text=املا من سلايداتي")
         page.wait_for_function("[...document.querySelectorAll('textarea')].some(t => t.value === 'Mouse: points and clicks')")
@@ -360,10 +363,12 @@ try:
             for tab_ in ("wk", "lp", "quiz", "rv", "sl", "gs", "ct"):
                 pick_kind(page, tab_); snap(f"files_{tab_}")
             go("library"); snap("library_files")
-            assert page.locator(".wk-group").count() >= 1 and page.locator(".file-note").count() >= 1   # files sit in weeks, each with a note for the students
-            page.click("text=الأسابيع >> nth=0"); page.wait_for_selector(".modal select"); page.click(".modal header .btn.icon")
-            page.click("details.add-src > summary"); page.fill(".add-src input[type=url]", "https://www.youtube.com/playlist?list=PL1"); page.fill(".add-src input[maxlength='120']", "بلاي ليست")
-            page.click("text=ضيف الرابط"); page.wait_for_selector(".file-row:has-text('بلاي ليست') .file-note")   # a link is a file too: note, week, for-students tick
+            page.wait_for_selector(".fx-lay .fx-g"); page.click(".fx-g >> nth=0"); page.click(".fx-w >> nth=0")
+            page.click(".fx-head .btn.primary"); page.wait_for_selector(".fx-tile >> nth=2"); snap("library_add"); page.click(".fx-tile >> nth=1")   # add → link: a link is a file too, with a note and a for-students switch
+            page.fill(".modal input[type=url]", "https://www.youtube.com/playlist?list=PL1"); page.fill(".modal input[maxlength='120']", "بلاي ليست"); page.click(".modal footer .btn.primary")
+            page.wait_for_selector(".fx-link:has-text('بلاي ليست') .fx-note")
+            page.click(".fx-head .btn.primary"); page.click(".fx-tile >> nth=2"); page.fill(".modal textarea", "الكويز الأسبوع الجاي"); page.click(".modal footer .btn.primary")   # add → message
+            page.wait_for_selector(".fx-msg:has-text('الكويز الأسبوع الجاي')")
             go("scheme"); page.wait_for_selector(".sw-card"); snap("scheme")
             go("library"); page.wait_for_selector(".banner.info"); snap("library")
             go("docs"); page.click("a.seg-btn[href='#/tools']"); page.wait_for_selector(".tl-form"); snap("tools")
@@ -402,6 +407,7 @@ try:
             assert sel.evaluate("e => e.matches(':open')"), "the list should be open"
             page.keyboard.press("ArrowDown"); page.keyboard.press("Enter"); page.wait_for_timeout(200)
             assert sel.evaluate("e => e.value") != before or sel.evaluate("e => e.options.length") == 1
+            sel.select_option(before)   # leave the page as it was
         else:
             page.keyboard.press("Escape")
         # reminders: the test button shows a pop-up
