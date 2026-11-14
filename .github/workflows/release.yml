@@ -54,7 +54,7 @@ jobs:
           NOTES: ${{ github.event.release.body }}
         run: |
           printf '%s' "$NOTES" > notes.txt
-          python scripts/write_latest.py "$TAG" "$RELEASE_URL" --notes-file notes.txt
+          python scripts/write_latest.py "$TAG" "$RELEASE_URL" --notes-file notes.txt --repo "$REPO" --windows-file dist/DLIS-Windows-Setup/DLIS_Teacher_Assistant_Setup.exe --mac-file dist/DLIS-Mac/DLIS_Teacher_Assistant.dmg
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add portal/latest.json

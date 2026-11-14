@@ -38,7 +38,7 @@ async function send(method, path, body) {
 // Reads are kept for 30 seconds and thrown away the moment anything is saved; the same read asked for twice at once is
 // sent once. Only things that change by themselves (alerts, running jobs, the file browser, one chat while it is answering)
 // are never kept. A page's reads are also remembered, so pointing at its tab can fetch them before the click happens.
-const NEVER = /^\/api\/(ping|bootstrap|reminders|background|alarms|status\/|fs\/|chats\/|sources\/)/;
+const NEVER = /^\/api\/(ping|bootstrap|reminders|background|alarms|status\/|fs\/|chats\/|sources\/|update\/progress)/;
 const KEEP_MS = 30000;
 const kept = new Map(), flying = new Map();
 let gen = 0;

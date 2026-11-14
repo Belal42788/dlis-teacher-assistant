@@ -103,6 +103,18 @@ class TestLatestFile(unittest.TestCase):
         self.assertTrue(is_newer(out["version"], "1.0.0"))
         self.assertFalse(is_newer(out["version"], "1.2.3"))
 
+    def test_installer_files_are_listed_with_their_sha256_so_the_app_can_check_the_download(self):
+        from app.server.update_service import clean_asset
+        with tempfile.TemporaryDirectory() as d:
+            exe = Path(d) / "DLIS_Teacher_Assistant_Setup.exe"; exe.write_bytes(b"installer")
+            out = write_latest.write("v1.2.3", "https://github.com/a/b/releases/tag/v1.2.3", "", Path(d), repo="a/b", windows=exe, mac=Path(d) / "missing.dmg")
+        self.assertEqual(out["windows"]["url"], "https://github.com/a/b/releases/download/v1.2.3/DLIS_Teacher_Assistant_Setup.exe")
+        self.assertEqual(out["windows"]["size"], 9)
+        self.assertEqual(clean_asset(out["windows"]), out["windows"])   # exactly what the app accepts
+        self.assertNotIn("mac", out)
+        with self.assertRaises(ValueError):
+            write_latest.write("v1.2.3", "https://x", "", Path(tempfile.gettempdir()), repo="not a repo")
+
     def test_notes_are_short_and_bad_input_is_refused(self):
         self.assertLessEqual(len(write_latest.clean_notes("word " * 200)), 300)
         with self.assertRaises(ValueError):
