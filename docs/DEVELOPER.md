@@ -42,6 +42,7 @@ Feature files (each is a mixin of `Service`):
 <!-- AUTO:features -->
 | Mixin | File | Lines |
 |---|---|---|
+| `BellMixin` | `app/server/bell_service.py` | 97 |
 | `BankMixin` | `app/server/bank_service.py` | 156 |
 | `HealthMixin` | `app/server/health_service.py` | 61 |
 | `SeatingMixin` | `app/server/seating_service.py` | 56 |
@@ -79,7 +80,7 @@ Tabs inside a menu page: `reminders` (tab of `tasks`), `tools` (tab of `docs`), 
 <!-- /AUTO:pages -->
 
 Files in the teacher's data folder: <!-- AUTO:datafiles -->
-`ai_prompts.json`, `behavior.json`, `calendar.json`, `chats.json`, `cloud.json`, `cloud_students.json`, `config.json`, `data_version.json`, `grades.json`, `lesson_log.json`, `library.json`, `map.json`, `parent_week.json`, `plans.json`, `question_bank.json`, `reminders.json`, `schedule.json`, `seating.json`, `sources.json`, `structure.json`, `tasks.json`, `weekly.json` (plus `data_version.json`, written by the store).
+`ai_prompts.json`, `behavior.json`, `bell_schedule.json`, `calendar.json`, `chats.json`, `cloud.json`, `cloud_students.json`, `config.json`, `data_version.json`, `grades.json`, `lesson_log.json`, `library.json`, `map.json`, `parent_week.json`, `plans.json`, `question_bank.json`, `reminders.json`, `schedule.json`, `seating.json`, `sources.json`, `structure.json`, `tasks.json`, `weekly.json` (plus `data_version.json`, written by the store).
 <!-- /AUTO:datafiles -->
 
 ## Keeping the code healthy
@@ -229,6 +230,9 @@ The server listens on 127.0.0.1 only and every request carries the secret token 
 | POST | `/api/students/parse` | `parse_students` |
 | GET | `/api/timetable` | `get_timetable` |
 | PUT | `/api/timetable` | `put_timetable` |
+| GET | `/api/bell` | `get_bell` |
+| PUT | `/api/bell` | `put_bell` |
+| POST | `/api/bell/reset` | `reset_bell` |
 | GET | `/api/calendar` | `get_calendar` |
 | PUT | `/api/calendar` | `put_calendar` |
 | POST | `/api/today/change` | `change_today` |

@@ -1135,3 +1135,15 @@ table.grid td select.filled { --tone: var(--blue); background-color: #fff; borde
 .cr-work { display: grid; gap: 1rem; }
 .opts.kinds { grid-template-columns: repeat(4, 1fr); }
 @media (max-width: 900px) { .opts.kinds { grid-template-columns: repeat(2, 1fr); } }
+
+/* ---------- Timetable: the shape of the school day ---------- */
+.bl { display: grid; gap: 1rem; }
+.bl h4 { margin: 0 0 .3rem; }
+.bl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .8rem 1rem; align-items: start; }
+.bl-grid .row { flex-wrap: nowrap; gap: .4rem; }
+.bl-grid .row select { min-width: 0; flex: 1; }
+.bl-grid .field input[type=number] { width: 5em; }
+.bl-table { display: grid; gap: .4rem; }
+.bl-row { display: grid; grid-template-columns: 7rem auto auto auto 1fr auto; gap: .5rem; align-items: center; padding: .3rem .5rem; border-radius: 10px; background: var(--wash, #f1f6fa); }
+.bl-row b { font-weight: 700; }
+@media (max-width: 760px) { .bl-row { grid-template-columns: 1fr auto; } }
