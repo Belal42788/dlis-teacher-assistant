@@ -4,6 +4,7 @@ import { t } from "../i18n.js";
 import { announceCard } from "../components/announce_list.js";
 import { todayIso } from "../labels.js";
 import { dateField } from "../components/date3.js";
+import { showProblems } from "../components/validate.js";
 
 // Announcements from the administration (principal, HR). Everyone signed in to the school server reads them; only admins write.
 export async function renderAnnouncements(root) {
@@ -15,7 +16,7 @@ export async function renderAnnouncements(root) {
       kids.push(h("div", { class: "panel" }, h("p", {}, d.problem === "cloud_offline" ? t("an_offline") : t("an_not_connected")), h("a", { class: "btn", href: "#/settings" }, icon("settings"), t("nav_settings"))));
     } else {
       if (d.role === "admin") {
-        const title = h("input", { type: "text", maxlength: 120, placeholder: t("an_title") });
+        const title = h("input", { type: "text", maxlength: 120, placeholder: t("an_title"), required: true, "data-label": t("an_title") });
         const body = h("textarea", { rows: 4, maxlength: 2000, placeholder: t("an_body") });
         const aud = h("select", {}, ["staff", "parents", "all"].map((a) => h("option", { value: a }, t(`an_aud_${a}`))));
         const from = dateField({ value: todayIso(), label: t("an_from") }), to = dateField({ label: t("an_to") });
@@ -33,6 +34,7 @@ export async function renderAnnouncements(root) {
           editing && editing.image_url ? h("label", { class: "row" }, drop, t("an_drop_pic")) : null,
           h("div", { class: "row" },
             h("button", { class: "btn primary", onClick: () => guarded(async () => {
+              if (from.value && to.value && to.value < from.value) { showProblems(document.getElementById("an-form"), [{ el: to, label: t("an_to"), reason: t("v_date_order") }]); return; }
               const f = pic.files[0], img = f ? { data_b64: await readFileB64(f) } : undefined;
               const data = { title: title.value, body: body.value, audience: aud.value, starts_on: from.value, ends_on: to.value, image: img };
               if (editing) await api.post(`/api/announcements/${editing.id}/update`, { ...data, remove_image: drop.checked });

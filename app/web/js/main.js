@@ -3,6 +3,7 @@ import { api, guarded, inPage, readsFor, warm } from "./api.js";
 import { t, setLang, hasKey } from "./i18n.js";
 import { applyFontSize, applyDensity } from "./fontsize.js";
 import { state } from "./state.js";
+import { installValidation } from "./components/validate.js";
 import { startWizard } from "./wizard.js";
 import { renderToday } from "./pages/today.js";
 import { renderClasses } from "./pages/classes.js";
@@ -32,6 +33,8 @@ import { renderChat } from "./pages/chat.js";
 import { renderHelp } from "./pages/help.js";
 import { renderReminders } from "./pages/reminders.js";
 import { startReminders } from "./reminders.js";
+
+installValidation();   // every action button first checks the fields around it
 
 const root = document.getElementById("app");
 

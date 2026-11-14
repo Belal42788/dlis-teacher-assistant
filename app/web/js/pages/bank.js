@@ -11,7 +11,7 @@ const EXAMPLE = "1. What is the CPU?\na) The brain of the computer\nb) A screen\
 
 export async function renderBank(root) {
   const { grades } = await api.get("/api/structure");
-  const gradeSel = (value) => h("select", {}, grades.map((g) => h("option", { value: g.id, selected: g.id === value }, gradeName(g))));
+  const gradeSel = (value) => h("select", { required: true, "data-label": t("chat_grade") }, grades.map((g) => h("option", { value: g.id, selected: g.id === value }, gradeName(g))));
   const levelSel = (value = "medium") => h("select", {}, LEVELS.map((l) => h("option", { value: l, selected: l === value }, t(`ai_${l}`))));
   const topicBox = (value = "") => h("input", { type: "text", value, placeholder: t("bk_topic"), maxlength: 80, list: "bk-topics" });
   const topics = h("datalist", { id: "bk-topics" });
@@ -51,7 +51,7 @@ export async function renderBank(root) {
   }
 
   function edit(it) {
-    const text = h("textarea", { rows: 7, dir: "ltr" }); text.value = it.text.replace(/^1\.\s*/, "1. ");
+    const text = h("textarea", { rows: 7, dir: "ltr", required: true, "data-label": t("bk_add") }); text.value = it.text.replace(/^1\.\s*/, "1. ");
     const topic = topicBox(it.topic); const level = levelSel(it.level);
     modal({ title: t("edit"), wide: true, body: h("div", {}, text, h("div", { class: "row bk-bar", style: { marginTop: ".6rem" } }, topic, level)),
       actions: [{ label: t("save"), kind: "primary", onClick: async () => { const r = await guarded(() => api.put(`/api/bank/${it.id}`, { text: text.value, topic: topic.value, level: level.value })); if (r) { await load(); return true; } return false; } }] });
@@ -59,7 +59,7 @@ export async function renderBank(root) {
 
   // ---- add
   const aGrade = gradeSel(grades[0]?.id); const aTopic = topicBox(); const aLevel = levelSel();
-  const aText = h("textarea", { rows: 8, dir: "ltr", placeholder: EXAMPLE });
+  const aText = h("textarea", { rows: 8, dir: "ltr", placeholder: EXAMPLE, required: true, "data-label": t("bk_add") });
   const addBtn = h("button", { class: "btn primary", onClick: async () => {
     addBtn.disabled = true;
     try {

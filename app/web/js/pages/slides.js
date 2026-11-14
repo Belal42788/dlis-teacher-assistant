@@ -30,7 +30,7 @@ export async function renderSlides(root, { embedded = false } = {}) {
     memo.week = weekSel.value;
   }
   const srcSl = await sourcePicker((id, x) => { if (id && x && x.topic && !topic.value.trim()) { topic.value = memo.topic = x.topic; typed = true; } });
-  const topic = h("input", { type: "text", placeholder: t("sl_topic_ph"), value: memo.topic, onInput: (e) => { memo.topic = e.target.value; typed = true; memo.objectives = ""; } });
+  const topic = h("input", { type: "text", required: true, "data-label": t("d_topic"), placeholder: t("sl_topic_ph"), value: memo.topic, onInput: (e) => { memo.topic = e.target.value; typed = true; memo.objectives = ""; } });
   const source = h("div", { class: "muted small" });
   function applyTopic() {
     const w = topics.find((x) => String(x.week) === weekSel.value);
@@ -152,7 +152,7 @@ export async function renderSlides(root, { embedded = false } = {}) {
   }
 
   fillWeeks(false);
-  root.replaceChildren(h("div", { class: embedded ? "" : "page" },
+  root.replaceChildren(h("div", { class: embedded ? "" : "page", "data-form": "" },
     h("div", { class: "page-head", hidden: embedded || null }, h("div", {}, h("h1", {}, t("nav_slides")), h("p", {}, t("sl_lead")))),
     h("div", { class: "panel" }, h("h3", {}, t("sl_step1")),
       h("div", { class: "pick-row" },

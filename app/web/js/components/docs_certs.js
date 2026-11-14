@@ -1,3 +1,4 @@
+import { showProblems } from "./validate.js";
 import { h, icon } from "../dom.js";
 import { api } from "../api.js";
 import { t, getLang } from "../i18n.js";
@@ -9,8 +10,8 @@ export function certsPanel(ctx) {
   const ctKind = h("select", {}, h("option", { value: "certificate" }, t("ct_k_cert")), h("option", { value: "card" }, t("ct_k_card")));
   const ctLang = h("select", {}, h("option", { value: "ar" }, "العربية"), h("option", { value: "en" }, "English"));
   ctLang.value = getLang();
-  const ctTitle = h("input", { type: "text", placeholder: t("ct_title_ph") });
-  const ctText = h("input", { type: "text", placeholder: t("ct_text_ph"), style: { minWidth: "18rem" } });
+  const ctTitle = h("input", { type: "text", placeholder: t("ct_title_ph"), required: true, "data-label": t("ct_title_ph") });
+  const ctText = h("input", { type: "text", placeholder: t("ct_text_ph"), required: true, "data-label": t("ct_text_ph"), style: { minWidth: "18rem" } });
   const ctCustom = h("div", { class: "row", hidden: true }, ctTitle, ctText);
   ctOcc.addEventListener("change", () => { ctCustom.hidden = ctOcc.value !== "custom"; });
   const ctNames = h("div", { class: "gs-absent", hidden: true, "data-nodraft": "1" });
@@ -19,6 +20,7 @@ export function certsPanel(ctx) {
   const ctExtra = h("textarea", { rows: 3, placeholder: t("ct_extra_ph") });
   const ctBtn = h("button", { class: "btn primary", onClick: () => run(ctBtn, async () => {
     const picked = [...ctNames.querySelectorAll("input:checked")].map((x) => x.value);
+    if (!ctAll.checked && !picked.length && !ctExtra.value.trim()) { showProblems(panel, [{ el: ctExtra, label: t("ct_extra"), reason: t("v_names") }]); return; }
     const classPart = ctAll.checked ? { room_id: sel.room } : picked.length ? { room_id: sel.room, students: picked } : { room_id: "" };
     const r = await api.post("/api/docs/certificates", { ...classPart, occasion: ctOcc.value, kind: ctKind.value, lang: ctLang.value,
       title: ctTitle.value.trim(), text: ctText.value.trim(), extra_names: ctExtra.value, date: new Date().toISOString().slice(0, 10) });

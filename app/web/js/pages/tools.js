@@ -45,6 +45,7 @@ export async function renderTools(root) {
       else if (f.type === "select") el = h("select", {}, f.options.map((o) => h("option", { value: o }, o)));
       else el = h("input", { type: f.type === "number" ? "number" : "text", placeholder: f.placeholder || "", min: f.type === "number" ? 1 : null });
       el.value = saved[f.key] !== undefined ? saved[f.key] : (f.default || "");
+      if (f.required) { el.required = true; el.setAttribute("data-label", L(f.label)); }
       inputs[f.key] = el;
       return h("label", { class: "field" }, h("span", { class: "label" }, L(f.label), f.required ? " *" : ""), el);
     });

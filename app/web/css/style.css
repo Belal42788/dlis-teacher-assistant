@@ -1147,3 +1147,10 @@ table.grid td select.filled { --tone: var(--blue); background-color: #fff; borde
 .bl-row { display: grid; grid-template-columns: 7rem auto auto auto 1fr auto; gap: .5rem; align-items: center; padding: .3rem .5rem; border-radius: 10px; background: var(--wash, #f1f6fa); }
 .bl-row b { font-weight: 700; }
 @media (max-width: 760px) { .bl-row { grid-template-columns: 1fr auto; } }
+
+/* ---------- Check before you go on: what is missing or wrong in a form ---------- */
+.v-banner { grid-column: 1 / -1; display: flex; gap: .6rem; align-items: flex-start; margin: 0 0 .8rem; padding: .7rem .9rem; border: 1px solid #e7b9b4; background: var(--margin-wash); border-radius: 10px; color: var(--ink); }
+.v-banner > svg { flex: none; margin-top: .15rem; color: var(--margin); }
+.v-banner ul { margin: .3rem 0 0; padding-inline-start: 1.1rem; }
+.v-banner .linklike { background: none; border: 0; padding: 0; color: var(--ink); font: inherit; text-decoration: underline; cursor: pointer; }
+input.invalid, textarea.invalid, select.invalid { border-color: var(--margin) !important; box-shadow: 0 0 0 3px rgba(200, 71, 61, .14); }

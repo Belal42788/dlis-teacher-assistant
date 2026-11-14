@@ -17,7 +17,7 @@ export function lastLine(e) {
 export function logDialog(opts) {
   const e = opts.entry || {};
   const prev = opts.last || {};
-  const topic = h("input", { type: "text", maxlength: 120, value: e.topic ?? (opts.plan && opts.plan.topic) ?? prev.topic ?? "", placeholder: t("log_topic") });
+  const topic = h("input", { type: "text", maxlength: 120, value: e.topic ?? (opts.plan && opts.plan.topic) ?? prev.topic ?? "", placeholder: t("log_topic"), required: true, "data-label": t("log_topic") });
   const slide = h("input", { type: "number", min: 1, max: 2000, value: e.slide ?? "", style: { width: "6em" } });
   const total = h("input", { type: "number", min: 1, max: 2000, value: e.total ?? (opts.plan && opts.plan.slides) ?? prev.total ?? "", style: { width: "6em" } });
   const note = h("textarea", { rows: 3, maxlength: 1000, placeholder: t("log_note_ph") }, e.note ?? "");

@@ -1,3 +1,4 @@
+import { showProblems } from "./validate.js";
 import { h, icon, toast } from "../dom.js";
 import { api } from "../api.js";
 import { t } from "../i18n.js";
@@ -11,13 +12,13 @@ export async function lessonPanel(ctx) {
   const srcLp = await sourcePicker(async (id, s) => { if (id && s && s.topic && !topic.value.trim()) topic.value = s.topic; });
   const lp = {};
   const field = (key, label, rows = 2, ph = "") => { lp[key] = h("textarea", { rows, placeholder: ph, style: { minHeight: "0" } }); return h("label", { class: "field" }, h("span", { class: "label" }, label), lp[key]); };
-  const topic = h("input", { type: "text" }); lp.topic = topic;
+  const topic = h("input", { type: "text", required: true, "data-label": t("d_topic") }); lp.topic = topic;
   const lpBtn = h("button", { class: "btn primary", onClick: () => run(lpBtn, async () => {
     const content = Object.fromEntries(Object.entries(lp).map(([k, el]) => [k, el.value]));
     showResult(await api.post("/api/docs/lesson-plan", { grade_id: gradeOf().id, trimester: sel.tri, week: sel.week, content }));
   }) }, icon("file"), t("d_create_lp"));
   const lpAi = aiButton(t("ai_write"), async () => {
-    if (!topic.value.trim()) { toast(t("ai_need_topic"), "error"); return null; }
+    if (!topic.value.trim()) { showProblems(lpPanel, [{ el: topic, label: t("d_topic"), reason: t("v_required") }]); return null; }
     const r = await api.post("/api/ai/lesson", { grade_id: gradeOf().id, trimester: sel.tri, week: sel.week, topic: topic.value.trim(), source_id: sid(srcLp) });
     for (const [k, v] of Object.entries(r.content)) if (lp[k] && v) lp[k].value = v;
     return true;

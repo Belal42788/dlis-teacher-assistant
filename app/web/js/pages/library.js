@@ -159,7 +159,7 @@ export async function renderLibrary(root) {
     draw1();
   }
   function linkSourceDialog(f) {   // a video: its text is pasted, then the AI can use it
-    const text = h("textarea", { rows: 5, style: { width: "100%" }, placeholder: t("src_yt_ph"), "aria-label": t("src_yt") });
+    const text = h("textarea", { rows: 5, style: { width: "100%" }, placeholder: t("src_yt_ph"), "aria-label": t("src_yt"), required: true });
     modal({ title: f.name, body: h("div", {}, h("p", { class: "muted small" }, t("lf_link_src_lead")), text),
       actions: [{ label: t("cancel") }, { label: t("lf_link_src_go"), kind: "primary", onClick: () => tools.run(async () => {
         const r = await api.post("/api/library/source", { rel: f.rel, on: true, transcript: text.value });
@@ -169,7 +169,7 @@ export async function renderLibrary(root) {
   const target = () => ({ g: view.g === "none" ? null : view.g, ...place0() });
 
   function messageDialog(f) {   // write a new message, or change one
-    const text = h("textarea", { rows: 5, maxlength: 600, style: { width: "100%" }, placeholder: t("fx_msg_ph"), "aria-label": t("fx_msg_ph") }, f ? f.text : "");
+    const text = h("textarea", { rows: 5, maxlength: 600, style: { width: "100%" }, placeholder: t("fx_msg_ph"), "aria-label": t("fx_msg_ph"), required: true }, f ? f.text : "");
     const left = h("small", { class: "muted" });
     const count = () => { left.textContent = t("fx_msg_left", { n: 600 - text.value.length }); };
     text.addEventListener("input", count); count();
@@ -181,7 +181,7 @@ export async function renderLibrary(root) {
   }
   function linkDialog() {
     const title = h("input", { type: "text", maxlength: 120, placeholder: t("lf_link_title_ph"), "aria-label": t("lf_link_title_ph") });
-    const url = h("input", { type: "url", dir: "ltr", placeholder: "https://…", "aria-label": t("src_url") });
+    const url = h("input", { type: "url", dir: "ltr", placeholder: "https://…", "aria-label": t("src_url"), required: true });
     modal({ title: t("fx_link_title"), body: h("div", { class: "stack" }, h("label", { class: "field" }, h("span", { class: "label" }, t("lf_link_title_ph")), title), h("label", { class: "field" }, h("span", { class: "label" }, t("src_url")), url)),
       actions: [{ label: t("cancel") }, { label: t("lf_link_add"), kind: "primary", onClick: async () => {
         if (!url.value.trim()) { url.focus(); return false; }

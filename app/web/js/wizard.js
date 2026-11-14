@@ -84,8 +84,8 @@ export function startWizard(root, onFinished, startAt) {
     async account(v) {
       const c = await api.get("/api/cloud");
       const form = h("div", { class: "panel", hidden: true });
-      const email = h("input", { type: "email", dir: "ltr", value: c.email, autocomplete: "username" }), pass = h("input", { type: "password", dir: "ltr", autocomplete: "current-password" });
-      const code = h("input", { type: "text", dir: "ltr", placeholder: "DLIS-…" });
+      const email = h("input", { type: "email", dir: "ltr", value: c.email, autocomplete: "username", required: true, "data-label": t("cl_email") }), pass = h("input", { type: "password", dir: "ltr", autocomplete: "current-password", required: true, "data-label": t("cl_pass") });
+      const code = h("input", { type: "text", dir: "ltr", placeholder: "DLIS-…", required: true, "data-label": t("cl_code") });
       const known = c.configured;
       form.append(...(known ? [c.school ? h("p", {}, h("b", {}, c.school)) : null] : [h("label", { class: "field" }, h("span", { class: "label" }, t("cl_code")), code), h("p", { class: "muted small" }, t("cl_code_ask"))]),
         h("label", { class: "field" }, h("span", { class: "label" }, t("cl_email")), email), h("label", { class: "field" }, h("span", { class: "label" }, t("cl_pass")), pass),
@@ -103,12 +103,12 @@ export function startWizard(root, onFinished, startAt) {
       const s = state.boot.settings || (await api.get("/api/settings"));
       const subjects = state.boot.subjects;
       const known = subjects.some((x) => x.en === s.subject);
-      const name = h("input", { type: "text", value: s.teacher_name, autocomplete: "name", "aria-required": "true" });
+      const name = h("input", { type: "text", value: s.teacher_name, autocomplete: "name", "aria-required": "true", required: true, "data-label": t("your_name") });
       const school = h("input", { type: "text", value: s.school_name });
-      const subjSel = h("select", {}, h("option", { value: "" }, t("choose_subject")),
+      const subjSel = h("select", { required: true, "data-label": t("your_subject") }, h("option", { value: "" }, t("choose_subject")),
         subjects.map((x) => h("option", { value: x.en }, subjectLabel(x.en, subjects))), h("option", { value: "__other" }, t("other_subject")));
       subjSel.value = s.subject ? (known ? s.subject : "__other") : "";
-      const other = h("input", { type: "text", value: known ? "" : s.subject, placeholder: t("type_subject"), style: { marginTop: ".5rem", display: subjSel.value === "__other" ? "" : "none" } });
+      const other = h("input", { type: "text", value: known ? "" : s.subject, placeholder: t("type_subject"), required: true, "data-label": t("your_subject"), style: { marginTop: ".5rem", display: subjSel.value === "__other" ? "" : "none" } });
       subjSel.addEventListener("change", () => { other.style.display = subjSel.value === "__other" ? "" : "none"; });
       const days = new Set(s.working_days);
       const dayBox = h("div", { class: "row", role: "group", "aria-label": t("working_days") });
