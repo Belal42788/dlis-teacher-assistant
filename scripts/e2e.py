@@ -472,7 +472,16 @@ try:
         page.wait_for_selector("text=تم الحفظ"); shot("11_students")
         # reload: data persists and the app opens straight to the shell
         page.goto(url); page.wait_for_selector(".shell"); page.click(".nav a[data-page=classes]"); page.wait_for_selector(".students li")
-        page.wait_for_function("document.querySelectorAll('.students li').length === 17", timeout=15000)
+        try:
+            page.wait_for_function("document.querySelectorAll('.students li').length === 17", timeout=30000)
+        except Exception:
+            # a rare slow-machine failure: say what the screen and the server hold, so the next one explains itself
+            seen = page.evaluate("""async () => { const tok = document.querySelector('meta[name=dlis-token]').content;
+              const get = async (p) => (await fetch(p, { headers: { 'X-DLIS-Token': tok } })).json();
+              const st = await get('/api/structure'); const rooms = [];
+              for (const r of st.rooms.slice(0, 4)) rooms.push([r.id, r.student_count, (await get('/api/rooms/' + r.id + '/students')).names?.length]);
+              return { shown: document.querySelectorAll('.students li').length, hash: location.hash, head: document.querySelector('.detail h2, .detail h3')?.textContent, rooms }; }""")
+            raise AssertionError(f"students after reload: {seen}") from None
         assert page.locator(".students li").count() == 17, page.locator(".students li").count()
         # english + unsaved-changes guard
         page.click(".nav a[data-page=settings]"); page.click(".seg-btn[data-tab=me]"); page.wait_for_selector("button[lang=en]"); page.click("button[lang=en]")
