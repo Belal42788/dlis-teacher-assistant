@@ -1154,3 +1154,27 @@ table.grid td select.filled { --tone: var(--blue); background-color: #fff; borde
 .v-banner ul { margin: .3rem 0 0; padding-inline-start: 1.1rem; }
 .v-banner .linklike { background: none; border: 0; padding: 0; color: var(--ink); font: inherit; text-decoration: underline; cursor: pointer; }
 input.invalid, textarea.invalid, select.invalid { border-color: var(--margin) !important; box-shadow: 0 0 0 3px rgba(200, 71, 61, .14); }
+
+/* question bank: topic cards, level bars, exam basket */
+.bk-tabs { flex-wrap: wrap; margin: 0 0 .8rem; }
+.bk-topics { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .7rem; }
+.bk-topic { display: grid; gap: .4rem; text-align: start; padding: .8rem .9rem; background: #fff; border: 1px solid var(--rule-strong); border-radius: 12px; font: inherit; color: var(--ink); cursor: pointer; }
+.bk-topic:hover { border-color: var(--blue); background: var(--blue-wash); }
+.bk-topic.on { border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue) inset; background: var(--blue-wash); }
+.bk-lv { display: flex; gap: 2px; height: 10px; border-radius: 999px; overflow: hidden; background: var(--rule); }
+.bk-lv .lv-easy, .lv-dot.lv-easy { background: var(--green); }
+.bk-lv .lv-medium, .lv-dot.lv-medium { background: var(--blue); }
+.bk-lv .lv-hard, .lv-dot.lv-hard { background: var(--indigo); }
+.bk-cover { height: 4px; border-radius: 999px; background: var(--rule); overflow: hidden; }
+.bk-cover > span { display: block; height: 100%; background: var(--pencil); border-radius: 999px; }
+.bk-legend { flex-wrap: wrap; gap: .3rem 1rem; margin-top: .8rem; }
+.bk-legend > span { display: inline-flex; align-items: center; gap: .35rem; }
+.lv-dot, .cv-dot { display: inline-block; width: 10px; height: 10px; border-radius: 999px; }
+.cv-dot { height: 4px; width: 16px; background: var(--pencil); }
+.bk-card.in-exam { outline: 2px solid var(--blue); background: #fff; }
+.bk-basket { position: sticky; bottom: .8rem; z-index: 5; display: flex; align-items: center; gap: .7rem; margin-top: 1rem; padding: .7rem 1rem; background: #fff; border: 1px solid var(--blue); border-radius: 14px; box-shadow: 0 10px 28px rgba(28, 31, 77, .18); }
+.bk-basket[hidden] { display: none; }
+.bk-n { min-width: 1.6rem; text-align: center; color: var(--blue-dark); }
+.bk-addmenu { position: relative; }
+.bk-addmenu > summary { list-style: none; cursor: pointer; }
+.bk-addmenu > summary::-webkit-details-marker { display: none; }

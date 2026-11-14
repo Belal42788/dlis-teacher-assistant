@@ -130,6 +130,48 @@ class TestBank(unittest.TestCase):
         self.svc.export_quiz({"grade_id": "g4", "trimester": 0, "week": 1, "number": 2, "text": pick["text"], "format": "gift", "bank_ids": pick["ids"][:1]})
         self.assertEqual(max(i["used"] for i in self.svc.bank_list({})["items"]), 2)
 
+    def test_topic_cards_count_levels_and_use(self):
+        self.add(topic="Hardware", level="easy")
+        self.add("1. What is a network?\n2. What is a router?\n", topic="Networks", level="hard")
+        self.add("1. Untitled one?\n", topic="")
+        self.add("1. What is an app?\n", grade="g5", topic="Software")
+        ids = [i["id"] for i in self.svc.bank_list({"topic": "Networks"})["items"]]
+        self.svc._bank_mark_used(ids[:1], "Grade 4 T1-W02 Quiz 1")
+        r = self.svc.bank_topics({"grade_id": "g4"})
+        self.assertEqual([c["topic"] for c in r["cards"]], ["Hardware", "Networks", ""])         # no-topic card last
+        hw, net = r["cards"][0], r["cards"][1]
+        self.assertEqual((hw["total"], hw["levels"]["easy"], hw["used"]), (5, 5, 0))
+        self.assertEqual((net["total"], net["levels"]["hard"], net["used"]), (2, 2, 1))
+        self.assertEqual((r["total"], r["used"]), (8, 1))
+        self.assertEqual(r["quizzes"], [{"quiz": "Grade 4 T1-W02 Quiz 1", "count": 1}])
+        self.assertEqual(self.svc.bank_list({"quiz": "Grade 4 T1-W02 Quiz 1"})["found"], 1)       # mix: questions that came from that quiz
+        self.assertEqual(self.svc.bank_topics({})["total"], 9)
+
+    def test_exam_basket_is_kept_and_makes_one_exam_from_mixed_questions(self):
+        self.add(topic="Hardware")
+        self.add("1. What is a network?\n2. What is a router?\n", topic="Networks", level="hard")
+        self.add("1. What is an app?\n", grade="g5", topic="Software")
+        ids4 = [i["id"] for i in self.svc.bank_list({"grade_id": "g4"})["items"]]
+        g5 = self.svc.bank_list({"grade_id": "g5"})["items"][0]["id"]
+        self.assertEqual(self.svc.bank_basket(), {"grade_id": "", "ids": [], "items": []})
+        out = self.svc.bank_basket_set({"ids": [ids4[3], ids4[0], ids4[3], "missing"]})
+        self.assertEqual(out["ids"], [ids4[3], ids4[0]])                                 # in the teacher's order, once each
+        self.assertEqual(out["grade_id"], "g4")
+        with self.assertRaises(AppError):
+            self.svc.bank_basket_set({"ids": [ids4[0], g5]})                             # one exam is for one grade
+        again = Service()
+        again.store = DataStore(self.svc.store.root)                                     # closing the program keeps the basket
+        self.assertEqual(again.bank_basket()["ids"], [ids4[3], ids4[0]])
+        self.svc.bank_delete(ids4[0])
+        self.assertEqual(self.svc.bank_basket()["ids"], [ids4[3]])                       # a deleted question leaves the basket
+        self.svc.bank_basket_set({"ids": [ids4[3], ids4[1], ids4[2]]})
+        r = self.svc.bank_exam({"trimester": 0, "week": 1, "number": 3, "with_answers": True})
+        self.assertEqual(r["questions"], 3)
+        self.assertEqual(self.svc.bank_basket()["ids"], [])                              # made: the basket is empty again
+        self.assertEqual(sorted(i["used"] for i in self.svc.bank_list({"grade_id": "g4"})["items"]), [0, 0, 0, 1, 1, 1])
+        with self.assertRaises(AppError):
+            self.svc.bank_exam({"trimester": 0, "week": 1})                              # nothing ticked
+
     def test_the_file_is_in_the_data_folder_and_survives_reopening(self):
         self.add()
         again = Service()

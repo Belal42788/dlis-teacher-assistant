@@ -307,6 +307,19 @@ try:
         page.fill(".panel input[type=text]", "مشاركة ممتازة"); page.keyboard.press("Enter"); page.wait_for_selector(".bh-note", timeout=10000); shot("17p_behavior")
         page.evaluate("location.hash='#/seating'"); page.wait_for_selector("#main:not(.busy) .seat")
         page.click(".st-pool .chip >> nth=0"); page.click(".seat >> nth=0"); page.wait_for_selector(".seat.full", timeout=10000); shot("17p_seating")
+        # question bank: add by pasting (an empty box warns first), topic cards, tick questions into the exam basket, it survives a reload, build the exam file
+        page.evaluate("location.hash='#/bank'"); page.wait_for_selector("#main:not(.busy) .bk-addmenu")
+        page.click(".bk-addmenu summary"); page.click(".bk-addmenu .menu-item >> nth=0"); page.wait_for_selector(".modal textarea")
+        page.click(".modal footer .btn.primary"); page.wait_for_selector(".modal .v-banner"); assert page.locator(".bk-card").count() == 0
+        page.fill(".modal input[type=text]", "Hardware")
+        page.fill(".modal textarea", "1. What is the CPU?\na) The brain\nb) A screen\nAnswer: a\n\n2. Name an input device.\nAnswer: mouse\n\n3. The ___ stores files.\nAnswer: disk")
+        page.click(".modal footer .btn.primary"); page.wait_for_selector(".bk-card >> nth=2"); assert page.locator(".bk-topic:has-text('Hardware')").count() == 1
+        page.click(".bk-card >> nth=0 >> .chip"); page.click(".bk-card >> nth=1 >> .chip"); page.wait_for_selector(".bk-basket:not([hidden]):has-text('2')")
+        page.reload(); page.wait_for_selector(".bk-basket:not([hidden]):has-text('2')"); shot("17r_bank")
+        page.click(".bk-basket .btn.primary"); page.wait_for_selector(".modal .bk-row >> nth=1")
+        page.click(".modal .bk-row >> nth=1 >> button >> nth=0"); page.wait_for_timeout(400)   # move the second one up
+        page.click(".modal footer .btn.primary"); page.wait_for_selector(".modal .banner.ok", timeout=20000); shot("17r_exam")
+        page.keyboard.press("Escape"); page.wait_for_selector(".bk-basket", state="hidden")
         # teacher tools: pick a tool, fill its form, the (fake) AI writes, save as Word; a student tool offers the name picker
         page.click(".nav a[data-page=docs]"); wait_docs(page); page.click(".opt[data-tool-opt] >> nth=0"); page.wait_for_selector(".tl-form")
         page.select_option("select[aria-label='اختار الأداة']", "rubric")

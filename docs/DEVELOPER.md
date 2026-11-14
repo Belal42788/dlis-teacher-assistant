@@ -43,7 +43,7 @@ Feature files (each is a mixin of `Service`):
 | Mixin | File | Lines |
 |---|---|---|
 | `BellMixin` | `app/server/bell_service.py` | 97 |
-| `BankMixin` | `app/server/bank_service.py` | 156 |
+| `BankMixin` | `app/server/bank_service.py` | 227 |
 | `HealthMixin` | `app/server/health_service.py` | 61 |
 | `SeatingMixin` | `app/server/seating_service.py` | 56 |
 | `BehaviorMixin` | `app/server/behavior_service.py` | 89 |
@@ -80,7 +80,7 @@ Tabs inside a menu page: `reminders` (tab of `tasks`), `tools` (tab of `docs`), 
 <!-- /AUTO:pages -->
 
 Files in the teacher's data folder: <!-- AUTO:datafiles -->
-`ai_prompts.json`, `behavior.json`, `bell_schedule.json`, `calendar.json`, `chats.json`, `cloud.json`, `cloud_students.json`, `config.json`, `data_version.json`, `grades.json`, `lesson_log.json`, `library.json`, `map.json`, `parent_week.json`, `plans.json`, `question_bank.json`, `reminders.json`, `schedule.json`, `seating.json`, `sources.json`, `structure.json`, `tasks.json`, `weekly.json` (plus `data_version.json`, written by the store).
+`ai_prompts.json`, `behavior.json`, `bell_schedule.json`, `calendar.json`, `chats.json`, `cloud.json`, `cloud_students.json`, `config.json`, `data_version.json`, `exam_basket.json`, `grades.json`, `lesson_log.json`, `library.json`, `map.json`, `parent_week.json`, `plans.json`, `question_bank.json`, `reminders.json`, `schedule.json`, `seating.json`, `sources.json`, `structure.json`, `tasks.json`, `weekly.json` (plus `data_version.json`, written by the store).
 <!-- /AUTO:datafiles -->
 
 ## Keeping the code healthy
@@ -294,6 +294,10 @@ The server listens on 127.0.0.1 only and every request carries the secret token 
 | GET | `/api/bank` | `bank_list` |
 | POST | `/api/bank` | `bank_add` |
 | POST | `/api/bank/pick` | `bank_pick` |
+| GET | `/api/bank/topics` | `bank_topics` |
+| GET | `/api/bank/basket` | `bank_basket` |
+| PUT | `/api/bank/basket` | `bank_basket_set` |
+| POST | `/api/bank/exam` | `bank_exam` |
 | PUT | `/api/bank/([a-z0-9]+)` | `bank_update` |
 | POST | `/api/bank/([a-z0-9]+)/delete` | `bank_delete` |
 | GET | `/api/health` | `health` |
