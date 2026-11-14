@@ -35,6 +35,7 @@ from .docs_service import DocsMixin
 from .library_service import LibraryMixin
 from .log_service import LogMixin
 from .behavior_service import BehaviorMixin
+from .bell_service import BellMixin
 from .bank_service import BankMixin
 from .health_service import HealthMixin
 from .seating_service import SeatingMixin
@@ -60,7 +61,7 @@ def _validate(model, data):
         raise AppError("invalid_data", f"{where}: {first.get('msg', 'invalid')}", field=where) from e
 
 
-class Service(BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, UpdateMixin, InsightsMixin, GradesMixin, ToolsMixin, SchemeMixin, LibraryMixin, ParentWeekMixin, CoverageMixin, CloudMixin, DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesMixin, LogMixin, SlidesMixin, RevisionMixin, MapMixin, SourceMixin, WeekMixin, WeeklyMixin):
+class Service(BellMixin, BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, UpdateMixin, InsightsMixin, GradesMixin, ToolsMixin, SchemeMixin, LibraryMixin, ParentWeekMixin, CoverageMixin, CloudMixin, DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesMixin, LogMixin, SlidesMixin, RevisionMixin, MapMixin, SourceMixin, WeekMixin, WeeklyMixin):
     def __init__(self):
         self.store: Optional[DataStore] = None
         folder = paths.read_prefs().get("data_folder")
@@ -416,9 +417,10 @@ class Service(BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, UpdateMixin, 
 
     def _fixed(self, tt: Timetable) -> dict:
         """Period times and the number of periods belong to the school, not to the teacher."""
-        bell = paths.bell_schedule()
+        bell = self._bell()
         tt.periods = [Period(**p) for p in bell["periods"]]
-        tt.duties = {d: [k for k in v if k in ("break", "late")] for d, v in tt.duties.items() if d in WEEKDAYS and v}
+        have = [k for k in ("break", "late") if k in bell]   # a school day with no break or no late duty has nothing to tick
+        tt.duties = {d: [k for k in v if k in have] for d, v in tt.duties.items() if d in WEEKDAYS and v}
         out = tt.model_dump(mode="json")
         out["bell"] = {k: bell[k] for k in ("breakfast", "break", "prayer", "late") if k in bell}
         return out
@@ -456,7 +458,7 @@ class Service(BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, UpdateMixin, 
         return self._fixed(scrub_timetable(self._with_fixed(store.load_timetable()), store.load_structure()))
 
     def _with_fixed(self, tt: Timetable) -> Timetable:
-        tt.periods = [Period(**p) for p in paths.bell_schedule()["periods"]]
+        tt.periods = [Period(**p) for p in self._bell()["periods"]]
         return tt
 
     def put_timetable(self, data: dict) -> dict:
@@ -576,12 +578,12 @@ class Service(BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, UpdateMixin, 
         self._seed_timetable(store)
         tt = self._with_fixed(store.load_timetable())
         sessions = sessions_on(d, tt, cal, store.load_structure())
-        bell = paths.bell_schedule()
+        bell = self._bell()
         duties, cancelled_duties = [], []
         if cal.is_school_day(d):
             off = set((tt.overrides.get(d.isoformat(), {}) or {}).get("cancel_duties", []))
             for kind in tt.duties.get(d.strftime("%A"), []):
-                if kind in ("break", "late"):
+                if kind in ("break", "late") and kind in bell:
                     item = {"kind": kind, "start": bell[kind]["start"], "end": bell[kind]["end"]}
                     (cancelled_duties if kind in off else duties).append(item)
         sessions = [{**x, "plan": self._plan_for(x["grade_id"], d)} for x in sessions]

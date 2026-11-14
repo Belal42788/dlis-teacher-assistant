@@ -170,6 +170,17 @@ try:
         # pages
         for name, sel in (("classes", ".split"), ("timetable", "table.grid"), ("calendar", ".wk-line"), ("settings", ".seg"), ("help", "details.help")):
             page.click(f".nav a[data-page={name}]"); page.wait_for_selector(sel); page.wait_for_timeout(250); shot(f"09_{name}_ar")
+        # the school day: change the number of lessons and the lesson length, the timetable follows, then go back to the school's times
+        page.click(".nav a[data-page=timetable]"); page.wait_for_selector("table.grid"); n0 = page.locator("table.grid thead th.p").count()
+        page.click("button:has-text('اليوم الدراسي')"); page.wait_for_selector(".bl-row")
+        page.fill(".bl input[aria-label='عدد الحصص']", "6"); page.dispatch_event(".bl input[aria-label='عدد الحصص']", "change"); page.fill(".bl input[aria-label='مدة الحصة (بالدقيقة)']", "45")
+        page.click("button:has-text('رتّب الأوقات')"); page.wait_for_function("document.querySelectorAll('.bl-row').length >= 6")
+        page.click(".modal footer .btn.primary")
+        page.wait_for_selector(".overlay >> text=هتختفي", timeout=3000) if False else None
+        if page.locator(".overlay >> text=هتختفي").count(): page.click(".overlay:has-text('هتختفي') footer .btn.primary")
+        page.wait_for_function(f"document.querySelectorAll('table.grid thead th.p').length < {n0}"); shot("09a_school_day")
+        page.click("button:has-text('اليوم الدراسي')"); page.wait_for_selector(".bl .banner.info"); page.click("button:has-text('ارجع لأوقات المدرسة')"); page.click(".overlay:has-text('الأصلية') footer .btn.primary")
+        page.wait_for_function(f"document.querySelectorAll('table.grid thead th.p').length === {n0}")
         # AI: set up the "other" service pointing at the fake, test it, then use it on the documents page
         page.click(".nav a[data-page=settings]"); page.click(".seg-btn[data-tab=ai]"); page.wait_for_selector(".ai-grid")
         page.click(".ai-card >> nth=-1"); page.fill(".ai-detail input[type=password]", "test-key")
