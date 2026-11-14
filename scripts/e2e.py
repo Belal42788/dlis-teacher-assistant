@@ -51,18 +51,16 @@ def wait_docs(page):
     """Wait for the Create page. This once timed out on one Linux run and never again; if it happens again, say what the page was
     showing and what the console said, so the cause can be found instead of guessed."""
     try:
-        page.wait_for_selector("#main:not(.busy) .steps")
+        page.wait_for_selector("#main:not(.busy) .cr-hub", state="attached")
     except Exception:
         print("DOCS PAGE DID NOT APPEAR.")
         raise
 
 
 def pick_kind(page, kind):
-    """Create page is three steps: go to step 2 if needed, then press the card of the file kind."""
-    if page.is_visible("[data-step-next]"):
-        page.click("[data-step-next]")
-    elif not page.is_visible(".opt[data-kind-opt]"):
-        page.click(".steps .st:nth-child(2)")   # already on step 3 from last time: go back to the choice
+    """Create page: the hub shows every file kind and tool as a tile; press the tile (from the work view, go back to the hub first)."""
+    if not page.is_visible(".opt[data-kind-opt]"):
+        page.click("[data-back-hub]")
     page.click(f".opt[data-kind-opt={kind}]")
 
 
@@ -181,7 +179,7 @@ try:
         assert "test-key" not in page.content()
         # documents + tasks
         os.environ["DLIS_NO_OPEN"] = "1"
-        page.click(".nav a[data-page=docs]"); page.wait_for_selector(".pick-row"); page.wait_for_timeout(300)
+        page.click(".nav a[data-page=docs]"); wait_docs(page); page.wait_for_timeout(300)
         tab = lambda n: pick_kind(page, n)
         P = ".panel:not(.sticky-pick):visible"
         tab("wk"); page.wait_for_selector(".wk-grid")
@@ -294,7 +292,7 @@ try:
         page.evaluate("location.hash='#/seating'"); page.wait_for_selector("#main:not(.busy) .seat")
         page.click(".st-pool .chip >> nth=0"); page.click(".seat >> nth=0"); page.wait_for_selector(".seat.full", timeout=10000); shot("17p_seating")
         # teacher tools: pick a tool, fill its form, the (fake) AI writes, save as Word; a student tool offers the name picker
-        page.click(".nav a[data-page=docs]"); page.click("a.seg-btn[href='#/tools']"); page.wait_for_selector(".tl-form")
+        page.click(".nav a[data-page=docs]"); wait_docs(page); page.click(".opt[data-tool-opt] >> nth=0"); page.wait_for_selector(".tl-form")
         page.select_option("select[aria-label='اختار الأداة']", "rubric")
         for el in page.locator(".tl-form input, .tl-form textarea").all(): el.fill("4" if el.get_attribute("type") == "number" else "Poster project")
         page.click("button:has-text('اكتبها')"); page.wait_for_function("document.querySelector('.tl-out').value.includes('Clarity')", timeout=20000)
@@ -304,7 +302,7 @@ try:
         for el in page.locator(".tl-form input, .tl-form textarea").all(): el.fill("4" if el.get_attribute("type") == "number" else "Works hard")
         page.click("button:has-text('اكتبها')"); page.wait_for_function("document.querySelector('.tl-out').value.includes('[student]')", timeout=20000)
         page.wait_for_selector("button:has-text('حط الاسم')"); page.wait_for_selector(".tl-form ~ * .banner.ok, .main .banner.ok", state="detached"); assert page.locator(".main a:has-text('شارك')").count() == 0, page.locator("a:has-text('شارك')").all_inner_texts()
-        page.click(".nav a[data-page=docs]"); wait_docs(page); page.click("a.seg-btn[href='#/tools']"); page.wait_for_selector(".tl-form")
+        page.click(".nav a[data-page=docs]"); wait_docs(page); page.click(".opt[data-tool-opt] >> nth=0"); page.wait_for_selector(".tl-form")
         assert "[student]" in page.input_value(".tl-out")      # what was written stays while visiting another page
         # quick search: Ctrl+K lists recent files and pages, finds a tool by its Arabic name and opens it, and finds a saved file
         page.keyboard.press("Control+k"); page.wait_for_selector(".quick-input"); page.wait_for_selector(".quick-item")
@@ -372,7 +370,7 @@ try:
             page.wait_for_selector(".fx-msg:has-text('الكويز الأسبوع الجاي')")
             go("scheme"); page.wait_for_selector(".sw-card"); snap("scheme")
             go("library"); page.wait_for_selector(".banner.info"); snap("library")
-            go("docs"); page.click("a.seg-btn[href='#/tools']"); page.wait_for_selector(".tl-form"); snap("tools")
+            go("docs"); snap("create_hub"); page.click(".opt[data-tool-opt] >> nth=0"); page.wait_for_selector(".tl-form"); snap("tools")
             go("chat"); snap("chat")
             page.click(".chat-tool >> nth=0"); snap("chat_ready_requests")
             go("classes"); snap("classes")
@@ -402,7 +400,7 @@ try:
         page.locator("#ai-ball").focus(); page.keyboard.press("Home"); page.wait_for_timeout(200)
         b3 = page.locator("#ai-ball").bounding_box(); assert abs(b3["x"] - b0["x"]) < 4 and abs(b3["y"] - b0["y"]) < 4, (b0, b3)
         # dropdown: the open list is drawn by the program (where the window can) and choosing an item changes the value
-        page.click(".nav a[data-page=docs]"); page.wait_for_selector("select"); sel = page.locator("select").first
+        page.click(".nav a[data-page=docs]"); wait_docs(page); pick_kind(page, "wk"); page.wait_for_selector(".pick-row select"); sel = page.locator(".pick-row select").first
         before = sel.evaluate("e => e.value"); sel.click(); page.wait_for_timeout(300)
         if page.evaluate("CSS.supports('appearance','base-select')"):
             assert sel.evaluate("e => e.matches(':open')"), "the list should be open"
