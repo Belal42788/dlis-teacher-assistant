@@ -1,7 +1,6 @@
-import { hubTabs } from "../components/hubtabs.js";
 import { h, icon } from "../dom.js";
 import { api, guarded } from "../api.js";
-import { t } from "../i18n.js";
+import { t, getLang } from "../i18n.js";
 import { renderSlides } from "./slides.js";
 import { docsShared } from "../components/docs_shared.js";
 import { lessonPanel } from "../components/docs_lesson.js";
@@ -12,7 +11,7 @@ import { revisionPanel } from "../components/docs_revision.js";
 import { weekPanel } from "../components/docs_week.js";
 import { roomLabel, gradeName, fmtShort, triName } from "../labels.js";
 
-const memoDocs = { tab: "wk", step: 1 };
+const memoDocs = { tab: "wk" };
 
 // "Create files": three steps (class and week, what to make, fill it in). Each kind of file is its own panel in components/docs_*.js;
 // this page picks the class and week, keeps them in `sel`, and hands each panel what it needs.
@@ -55,6 +54,7 @@ export async function renderDocs(root) {
   }
 
   const ai = await guarded(() => api.get("/api/ai")) || { ready: false };
+  const catalog = await guarded(() => api.get("/api/tools")) || { groups: [], tools: [] };
   const shared = docsShared(ai);
   const ctx = { root, structure, rooms, used, sel, gradeOf, ai, ...shared };
   const lesson = await lessonPanel(ctx);
@@ -100,42 +100,39 @@ export async function renderDocs(root) {
       h("label", {}, h("span", { class: "label" }, t("d_trimester")), triSel),
       h("label", {}, h("span", { class: "label" }, t("d_week")), weekSel)), info, planBox);
   const slidesBox = h("div", {});   // the slide maker lives here as one more thing to make; it opens the first time it is chosen
-  // one kind of file at a time: the page stays short and the teacher sees only what they chose
   const panelList = [["wk", week.el, "wk_tab"], ["lp", lesson.el, "d_lp_title"], ["quiz", quiz.el, "d_quiz_title"], ["rv", revision.el, "rv_title"], ["sl", slidesBox, "hub_make_slides"], ["gs", grading.el, "d_gs_title"], ["ct", certs.el, "ct_title"]];
-  // three steps: 1) class and week, 2) what to make, 3) fill it in and make it. Each step shows one thing.
+  // Two views. The hub shows everything at once as big tiles: the school's files, then the AI tools. A tile opens its work view;
+  // the class, term and week are picked there (they start on the current week), so the teacher never has to choose before knowing what to make.
   const KIND_ICON = { wk: "spark", lp: "file", quiz: "list", rv: "check", sl: "slides", gs: "tasks", ct: "user" };
-  const stepNames = [t("dz_step1"), t("dz_step2"), t("dz_step3")];
-  const stepBar = h("div", { class: "steps", role: "list" });
-  const step1 = h("div", {}, pickPanel, h("div", { class: "foot" }, h("span", { class: "grow" }), h("button", { class: "btn pri", "data-step-next": "", onClick: () => go(2) }, t("dz_next"), " ", icon("chevron"))));
-  const step2 = h("div", { class: "panel" },
-    h("div", { class: "opts" }, panelList.map(([id, , key]) =>
-      h("button", { class: "opt", "data-kind-opt": id, onClick: () => { showTab(id); go(3); } }, icon(KIND_ICON[id] || "file"), h("b", {}, t(key)), h("small", {}, t(`dz_hint_${id}`))))),
-    h("div", { class: "foot" }, h("button", { class: "btn", onClick: () => go(1) }, icon("back"), " ", t("dz_back"))));
+  const lang = getLang(), L = (o) => (o && (o[lang] || o.en)) || "";
+  const hub = h("div", { class: "cr-hub" },
+    h("section", {}, h("h2", {}, t("cr_official")), h("p", { class: "muted" }, t("cr_official_hint")),
+      h("div", { class: "opts kinds" }, panelList.map(([id, , key]) =>
+        h("button", { class: "opt", "data-kind-opt": id, onClick: () => { showTab(id); go(2); } }, icon(KIND_ICON[id] || "file"), h("b", {}, t(key)), h("small", {}, t(`dz_hint_${id}`)))))),
+    h("section", {}, h("h2", {}, t("cr_tools")), h("p", { class: "muted" }, t("cr_tools_hint")),
+      catalog.groups.map((g) => h("div", { class: "cr-group" }, h("h3", {}, L(g.name)),
+        h("div", { class: "opts tiles" }, catalog.tools.filter((x) => x.group === g.id).map((x) =>
+          h("a", { class: "opt", href: `#/tools?tool=${x.id}`, "data-tool-opt": x.id }, icon("spark"), h("b", {}, L(x.name)), h("small", {}, L(x.desc)))))))));
   const summary = h("div", { class: "dz-sum" });
-  const step3 = h("div", {}, summary, ...panelList.map(([, el]) => el), result);
+  const work = h("div", { class: "cr-work" }, h("div", { class: "row" }, h("button", { class: "btn", "data-back-hub": "", onClick: () => go(1) }, icon("back"), " ", t("cr_back")), h("span", { class: "grow" }), summary),
+    pickPanel, ...panelList.map(([, el]) => el), result);
   function showTab(id) {
     memoDocs.tab = id;
     panelList.forEach(([k, el]) => { el.hidden = k !== id; });
+    pickPanel.hidden = id === "sl";   // the slide maker has its own topic and class boxes
     if (id === "sl" && !slidesBox.dataset.ready) { slidesBox.dataset.ready = "1"; guarded(() => renderSlides(slidesBox, { embedded: true })); }
+    const kind = panelList.find(([k]) => k === id);
+    summary.replaceChildren(h("span", { class: "chip" }, kind ? t(kind[2]) : ""));
   }
   function go(n) {
-    memoDocs.step = n;
-    step1.hidden = n !== 1; step2.hidden = n !== 2; step3.hidden = n !== 3;
-    stepBar.replaceChildren(...stepNames.map((name, i) => h("button", { class: `st${i + 1 === n ? " on" : i + 1 < n ? " ok" : ""}`, role: "listitem", disabled: i + 1 > n,
-      onClick: () => go(i + 1) }, h("i", {}, i + 1 < n ? "✓" : String(i + 1)), name)));
-    if (n === 3) {
-      const kind = panelList.find(([k]) => k === memoDocs.tab);
-      summary.replaceChildren(h("span", { class: "chip" }, kind ? t(kind[2]) : ""), " ",
-        memoDocs.tab === "sl" ? "" : memoDocs.tab === "ct" ? (roomSel.selectedOptions[0]?.textContent || "") : `${roomSel.selectedOptions[0]?.textContent || ""} · ${weekSel.selectedOptions[0]?.textContent || ""}`,
-        h("button", { class: "btn sm", onClick: () => go(2) }, t("dz_change")));
-    }
+    hub.hidden = n !== 1; work.hidden = n !== 2;
     window.scrollTo?.(0, 0);
   }
   showTab(panelList.some(([k]) => k === memoDocs.tab) ? memoDocs.tab : "wk");
   drawWeeks();
-  root.replaceChildren(h("div", { class: "page" }, hubTabs("create", "docs"),
+  root.replaceChildren(h("div", { class: "page" },
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_docs")), h("p", {}, t("docs_lead")))),
-    stepBar, step1, step2, step3));
-  go(memoDocs.step || 1);
+    hub, work));
+  go(1);
   await refresh();
 }

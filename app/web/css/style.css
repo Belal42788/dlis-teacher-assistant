@@ -1121,3 +1121,17 @@ table.grid td select.filled { --tone: var(--blue); background-color: #fff; borde
 .fx-plan[open] > summary { border-bottom: 1px solid #e3ebf2; }
 .fx-plan-in { padding: .8rem 1rem 1rem; display: grid; gap: .6rem; }
 .fx-plan-in .field textarea { width: 100%; }
+
+/* ---------- Create: the school's files and the AI tools as big tiles, shown at once ---------- */
+.cr-hub { display: grid; gap: 1.6rem; }
+.cr-hub h2 { margin: 0 0 .2rem; }
+.cr-hub > section > .muted { margin: 0 0 .8rem; }
+.cr-group { margin-top: 1rem; }
+.cr-group h3 { margin: 0 0 .5rem; color: var(--indigo); font-size: 1rem; }
+.opts.tiles { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .6rem; }
+.opts.tiles .opt { padding: .7rem .9rem; text-decoration: none; }
+.opts.tiles .opt svg { width: 1.3rem; height: 1.3rem; }
+.opts.tiles .opt small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cr-work { display: grid; gap: 1rem; }
+.opts.kinds { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 900px) { .opts.kinds { grid-template-columns: repeat(2, 1fr); } }

@@ -1,4 +1,3 @@
-import { hubTabs } from "../components/hubtabs.js";
 import { h, icon, toast } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { t, getLang } from "../i18n.js";
@@ -92,7 +91,7 @@ export async function renderTools(root) {
         cur().student ? null : h("a", { class: "btn small", href: `#/library?share=${encodeURIComponent(r.rel.replace(/\\/g, "/"))}` }, icon("send"), t("lb_share")))));
   }) }, icon("file"), t("tl_word"));
 
-  root.replaceChildren(h("div", { class: "page" }, hubTabs("create", "tools"),
+  root.replaceChildren(h("div", { class: "page" }, h("a", { class: "btn small", href: "#/docs", "data-back-hub": "" }, icon("back"), " ", t("cr_back")),
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_tools")), h("p", {}, t("tl_lead")))),
     ai.ready ? null : h("div", { class: "banner" }, icon("info"), h("div", { class: "small" }, h("a", { href: "#/settings" }, t("ai_setup_link")))),
     h("div", { class: "panel" },

@@ -4,7 +4,6 @@ import { t } from "../i18n.js";
 // Pages that belong together share one menu entry and a small tab row at the top.
 const GROUPS = {
   library: [["library", "lb_tab_files"], ["bank", "nav_bank"]],
-  create: [["docs", "cr_tab_docs"], ["tools", "nav_tools"]],
   classes: [["classes", "hub_students"], ["log", "nav_log"], ["progress", "nav_progress"], ["grades", "nav_grades"], ["behavior", "nav_behavior"], ["seating", "nav_seating"], ["insights", "nav_insights"]],
   tasks: [["tasks", "hub_tasks"], ["reminders", "hub_reminders"]],
 };
