@@ -38,7 +38,7 @@ Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#AppExe}"; Description: "Open {#AppName} now"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#AppExe}"; Description: "Open {#AppName} now"; Flags: nowait postinstall
 
 [Code]
 // The app window needs Microsoft Edge WebView2 (already on recent Windows 10 and 11).

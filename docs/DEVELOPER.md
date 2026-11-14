@@ -47,7 +47,7 @@ Feature files (each is a mixin of `Service`):
 | `HealthMixin` | `app/server/health_service.py` | 61 |
 | `SeatingMixin` | `app/server/seating_service.py` | 56 |
 | `BehaviorMixin` | `app/server/behavior_service.py` | 89 |
-| `UpdateMixin` | `app/server/update_service.py` | 111 |
+| `UpdateMixin` | `app/server/update_service.py` | 230 |
 | `InsightsMixin` | `app/server/grades_service.py` | 264 |
 | `GradesMixin` | `app/server/grades_service.py` | 264 |
 | `ToolsMixin` | `app/server/tools_service.py` | 65 |
@@ -288,6 +288,9 @@ The server listens on 127.0.0.1 only and every request carries the secret token 
 | PUT | `/api/seating` | `seating_save` |
 | GET | `/api/update` | `check_update` |
 | POST | `/api/update/dismiss` | `dismiss_update` |
+| POST | `/api/update/install` | `update_install` |
+| GET | `/api/update/progress` | `update_progress` |
+| POST | `/api/update/launch` | `update_launch` |
 | GET | `/api/bank` | `bank_list` |
 | POST | `/api/bank` | `bank_add` |
 | POST | `/api/bank/pick` | `bank_pick` |

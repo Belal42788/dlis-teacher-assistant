@@ -130,13 +130,32 @@ function skeleton() {
 }
 
 // "A newer version is out": one quiet notice, never blocks anything, and "Later" hides it for that version.
+// In an installed program «Download and install» fetches the installer, the program checks it, closes, and the new version opens by itself.
 function checkForUpdate() {
   api.get("/api/update").then((u) => {
     if (!u.available) return;
+    const status = h("div", { class: "small", "aria-live": "polite" });
+    const getBtn = h("button", { class: `btn small${u.install ? "" : " primary"}`, onClick: () => guarded(() => api.post("/api/open-url", { url: u.url })) }, u.install ? t("upd_page") : t("upd_get"));
+    const laterBtn = h("button", { class: "btn small", onClick: () => { api.post("/api/update/dismiss", { version: u.version }).catch(() => {}); box.remove(); } }, t("upd_later"));
+    const installBtn = u.install ? h("button", { class: "btn small primary", onClick: () => install() }, icon("download"), t("upd_install")) : null;
+    async function install() {
+      if (!(await confirmBox(t("upd_install_confirm"), { danger: false, okLabel: t("upd_install") }))) return;
+      for (const b of [installBtn, getBtn, laterBtn]) b && (b.disabled = true);
+      const fail = (code) => { status.textContent = t(`err_${code}`); for (const b of [installBtn, getBtn, laterBtn]) b && (b.disabled = false); };
+      try { await api.post("/api/update/install", {}); } catch (e) { return fail(e.code || "update_download_failed"); }
+      for (;;) {
+        await new Promise((r) => setTimeout(r, 700));
+        let p; try { p = await api.get("/api/update/progress"); } catch { return fail("update_download_failed"); }
+        if (p.state === "error") return fail(p.error);
+        if (p.state === "ready") break;
+        status.textContent = t("upd_downloading", { n: p.total ? Math.min(99, Math.round((100 * p.done) / p.total)) : 0 });
+      }
+      status.textContent = t("upd_installing");
+      try { const r = await api.post("/api/update/launch", {}); status.textContent = r.quits ? t("upd_installing") : t("upd_mac_next"); if (!r.quits) for (const b of [installBtn, getBtn, laterBtn]) b && (b.disabled = false); }
+      catch (e) { fail(e.code || "update_download_failed"); }
+    }
     const box = h("div", { class: "notice", role: "status" }, icon("info"),
-      h("div", { class: "grow" }, h("b", {}, t("upd_title", { v: u.version })), u.notes ? h("div", { class: "small" }, u.notes) : null),
-      h("button", { class: "btn small primary", onClick: () => guarded(() => api.post("/api/open-url", { url: u.url })) }, t("upd_get")),
-      h("button", { class: "btn small", onClick: () => { api.post("/api/update/dismiss", { version: u.version }).catch(() => {}); box.remove(); } }, t("upd_later")));
+      h("div", { class: "grow" }, h("b", {}, t("upd_title", { v: u.version })), u.notes ? h("div", { class: "small" }, u.notes) : null, status), installBtn, getBtn, laterBtn);
     document.body.append(box);
   }).catch(() => {});
 }

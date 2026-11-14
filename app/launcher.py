@@ -438,6 +438,7 @@ def _run_app_window(server, args) -> int:
             pass
 
     hooks["quit"] = quit_app
+    svc.quit_hook = quit_app   # lets "Download and install" close the program so the installer can replace it
 
     def close_clicked():
         if state["tray"] and not state["quitting"]:
