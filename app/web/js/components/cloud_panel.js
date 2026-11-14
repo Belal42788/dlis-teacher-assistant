@@ -30,24 +30,24 @@ export function cloudPanel() {
   const roleName = (r) => t(`cl_role_${r || "none"}`);
   // administration only: the server's address and key, and the school code that teachers type once
   function adminBox(c) {
-    const url = h("input", { type: "text", dir: "ltr", value: c.url, placeholder: "https://xxxx.supabase.co" });
-    const key = h("input", { type: "password", dir: "ltr", placeholder: c.key_set ? "••••••••" : "anon public key" });
+    const url = h("input", { type: "url", dir: "ltr", value: c.url, placeholder: "https://xxxx.supabase.co", required: true, "data-label": t("cl_url") });
+    const key = h("input", { type: "password", dir: "ltr", placeholder: c.key_set ? "••••••••" : "anon public key", "data-label": t("cl_key"), ...(c.key_set ? {} : { required: true }) });
     const school = h("input", { type: "text", value: c.school, placeholder: t("cl_school_ph") });
     const code = h("textarea", { rows: 3, readonly: true, dir: "ltr", class: "mono" });
-    return h("details", { class: "fold", open: false }, h("summary", {}, t("cl_admin")), h("p", { class: "muted small" }, t("cl_admin_lead")),
+    return h("details", { class: "fold", "data-form": "", open: false }, h("summary", {}, t("cl_admin")), h("p", { class: "muted small" }, t("cl_admin_lead")),
       h("label", { class: "field" }, h("span", { class: "label" }, t("cl_school")), school),
       h("label", { class: "field" }, h("span", { class: "label" }, t("cl_url")), url),
       h("label", { class: "field" }, h("span", { class: "label" }, t("cl_key")), key),
       h("div", { class: "row" },
-        h("button", { class: "btn", onClick: () => guarded(async () => { await api.put("/api/cloud", { url: url.value, key: key.value, school: school.value }); out.textContent = t("saved"); await draw(); }) }, icon("check"), t("save")),
+        h("button", { class: "btn", "data-check": "", onClick: () => guarded(async () => { await api.put("/api/cloud", { url: url.value, key: key.value, school: school.value }); out.textContent = t("saved"); await draw(); }) }, icon("check"), t("save")),
         c.signed_in && c.role === "admin" ? h("button", { class: "btn primary", onClick: () => guarded(async () => { const r = await api.post("/api/cloud/code", {}); code.value = r.code; code.select(); }) }, icon("file"), t("cl_code_make")) : null),
       h("p", { class: "muted small" }, t("cl_code_hint")), code);
   }
   async function draw() {
     const c = await api.get("/api/cloud");
-    const email = h("input", { type: "email", dir: "ltr", value: c.email });
-    const pass = h("input", { type: "password", dir: "ltr" });
-    const code = h("input", { type: "text", dir: "ltr", placeholder: "DLIS-…" });
+    const email = h("input", { type: "email", dir: "ltr", value: c.email, required: true, "data-label": t("cl_email") });
+    const pass = h("input", { type: "password", dir: "ltr", required: true, "data-label": t("cl_pass") });
+    const code = h("input", { type: "text", dir: "ltr", placeholder: "DLIS-…", required: true, "data-label": t("cl_code") });
     const admin = c.role === "admin";
     if (!c.configured) {
       box.replaceChildren(h("h3", {}, t("cl_title")), h("p", { class: "muted" }, t("cl_join_lead")),

@@ -29,9 +29,9 @@ export async function renderBehavior(root) {
     }
     // ---- the quick form
     let kind = "good";
-    const student = h("select", { "aria-label": t("bh_student") }, d.students.map((n) => h("option", { value: n }, n)));
+    const student = h("select", { required: true, "aria-label": t("bh_student") }, d.students.map((n) => h("option", { value: n }, n)));
     if (who) student.value = who;
-    const note = h("input", { type: "text", maxlength: 500, placeholder: t("bh_note_ph"), "aria-label": t("bh_note"), style: { flex: "1 1 18rem" } });
+    const note = h("input", { type: "text", required: true, maxlength: 500, placeholder: t("bh_note_ph"), "aria-label": t("bh_note"), style: { flex: "1 1 18rem" } });
     const kinds = h("div", { class: "row" });
     const drawKinds = () => kinds.replaceChildren(...[["good", "bh_good"], ["concern", "bh_concern"]].map(([k, key]) =>
       h("button", { type: "button", class: `chip${kind === k ? " on" : ""}`, "aria-pressed": String(kind === k), onClick: () => { kind = k; drawKinds(); } }, t(key))));
@@ -41,7 +41,7 @@ export async function renderBehavior(root) {
       if (r) { toast(t("saved")); who = student.value; draw(); }
     };
     note.addEventListener("keydown", (e) => { if (e.key === "Enter") add(); });
-    const form = h("div", { class: "panel" }, h("div", { class: "row" }, student, kinds), h("div", { class: "row", style: { marginTop: ".5rem" } }, note, h("button", { class: "btn primary", onClick: add }, icon("plus"), t("bh_add"))));
+    const form = h("div", { class: "panel", "data-form": "" }, h("div", { class: "row" }, student, kinds), h("div", { class: "row", style: { marginTop: ".5rem" } }, note, h("button", { class: "btn primary", onClick: add }, icon("plus"), t("bh_add"))));
 
     // ---- who has notes
     const chips = h("div", { class: "row", style: { flexWrap: "wrap", marginBottom: ".6rem" } },

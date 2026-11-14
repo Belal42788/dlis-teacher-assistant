@@ -8,8 +8,8 @@ const periodLabel = (p) => `${t("ch_period_n", { n: p.name })} · ${fmt12(p.star
 
 export function coverDialog(d, structure, change) {
   const free = d.periods.filter((p) => !busyBy(d, structure, p.name));
-  const period = h("select", {}, free.map((p) => h("option", { value: p.name }, periodLabel(p))));
-  const room = h("select", {}, structure.rooms.map((r) => h("option", { value: r.id }, roomLabel(r, structure))));
+  const period = h("select", { required: true, "data-label": t("ch_period") }, free.map((p) => h("option", { value: p.name }, periodLabel(p))));
+  const room = h("select", { required: true, "data-label": t("ch_class") }, structure.rooms.map((r) => h("option", { value: r.id }, roomLabel(r, structure))));
   const note = h("input", { type: "text", maxlength: 80, placeholder: t("ch_note") });
   modal({ title: t("ch_cover_title"), body: h("div", { class: "grid-gap" },
     h("p", { class: "muted small" }, t("ch_today_only")),
@@ -21,7 +21,7 @@ export function coverDialog(d, structure, change) {
 
 export function moveDialog(d, structure, s, change) {
   const others = d.periods.filter((p) => p.name !== s.period);
-  const to = h("select", {}, others.map((p) => { const who = busyBy(d, structure, p.name);
+  const to = h("select", { required: true, "data-label": t("ch_move_title") }, others.map((p) => { const who = busyBy(d, structure, p.name);
     return h("option", { value: p.name }, `${periodLabel(p)} — ${who ? t("ch_swap_with", { what: who }) : t("ch_free")}`); }));
   modal({ title: t("ch_move_title"), body: h("div", { class: "grid-gap" }, h("p", { class: "muted small" }, t("ch_today_only")), to),
     actions: [{ label: t("cancel") }, { label: t("ch_move_do"), kind: "primary", onClick: () => change({ action: "move", period: s.period, to: to.value }) }] });

@@ -10,7 +10,7 @@ export async function renderTasks(root) {
   // fetch what the page needs at the same time, not one after the other
   let [data, weekly] = await Promise.all([api.get("/api/tasks"), weeklyPanel()]);
   const list = h("div", {});
-  const title = h("input", { type: "text", placeholder: t("t_what"), "aria-label": t("t_what"), onKeydown: (e) => e.key === "Enter" && add() });
+  const title = h("input", { type: "text", placeholder: t("t_what"), "aria-label": t("t_what"), required: true, onKeydown: (e) => e.key === "Enter" && add() });
   const imp = h("select", { "aria-label": t("t_importance") }, ["high", "medium", "low"].map((k) => h("option", { value: k }, t(`imp_${k}`))));
   imp.value = "medium";
   const deadline = dateField({ label: t("t_deadline") });

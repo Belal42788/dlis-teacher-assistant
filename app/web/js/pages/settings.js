@@ -39,12 +39,12 @@ export async function renderSettings(root, { reloadApp }) {
   const subjects = boot.subjects;
   const known = subjects.some((x) => x.en === settings.subject);
 
-  const name = h("input", { type: "text", value: settings.teacher_name });
+  const name = h("input", { type: "text", value: settings.teacher_name, required: true, "data-label": t("your_name") });
   const school = h("input", { type: "text", value: settings.school_name });
-  const subjSel = h("select", {}, h("option", { value: "" }, t("choose_subject")),
+  const subjSel = h("select", { required: true, "data-label": t("your_subject") }, h("option", { value: "" }, t("choose_subject")),
     subjects.map((x) => h("option", { value: x.en }, subjectLabel(x.en, subjects))), h("option", { value: "__other" }, t("other_subject")));
   subjSel.value = settings.subject ? (known ? settings.subject : "__other") : "";
-  const other = h("input", { type: "text", value: known ? "" : settings.subject, placeholder: t("type_subject"), style: { marginTop: ".5rem", display: subjSel.value === "__other" ? "" : "none" } });
+  const other = h("input", { type: "text", value: known ? "" : settings.subject, placeholder: t("type_subject"), required: true, "data-label": t("your_subject"), style: { marginTop: ".5rem", display: subjSel.value === "__other" ? "" : "none" } });
   subjSel.addEventListener("change", () => { other.style.display = subjSel.value === "__other" ? "" : "none"; });
   const days = new Set(settings.working_days);
   const dayBox = h("div", { class: "row" });

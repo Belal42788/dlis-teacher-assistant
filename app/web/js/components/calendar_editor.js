@@ -41,14 +41,14 @@ export function calendarEditor({ calendar, withEvents = false, onChange }) {
   const evBox = h("div", { class: "scroll-list" });
   const eventRows = () => cal.events.map((ev, i) => h("div", { class: "list-row two" },
     dateInput(ev, "date"),
-    h("input", { type: "text", value: ev.name, placeholder: t("event_name"), "aria-label": t("event_name"), onInput: (e) => { ev.name = e.target.value; changed(); } }),
+    h("input", { type: "text", value: ev.name, placeholder: t("event_name"), "aria-label": t("event_name"), required: true, onInput: (e) => { ev.name = e.target.value; changed(); } }),
     h("button", { class: "btn icon ghost", "aria-label": t("remove"), onClick: () => { cal.events.splice(i, 1); changed(); render(); } }, icon("trash"))));
 
   function render() {
     evBox.replaceChildren(evOpen ? eventRows() : []);
     root.replaceChildren(
       h("label", { class: "field", style: { maxWidth: "220px" } }, h("span", { class: "label" }, t("academic_year")),
-        h("input", { type: "text", value: cal.academic_year, placeholder: "2026-2027", dir: "ltr",
+        h("input", { type: "text", value: cal.academic_year, placeholder: "2026-2027", dir: "ltr", pattern: "\\d{4}-\\d{4}", "data-label": t("academic_year"),
           onInput: (e) => { cal.academic_year = e.target.value; changed(); } })),
       h("h3", { class: "sec" }, t("trimesters")),
       h("div", { class: "tri-head small muted" }, h("span", {}), h("span", {}, t("starts_on")), h("span", {}, t("ends_on")), h("span", { title: t("week1_hint") }, t("week1_start"))),
@@ -62,7 +62,7 @@ export function calendarEditor({ calendar, withEvents = false, onChange }) {
       cal.holidays.length ? h("div", { class: "list-head small muted" }, h("span", {}, t("from_date")), h("span", {}, t("to_date_optional")), h("span", {}, t("holiday_name")), h("span", {})) : h("p", { class: "muted small" }, t("holidays_hint")),
       h("div", {}, cal.holidays.map((hd, i) => h("div", { class: "list-row" },
         dateInput(hd, "start", () => { if (!hd.name.trim() && hd.start) { hd.name = officialName(hd.start); render(); } }), dateInput(hd, "end"),
-        h("input", { type: "text", value: hd.name, placeholder: t("holiday_name"), "aria-label": t("holiday_name"), onInput: (e) => { hd.name = e.target.value; changed(); } }),
+        h("input", { type: "text", value: hd.name, placeholder: t("holiday_name"), "aria-label": t("holiday_name"), required: true, onInput: (e) => { hd.name = e.target.value; changed(); } }),
         h("button", { class: "btn icon ghost", "aria-label": t("remove"), onClick: () => { cal.holidays.splice(i, 1); changed(); render(); } }, icon("trash"))))),
 
       withEvents ? [

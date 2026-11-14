@@ -27,7 +27,7 @@ export async function renderCalendar(root, edit = false) {
   function dayNotes(iso) {
     const mine = () => (cal.events || []).map((e, i) => ({ e, i })).filter((x) => x.e.date === iso);
     const list = h("div", { class: "list" });
-    const name = h("input", { type: "text", placeholder: t("event_name"), "aria-label": t("event_name"), maxlength: 120,
+    const name = h("input", { type: "text", placeholder: t("event_name"), "aria-label": t("event_name"), maxlength: 120, required: true,
       onKeydown: (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); add(); } } });
     const holName = idx.hol.get(iso);
     async function save() {

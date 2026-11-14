@@ -5,6 +5,7 @@ import { t, getLang } from "../i18n.js";
 import { state } from "../state.js";
 import { roomLabel, gradeName, stageName, subjectLabel, stageTone } from "../labels.js";
 import { classPicker } from "../components/class_picker.js";
+import { showProblems } from "../components/validate.js";
 
 let selectedId = "";
 
@@ -77,7 +78,7 @@ export async function renderClasses(root) {
         h("button", { class: "btn icon ghost", "aria-label": t("remove"), onClick: () => { names.splice(i, 1); english.splice(i, 1); auto.splice(i, 1); drawList(); touch(); } }, icon("trash")))));
     }
     drawList();
-    const add = h("input", { type: "text", placeholder: t("add_student_ph"), "aria-label": t("add_student_ph"), class: "grow",
+    const add = h("input", { type: "text", placeholder: t("add_student_ph"), "aria-label": t("add_student_ph"), class: "grow", "data-required": "",
       onKeydown: (e) => { if (e.key === "Enter") addOne(); } });
     function addOne() {
       const v = add.value.trim();
@@ -92,12 +93,12 @@ export async function renderClasses(root) {
         h("div", { class: "row" }, status, h("button", { class: "btn", onClick: () => importDialog(room, names, (merged) => { const keep = new Map(names.map((n, i) => [n, english[i]])); names = merged; english = merged.map((n) => keep.get(n) || ""); auto = merged.map(() => ""); drawList(); touch(); }) }, icon("upload"), t("paste_or_import")))),
       names.length ? null : h("div", { class: "banner info" }, icon("info"), h("div", {}, t("no_students_yet"))),
       list,
-      h("div", { class: "row", style: { marginTop: ".8rem" } }, add, h("button", { class: "btn", onClick: addOne }, icon("plus"), t("add"))));
+      h("div", { class: "row", "data-form": "", style: { marginTop: ".8rem" } }, add, h("button", { class: "btn", "data-check": "", onClick: addOne }, icon("plus"), t("add"))));
   }
 
   function importDialog(room, current, apply) {
     let parsed = { names: [], duplicates: [] };
-    const ta = h("textarea", { placeholder: t("paste_here"), "aria-label": t("paste_here") });
+    const ta = h("textarea", { placeholder: t("paste_here"), "aria-label": t("paste_here"), required: true });
     const info = h("div", { class: "muted", style: { margin: ".8rem 0" } }, t("import_waiting"));
     const replace = h("input", { type: "checkbox", style: { width: "20px", height: "20px" } });
     const show = (p) => {
@@ -122,7 +123,7 @@ export async function renderClasses(root) {
         h("div", { class: "row", style: { marginTop: ".8rem" } }, h("b", {}, t("or_choose_file")), file), info,
         current.length ? h("label", { class: "row" }, replace, t("replace_current", { n: current.length })) : null),
       actions: [{ label: t("cancel") }, { label: t("add_to_class"), kind: "primary", onClick: () => {
-        if (!parsed.names.length) return false;
+        if (!parsed.names.length) { showProblems(ta.closest(".modal"), [{ el: ta, label: t("paste_here"), reason: t("import_nothing") }]); return false; }
         const base = replace.checked ? [] : current.filter((x) => x.trim());
         const have = new Set(base.map((x) => x.toLowerCase()));
         apply([...base, ...parsed.names.filter((n) => !have.has(n.toLowerCase()))]);

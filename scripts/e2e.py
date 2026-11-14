@@ -299,6 +299,11 @@ try:
         page.click("button:has-text('اعمل الملف')"); page.wait_for_selector(".banner.ok:visible:has-text('في الملف')", timeout=20000); shot("17o_certificates")
         # behaviour note, then a seat
         page.evaluate("location.hash='#/behavior'"); page.wait_for_selector("#main:not(.busy) .panel input[type=text]")
+        # "check before you go on": the add button with an empty note warns and sends nothing; typing the note clears the warning
+        page.click(".panel .btn.primary"); page.wait_for_selector(".v-banner")
+        assert page.locator(".bh-note").count() == 0 and page.locator(".panel input[aria-invalid=true]").count() == 1
+        shot("17o_check_warning")
+        page.fill(".panel input[type=text]", "x"); page.wait_for_selector(".v-banner", state="detached")
         page.fill(".panel input[type=text]", "مشاركة ممتازة"); page.keyboard.press("Enter"); page.wait_for_selector(".bh-note", timeout=10000); shot("17p_behavior")
         page.evaluate("location.hash='#/seating'"); page.wait_for_selector("#main:not(.busy) .seat")
         page.click(".st-pool .chip >> nth=0"); page.click(".seat >> nth=0"); page.wait_for_selector(".seat.full", timeout=10000); shot("17p_seating")

@@ -17,7 +17,7 @@ export function aiPanel() {
   function draw() {
     const lang = getLang();
     const p = st.providers.find((x) => x.id === cur) || st.providers[0];
-    const key = h("input", { type: "password", autocomplete: "off", spellcheck: "false", dir: "ltr", placeholder: p.has_key ? "••••••••••••" : t("ai_key_ph") });
+    const key = h("input", { type: "password", autocomplete: "off", spellcheck: "false", dir: "ltr", placeholder: p.has_key ? "••••••••••••" : t("ai_key_ph"), "data-label": t("ai_key"), ...(p.needs_key && !p.has_key ? { required: true } : {}) });
     // Models are asked from the service itself. "Automatic" lets the app pick a working one.
     const model = h("select", { dir: "ltr" }, h("option", { value: "" }, t("ai_auto_model")));
     const fill = (list, chosen) => {
@@ -35,12 +35,12 @@ export function aiPanel() {
       } catch (e) { if (!quiet) throw e; }
     };
     if (p.has_key || !p.needs_key) loadModels(true);
-    const base = h("input", { type: "text", dir: "ltr", value: p.saved_base_url || p.base_url, placeholder: "https://.../v1" });
+    const base = h("input", { type: "url", dir: "ltr", value: p.saved_base_url || p.base_url, placeholder: "https://.../v1", "data-label": t("ai_base_url"), ...(p.saved_base_url || p.base_url ? {} : { required: true }) });
     const out = h("div", {});
     const body = () => ({ provider: p.id, api_key: key.value.trim(), model: model.value, base_url: base.value.trim() });
     const busy = async (btn, fn) => { btn.disabled = true; try { return await guarded(fn); } finally { btn.disabled = false; } };
 
-    const testBtn = h("button", { class: "btn", onClick: () => busy(testBtn, async () => {
+    const testBtn = h("button", { class: "btn", "data-check": "", onClick: () => busy(testBtn, async () => {
       out.replaceChildren(h("span", { class: "muted" }, t("ai_testing")));
       try {
         const r = await api.post("/api/ai/test", body());
