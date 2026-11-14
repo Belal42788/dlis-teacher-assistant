@@ -31,6 +31,8 @@ class TestQuizVersionsAndParentWeek(unittest.TestCase):
             self.assertEqual(out["homework"], ["Page 12", "Draw a mouse"])
             self.assertEqual(out["material"], [{"title": "Video", "url": "https://youtu.be/x"}])
             self.assertEqual(out["quiz_alerts"][0]["date"], "2026-11-12"); self.assertFalse(out["approved"])
+            again = svc.save_parent_week({"room_id": "kg1-a", "trimester": 0, "week": 8, "homework": "Page 13", "quiz_alerts": ""})   # the files page sends no links: the saved ones stay
+            self.assertEqual((again["homework"], again["material"]), (["Page 13"], out["material"]))
             with self.assertRaises(AppError):
                 svc.save_parent_week({"room_id": "kg1-a", "trimester": 0, "week": 8}, True)
 

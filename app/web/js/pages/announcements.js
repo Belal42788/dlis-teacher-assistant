@@ -1,6 +1,5 @@
 import { h, icon, confirmBox, readFileB64 } from "../dom.js";
 import { api, guarded } from "../api.js";
-import { hubTabs } from "../components/hubtabs.js";
 import { t } from "../i18n.js";
 import { announceCard } from "../components/announce_list.js";
 import { todayIso } from "../labels.js";
@@ -11,7 +10,7 @@ export async function renderAnnouncements(root) {
   let editing = null;
   async function load() {
     const d = await api.get("/api/announcements");
-    const kids = [hubTabs("parents", "announcements"), h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_announcements")), h("p", {}, t("an_lead"))))];
+    const kids = [h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_announcements")), h("p", {}, t("an_lead"))))];
     if (!d.connected) {
       kids.push(h("div", { class: "panel" }, h("p", {}, d.problem === "cloud_offline" ? t("an_offline") : t("an_not_connected")), h("a", { class: "btn", href: "#/settings" }, icon("settings"), t("nav_settings"))));
     } else {

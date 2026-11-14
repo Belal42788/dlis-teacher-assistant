@@ -27,7 +27,6 @@ import { mailDeveloper } from "./components/dev_mail.js";
 import { renderMap } from "./pages/map.js";
 import { renderAnnouncements } from "./pages/announcements.js";
 import { renderProgress } from "./pages/progress.js";
-import { renderParentWeek } from "./pages/parentweek.js";
 import { renderFollowup } from "./pages/followup.js";
 import { renderChat } from "./pages/chat.js";
 import { renderHelp } from "./pages/help.js";
@@ -77,7 +76,6 @@ const PAGES = [
   { id: "seating", nav: "classes", render: renderSeating },
   { id: "insights", nav: "classes", render: renderInsights },
   { id: "announcements", icon: "megaphone", group: "school", need: "online", render: renderAnnouncements },
-  { id: "parentweek", nav: "announcements", render: renderParentWeek },
   { id: "followup", icon: "tasks", group: "school", need: "admin", render: renderFollowup },
   { id: "map", icon: "map", group: "school", render: renderMap },
   { id: "settings", icon: "settings", group: "end", render: renderSettings },
