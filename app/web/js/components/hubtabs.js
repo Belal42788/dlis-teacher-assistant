@@ -6,7 +6,6 @@ const GROUPS = {
   library: [["library", "lb_tab_files"], ["bank", "nav_bank"]],
   create: [["docs", "cr_tab_docs"], ["tools", "nav_tools"]],
   classes: [["classes", "hub_students"], ["log", "nav_log"], ["progress", "nav_progress"], ["grades", "nav_grades"], ["behavior", "nav_behavior"], ["seating", "nav_seating"], ["insights", "nav_insights"]],
-  parents: [["announcements", "an_tab"], ["parentweek", "nav_parentweek"]],
   tasks: [["tasks", "hub_tasks"], ["reminders", "hub_reminders"]],
 };
 // «My files» has two tabs, so each one says what is in it and what you do there (hh_<tab>_has / _do).

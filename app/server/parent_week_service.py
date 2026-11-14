@@ -60,7 +60,8 @@ class ParentWeekMixin:
         room, tri, week = str(b.get("room_id", "")), int(b.get("trimester", 0)), int(b.get("week", 1))
         self._room(room)
         data = self._pw()
-        item = {"homework": _lines(b.get("homework")), "material": _links(b.get("material")), "quiz_alerts": _alerts(b.get("quiz_alerts")),
+        old = data.get(f"{room}|{tri}|{week}", {})
+        item = {"homework": _lines(b.get("homework")), "material": _links(b["material"]) if "material" in b else old.get("material", []), "quiz_alerts": _alerts(b.get("quiz_alerts")),
                 "approved": data.get(f"{room}|{tri}|{week}", {}).get("approved", False)}
         if publish is not None:
             if self._cloud_cfg()["role"] not in ("teacher", "admin"):

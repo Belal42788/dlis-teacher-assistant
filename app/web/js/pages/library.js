@@ -16,6 +16,8 @@ const view = { g: "", key: "", all: false };   // where the teacher was looking,
 export async function renderLibrary(root) {
   const [structure, ov] = await Promise.all([api.get("/api/structure"), api.get("/api/overview")]);
   const ai = await guarded(() => api.get("/api/ai")) || { ready: false };
+  const cloud = await guarded(() => api.get("/api/cloud")) || {};
+  const staff = !!(cloud.signed_in && (cloud.role === "teacher" || cloud.role === "admin"));
   const wanted = new URLSearchParams((location.hash.split("?")[1] || "")).get("share") || "";
   const tools = sourceTools({ ai, reload: () => load() });
   const grades = structure.grades.filter((g) => structure.rooms.some((r) => r.grade_id === g.id));
@@ -275,10 +277,62 @@ export async function renderLibrary(root) {
         h("button", { class: "btn primary", onClick: addMenu }, icon("plus"), t("fx_add"), " ⌄")),
       rooms.length ? h("div", { class: "fx-head-rooms muted small" }, t("fx_shown_to"), " ", rooms.map((r) => h("span", { class: "chip small" }, shortRoomLabel(r, structure)))) : null);
   }
+  // ---------------------------------------------------------------- the week plan parents see (homework + quiz alerts), kept under the week's header
+  const plans = new Map();   // "<grade>|<week key>" -> what the teacher typed, kept while moving around so nothing is lost
+  function planBox() {
+    const rooms = roomsOf(view.g);
+    if (view.g === "none" || view.g === "*" || view.key === "none" || !rooms.length) return null;
+    const k = parseKey(view.key), pkey = `${view.g}|${view.key}`;
+    const box = h("details", { class: "fx-plan", open: !!view.planOpen });
+    box.addEventListener("toggle", () => { view.planOpen = box.open; });
+    const lines = (v) => String(v || "").split("\n").map((x) => x.trim()).filter(Boolean);
+    const weekLinks = () => all().filter(({ f, p }) => f.kind === "link" && inGrade(p, view.g) && wkKey(p.t, p.w) === view.key && isOn(p)).map(({ f }) => `${f.name}: ${f.url}`);
+    async function fetchPlan() {
+      const rs = (await Promise.all(rooms.map((r) => guarded(() => api.get(`/api/parent-week?room=${r.id}&tri=${k.t}&week=${k.w}`))))).filter(Boolean);
+      if (!rs.length) return null;
+      const first = (key) => (rs.find((x) => x[key] && x[key].length) || { [key]: [] })[key];
+      return { topics: [...new Set(rs.flatMap((x) => x.topics))], hw: first("homework").join("\n"), qz: first("quiz_alerts").map((a) => (a.date ? `${a.title} | ${a.date}` : a.title)).join("\n"), approved: rs.every((x) => x.approved) };
+    }
+    const payload = (r, d) => ({ room_id: r.id, trimester: k.t, week: k.w, homework: d.hw, quiz_alerts: d.qz });
+    const message = (lang, d) => {
+      const L = { ar: { hi: "السلام عليكم ورحمة الله، أولياء الأمور الكرام 🌷", wk: "ملخص الأسبوع", did: "📚 اللي اتشرح:", hw: "📝 الواجب:", mat: "🔗 مصادر مساعدة:", qz: "⏰ اختبارات قادمة:", end: "شكرًا لتعاونكم." },
+                  en: { hi: "Dear parents,", wk: "Week summary", did: "📚 This week we learned:", hw: "📝 Homework:", mat: "🔗 Helpful links:", qz: "⏰ Upcoming quizzes:", end: "Thank you for your support." } }[lang];
+      const block = (title, items) => (items.length ? [title, ...items.map((x) => "• " + x), ""] : []);
+      return [L.hi, `${L.wk} ${k.w}`, "", ...block(L.did, d.topics), ...block(L.hw, lines(d.hw)), ...block(L.mat, weekLinks()), ...block(L.qz, lines(d.qz).map((x) => x.replace(/\s*\|\s*/, " – "))), L.end].join("\n").trim();
+    };
+    function fill(d) {
+      const hw = h("textarea", { rows: 3, placeholder: t("pw_hw_ph"), "aria-label": t("pw_hw") }, d.hw), qz = h("textarea", { rows: 2, placeholder: t("pw_quiz_ph"), "aria-label": t("pw_quiz") }, d.qz);
+      hw.addEventListener("input", () => { d.hw = hw.value; }); qz.addEventListener("input", () => { d.qz = qz.value; });
+      const run = (fn) => guarded(async () => { for (const r of rooms) await fn(r); plans.delete(pkey); toast(t("saved")); await show(); });
+      const copy = (lang) => guarded(async () => { await navigator.clipboard.writeText(message(lang, d)); toast(t("pw_copied")); });
+      box.replaceChildren(
+        h("summary", {}, h("b", {}, t("fx_plan_title")), d.approved ? h("span", { class: "chip on small" }, t("pb_live")) : (d.hw || d.qz ? h("span", { class: "chip small" }, t("fx_plan_draft")) : null)),
+        h("div", { class: "fx-plan-in" },
+          h("p", { class: "muted small" }, t("fx_plan_hint")),
+          d.topics.length ? h("div", { class: "banner info" }, icon("info"), h("div", {}, h("b", {}, t("pw_taught")), " ", d.topics.join(" · "))) : null,
+          h("label", { class: "field" }, h("span", { class: "label" }, t("pw_hw")), hw),
+          h("label", { class: "field" }, h("span", { class: "label" }, t("pw_quiz")), qz),
+          h("div", { class: "row" },
+            h("button", { class: "btn", onClick: () => run((r) => api.put("/api/parent-week", payload(r, d))) }, t("save")),
+            staff ? h("button", { class: "btn primary", onClick: () => run((r) => api.post("/api/parent-week/publish", payload(r, d))) }, icon("send"), t("pw_publish")) : h("span", { class: "muted small" }, t("an_not_connected")),
+            staff && d.approved ? h("button", { class: "btn ghost", onClick: () => run((r) => api.post("/api/parent-week/unpublish", payload(r, d))) }, t("pb_unapprove")) : null,
+            h("span", { class: "grow" }), h("span", { class: "muted small" }, t("pw_msg")),
+            h("button", { class: "btn small", onClick: () => copy("ar") }, icon("copy"), "عربي"), h("button", { class: "btn small", onClick: () => copy("en") }, icon("copy"), "English"))));
+    }
+    async function show() {
+      let d = plans.get(pkey);
+      if (!d) { d = await fetchPlan(); if (!d) { box.remove(); return; } plans.set(pkey, d); }
+      if (box.isConnected || !box.parentNode) fill(d);
+    }
+    box.append(h("summary", {}, h("b", {}, t("fx_plan_title"))));
+    show();
+    return box;
+  }
+
   function middle() {
     const here = all().filter(({ p }) => inGrade(p, view.g) && (view.g === "none" || wkKey(p.t, p.w) === view.key)).sort((a, b) => b.f.mtime - a.f.mtime);
     const msgs = here.filter(({ f }) => f.kind === "message"), links = here.filter(({ f }) => f.kind === "link"), files = here.filter(({ f }) => f.kind !== "message" && f.kind !== "link");
-    const main = h("div", { class: "fx-main" }, head(),
+    const main = h("div", { class: "fx-main" }, head(), planBox(),
       here.length ? h("div", { class: "fx-stack" }, msgs.map(msgBox), files.length ? h("div", { class: "fx-two" }, files.map(fileBox)) : null, links.map(linkBox))
         : h("div", { class: "fx-empty" }, icon("folder"), h("p", {}, view.g === "none" ? t("lb_none") : t("fx_empty"))));
     if (view.g !== "none") {   // drop files on the week to add them there

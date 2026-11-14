@@ -52,7 +52,7 @@ Feature files (each is a mixin of `Service`):
 | `ToolsMixin` | `app/server/tools_service.py` | 65 |
 | `SchemeMixin` | `app/server/scheme_service.py` | 152 |
 | `LibraryMixin` | `app/server/library_service.py` | 592 |
-| `ParentWeekMixin` | `app/server/parent_week_service.py` | 73 |
+| `ParentWeekMixin` | `app/server/parent_week_service.py` | 74 |
 | `CoverageMixin` | `app/server/coverage_service.py` | 117 |
 | `CloudMixin` | `app/server/cloud_service.py` | 437 |
 | `DocsMixin` | `app/server/docs_service.py` | 418 |
@@ -75,7 +75,7 @@ Pages:
 <!-- AUTO:pages -->
 Menu pages: `today`, `timetable`, `calendar`, `tasks`, `scheme`, `docs`, `library`, `chat`, `classes`, `announcements`, `followup`, `map`, `settings`, `help`.
 
-Tabs inside a menu page: `reminders` (tab of `tasks`), `tools` (tab of `docs`), `bank` (tab of `library`), `log` (tab of `classes`), `progress` (tab of `classes`), `grades` (tab of `classes`), `behavior` (tab of `classes`), `seating` (tab of `classes`), `insights` (tab of `classes`), `parentweek` (tab of `announcements`).
+Tabs inside a menu page: `reminders` (tab of `tasks`), `tools` (tab of `docs`), `bank` (tab of `library`), `log` (tab of `classes`), `progress` (tab of `classes`), `grades` (tab of `classes`), `behavior` (tab of `classes`), `seating` (tab of `classes`), `insights` (tab of `classes`).
 <!-- /AUTO:pages -->
 
 Files in the teacher's data folder: <!-- AUTO:datafiles -->

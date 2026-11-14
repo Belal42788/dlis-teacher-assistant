@@ -205,8 +205,9 @@ try:
         page.reload(); page.wait_for_selector(".nav"); page.click(".nav a[data-page=scheme]"); page.wait_for_selector(".sw-card")
         assert page.input_value(".sw-card input[placeholder='الوحدة 2'] >> nth=0") == "Unit 2" and "Explain the CPU" in page.input_value(".sw-card textarea >> nth=0")
         page.evaluate("window.__cp = ''; navigator.clipboard.writeText = async (x) => { window.__cp = x; }")
-        page.goto(page.url.split("#")[0] + "#/parentweek"); page.wait_for_selector("button:has-text('عربي')")
-        page.fill("textarea >> nth=0", "صفحة 12"); page.click("button:has-text('عربي')"); page.wait_for_timeout(300)
+        page.goto(page.url.split("#")[0] + "#/library"); page.wait_for_selector(".fx-plan")   # the parents' week plan sits in the week on the files page
+        page.click(".fx-plan > summary"); page.wait_for_selector(".fx-plan textarea")
+        page.fill(".fx-plan textarea >> nth=0", "صفحة 12"); page.click(".fx-plan button:has-text('عربي')"); page.wait_for_timeout(300)
         cp = page.evaluate("window.__cp"); assert "السلام عليكم" in cp and "صفحة 12" in cp, cp
         page.click(".nav a[data-page=today]"); page.wait_for_selector(".plan-line"); page.click("text=ورقة للمدرس البديل"); page.wait_for_selector("text=Cover_Sheet"); shot("08c_today_plan")
         page.click(".nav a[data-page=tasks]"); page.wait_for_selector(".task-add")
@@ -466,7 +467,7 @@ try:
               const outside = (r.right > pr.right + 2 || r.left < pr.left - 2) && pcs.overflowX === 'visible' && cs.position !== 'absolute' && cs.position !== 'fixed' && pr.width > 0;
               if (clipped || outside) out.push((el.tagName + '.' + el.className).slice(0, 50) + ' | ' + el.textContent.trim().slice(0, 40) + ' | ' + Math.round(r.width) + ' vs ' + Math.round(pr.width) + ' in ' + p.tagName + '.' + p.className + ' ws=' + pcs.whiteSpace + ' disp=' + pcs.display + ' kids=' + [...p.children].map(k => Math.round(k.getBoundingClientRect().width) + '@' + Math.round(k.getBoundingClientRect().left)).join(',') + ' td@' + Math.round(pr.left) + ' pad=' + pcs.paddingLeft + '/' + pcs.paddingRight + ' minw=' + pcs.minWidth); }
               return out.slice(0, 12); }"""
-            for route in ("today", "timetable", "calendar", "tasks", "docs", "scheme", "tools", "library", "chat", "classes", "log", "progress", "parentweek", "map", "settings", "help"):
+            for route in ("today", "timetable", "calendar", "tasks", "docs", "scheme", "tools", "library", "chat", "classes", "log", "progress", "map", "settings", "help"):
                 page.evaluate(f"location.hash = '#/{route}'"); page.wait_for_timeout(700)
                 for r in page.evaluate(JS): print("SWEEP", route, "->", r)
                 shot(f"14_{route}_en")
