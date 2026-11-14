@@ -14,6 +14,12 @@ jobs:
         with: { python-version: "3.13" }
       - name: This school's server settings are safe (no secret key inside the installer)
         run: python scripts/school_check.py
+      - name: This school's private data (student lists, teacher timetables) from the repository secrets, if the school added them
+        shell: bash
+        env: { ROSTER: "${{ secrets.SCHOOL_ROSTER_JSON }}", TIMETABLES: "${{ secrets.SCHOOL_TIMETABLES_JSON }}" }
+        run: |
+          if [ -n "$ROSTER" ]; then printf '%s' "$ROSTER" > resources/school_roster.json; fi
+          if [ -n "$TIMETABLES" ]; then printf '%s' "$TIMETABLES" > resources/teacher_timetables.json; fi
       - run: pip install -r requirements.txt pyinstaller
       - run: python -m unittest discover -s tests
       - run: pyinstaller --noconfirm --clean --windowed --icon resources/icon.ico --name DLIS_Teacher_Assistant --add-data "app/web;app/web" --add-data "resources;resources" --collect-data docx --collect-data certifi --collect-all pypdfium2 --hidden-import webview --hidden-import pystray._win32 run.py
@@ -37,6 +43,12 @@ jobs:
         with: { python-version: "3.13" }
       - name: This school's server settings are safe (no secret key inside the installer)
         run: python scripts/school_check.py
+      - name: This school's private data (student lists, teacher timetables) from the repository secrets, if the school added them
+        shell: bash
+        env: { ROSTER: "${{ secrets.SCHOOL_ROSTER_JSON }}", TIMETABLES: "${{ secrets.SCHOOL_TIMETABLES_JSON }}" }
+        run: |
+          if [ -n "$ROSTER" ]; then printf '%s' "$ROSTER" > resources/school_roster.json; fi
+          if [ -n "$TIMETABLES" ]; then printf '%s' "$TIMETABLES" > resources/teacher_timetables.json; fi
       - run: pip install -r requirements.txt pyinstaller
       - run: pyinstaller --noconfirm --clean --windowed --icon resources/icon.icns --name DLIS_Teacher_Assistant --add-data "app/web:app/web" --add-data "resources:resources" --collect-data docx --collect-data certifi --collect-all pypdfium2 --hidden-import webview run.py
       - name: Check the built program is complete

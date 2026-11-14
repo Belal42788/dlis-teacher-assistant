@@ -42,6 +42,16 @@ def resources_dir() -> Path:
     return bundle_root() / "resources"
 
 
+def school_file(name: str) -> Path:
+    """A file that belongs to one school (its student lists, its teachers' timetables). These are private: they are not in the public code.
+    The school puts them in `resources/` before building the installer (the GitHub build writes them from the repository's secrets),
+    or in the folder named by DLIS_SCHOOL_DATA (the tests use fake ones)."""
+    over = os.environ.get("DLIS_SCHOOL_DATA")
+    if over and (Path(over) / name).is_file():
+        return Path(over) / name
+    return resources_dir() / name
+
+
 def default_data_folder() -> Path:
     docs = Path.home() / "Documents"
     return (docs if docs.exists() else Path.home()) / APP_NAME

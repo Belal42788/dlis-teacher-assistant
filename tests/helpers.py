@@ -8,6 +8,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import nonet   # the tests never reach the real internet (same answer here, on GitHub, anywhere)
 nonet.install()
+# a school's real student lists and teacher timetables are private (not in the code); the tests use made-up ones
+os.environ["DLIS_SCHOOL_DATA"] = str(Path(__file__).resolve().parent / "fixtures" / "school_data")
 
 ZIP_DATA = Path(os.environ.get("DLIS_LEGACY_SAMPLE", "/home/claude/proj/DLIS_Data"))
 

@@ -6,7 +6,7 @@ from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
 SHOTS = Path(os.environ.get("SHOTS", str(Path(tempfile.gettempdir()) / "shots"))); SHOTS.mkdir(exist_ok=True, parents=True)
 home = tempfile.mkdtemp(); data = Path(tempfile.mkdtemp()) / "My DLIS"
-env = dict(os.environ, DLIS_APP_HOME=home, HOME=home, USERPROFILE=home, PYTHONUTF8="1")  # fake home so the folder picker is isolated (HOME on Mac/Linux, USERPROFILE on Windows)
+env = dict(os.environ, DLIS_SCHOOL_DATA=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tests", "fixtures", "school_data"), DLIS_APP_HOME=home, HOME=home, USERPROFILE=home, PYTHONUTF8="1")  # fake home so the folder picker is isolated (HOME on Mac/Linux, USERPROFILE on Windows)
 (Path(home) / "Documents").mkdir()
 # the server thinks it is a school day (Wed 28 Oct 2026), so the screens do not depend on the weekday the test runs on
 _fake = Path(tempfile.mkdtemp()); (_fake / "sitecustomize.py").write_text(

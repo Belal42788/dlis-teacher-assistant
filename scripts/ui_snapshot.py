@@ -21,7 +21,7 @@ if sys.argv[1:2] == ["--compare"]:
     sys.exit(1 if diff else 0)
 root = str(Path(__file__).resolve().parents[1])
 outp = sys.argv[1]
-os.environ["DLIS_APP_HOME"]=tempfile.mkdtemp()
+os.environ["DLIS_APP_HOME"]=tempfile.mkdtemp(); os.environ["DLIS_SCHOOL_DATA"]=os.path.join(os.path.dirname(os.path.abspath(__file__)),"..","tests","fixtures","school_data")
 sys.path.insert(0,root)
 from app.server.http import AppServer
 from playwright.sync_api import sync_playwright

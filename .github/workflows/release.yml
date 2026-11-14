@@ -29,6 +29,7 @@ jobs:
   build:
     needs: verify
     uses: ./.github/workflows/build.yml
+    secrets: inherit
   publish:
     needs: build
     runs-on: ubuntu-latest

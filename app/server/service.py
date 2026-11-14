@@ -320,10 +320,10 @@ class Service(BellMixin, BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, Up
         return self.put_settings({"setup_done": True})
 
     def _seed_roster(self, store, structure) -> None:
-        """Classes the school already knows (resources/school_roster.json) start with their students.
+        """Classes the school already knows (school_roster.json, private: see paths.school_file) start with their students.
         Only fills a class that has no student list yet, so a teacher's own edits are never overwritten."""
         import json
-        f = paths.resources_dir() / "school_roster.json"
+        f = paths.school_file("school_roster.json")
         if not f.is_file():
             return
         roster = json.loads(f.read_text(encoding="utf-8"))
@@ -426,11 +426,11 @@ class Service(BellMixin, BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, Up
         return out
 
     def _seed_timetable(self, store) -> None:
-        """Teachers whose timetable the school already has (resources/teacher_timetables.json) get it once.
+        """Teachers whose timetable the school already has (teacher_timetables.json, private) get it once.
         Their own later edits are kept: the same ready-made timetable is never applied twice."""
         import json
         import re
-        f = paths.resources_dir() / "teacher_timetables.json"
+        f = paths.school_file("teacher_timetables.json")
         name = re.sub(r"\s+", "", store.load_settings().teacher_name).casefold()
         if not f.is_file() or not name:
             return

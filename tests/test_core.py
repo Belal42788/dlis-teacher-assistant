@@ -229,7 +229,7 @@ class TestSortAndPaste(unittest.TestCase):
 
     def test_school_system_export_paste(self):
         from app.core.students import parse_text
-        txt = "1214\nأحمد سمير\nذكر\n********\nرياض اطفال\nKG1\nKG1 A\n1 شارع تجريبي\n01000000000\n\n1322\nليلى محمود\nذكر\n********\nرياض اطفال\nKG1\nKG1 A\n"
+        txt = "1001\nأحمد سمير\nذكر\n********\nرياض اطفال\nKG1\nKG1 A\n1 شارع تجريبي\n01000000000\n\n1002\nليلى محمود\nأنثى\n********\nرياض اطفال\nKG1\nKG1 A\n"
         self.assertEqual(parse_text(txt)["names"], ["أحمد سمير", "ليلى محمود"])
 
     def test_school_calendar_file_is_valid(self):

@@ -11,7 +11,7 @@ for _s in (sys.stdout, sys.stderr):   # Windows consoles default to a code page 
     except Exception: pass
 home = tempfile.mkdtemp()
 data = Path(tempfile.mkdtemp()) / "مدرسة دار لقمان (نسخة 2026) - بيانات المدرس"   # Arabic letters, spaces, brackets
-os.environ.update(DLIS_APP_HOME=home, HOME=home, USERPROFILE=home, PYTHONUTF8="1")
+os.environ.update(DLIS_SCHOOL_DATA=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tests", "fixtures", "school_data"), DLIS_APP_HOME=home, HOME=home, USERPROFILE=home, PYTHONUTF8="1")
 sys.path.insert(0, str(ROOT))
 from app.server.http import AppServer
 

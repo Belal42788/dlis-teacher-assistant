@@ -142,5 +142,16 @@ class TestNoInternet(unittest.TestCase):
         c.close(); srv.close()
 
 
+class TestPrivateSchoolData(unittest.TestCase):
+    def test_student_lists_and_timetables_stay_out_of_the_public_code(self):
+        """A school's real student names and teachers' timetables are private: git must ignore them (the build reads them from secrets)."""
+        ignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
+        for f in ("resources/school_roster.json", "resources/teacher_timetables.json"):
+            self.assertIn(f, ignore, f"{f} must be listed in .gitignore")
+        if shutil.which("git") and (ROOT / ".git").exists():
+            tracked = subprocess.run(["git", "ls-files", "resources"], cwd=ROOT, capture_output=True, text=True).stdout.split()
+            self.assertFalse({"resources/school_roster.json", "resources/teacher_timetables.json"} & set(tracked), "private school data is tracked by git")
+
+
 if __name__ == "__main__":
     unittest.main()
