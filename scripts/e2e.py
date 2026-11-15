@@ -481,6 +481,7 @@ try:
               const st = await get('/api/structure'); const rooms = [];
               for (const r of st.rooms.slice(0, 4)) rooms.push([r.id, r.student_count, (await get('/api/rooms/' + r.id + '/students')).names?.length]);
               return { shown: document.querySelectorAll('.students li').length, hash: location.hash, head: document.querySelector('.detail h2, .detail h3')?.textContent, rooms }; }""")
+            why_stuck(page)   # while the browser is still open: what is it waiting for?
             raise AssertionError(f"students after reload: {seen}") from None
         assert page.locator(".students li").count() == 17, page.locator(".students li").count()
         # english + unsaved-changes guard
