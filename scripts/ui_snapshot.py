@@ -21,7 +21,7 @@ if sys.argv[1:2] == ["--compare"]:
     sys.exit(1 if diff else 0)
 root = str(Path(__file__).resolve().parents[1])
 outp = sys.argv[1]
-os.environ["DLIS_APP_HOME"]=tempfile.mkdtemp(); os.environ["DLIS_SCHOOL_DATA"]=os.path.join(os.path.dirname(os.path.abspath(__file__)),"..","tests","fixtures","school_data")
+os.environ["DLIS_APP_HOME"]=tempfile.mkdtemp(); os.environ["DLIS_NO_KEYCHAIN"]="1"; os.environ["DLIS_SCHOOL_DATA"]=os.path.join(os.path.dirname(os.path.abspath(__file__)),"..","tests","fixtures","school_data")
 sys.path.insert(0,root)
 from app.server.http import AppServer
 from playwright.sync_api import sync_playwright
@@ -47,7 +47,7 @@ with sync_playwright() as p:
     for lang in ("ar","en"):
         call("PUT","/api/prefs",{"language":lang})
         for w in (1200,390):
-            pg=b.new_page(viewport={"width":w,"height":800}); pg.add_init_script("localStorage.setItem('dlis.lang','%s')"%lang)
+            pg=b.new_page(viewport={"width":w,"height":800}, bypass_csp=True); pg.add_init_script("localStorage.setItem('dlis.lang','%s')"%lang)
             pg.goto(base+"/"); pg.wait_for_timeout(900)
             for pid in ids:
                 pg.evaluate(f"location.hash='#/{pid}'"); 

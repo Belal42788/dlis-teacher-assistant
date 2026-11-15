@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-os.environ["DLIS_APP_HOME"] = tempfile.mkdtemp()
+os.environ["DLIS_APP_HOME"] = tempfile.mkdtemp(); os.environ["DLIS_NO_KEYCHAIN"] = "1"
 os.environ["DLIS_NO_OPEN"] = "1"
 
 from app.core.store import DATA_VERSION, DataStore

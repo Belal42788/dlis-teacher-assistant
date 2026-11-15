@@ -8,6 +8,16 @@ from app.core.errors import AppError
 from app.core.store import DataStore
 
 
+def _tiny_zip() -> bytes:
+    """A real (tiny) Office-style zip: uploads are checked to be what their name says."""
+    import io
+    import zipfile
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w") as z:
+        z.writestr("ppt/presentation.xml", "<x/>")
+    return out.getvalue()
+
+
 class TestCloud(unittest.TestCase):
     def test_sign_in_role_and_test_against_a_fake_server(self):
         import threading
@@ -158,13 +168,13 @@ class TestCloud(unittest.TestCase):
                 self.assertEqual((ins["approved"], ins["class_id"]), (False, "g4-a"))   # never visible before the teacher approves
                 svc.add_publication({"class_id": "g4-a", "kind": "quiz", "title": "Q1", "url": "https://x.com/q", "visible_from": "2026-11-05"})
                 self.assertTrue([x for x in log if x[0] == "ins"][-1][1][0]["visible_from"].startswith("2026-11-05T00:00:00"))
-                svc.add_publication({"class_id": "g4-a", "kind": "presentation", "title": "Slides", "file": {"filename": "a b.pptx", "data_b64": base64.b64encode(b"x" * 100).decode()}})
+                svc.add_publication({"class_id": "g4-a", "kind": "presentation", "title": "Slides", "file": {"filename": "a b.pptx", "data_b64": base64.b64encode(_tiny_zip()).decode()}})
                 self.assertTrue(any(x[0] == "up" and "/object/files/g4-a/" in x[1] for x in log))
                 svc.set_publication("22222222-2222-2222-2222-222222222222", {"approved": True})
                 self.assertEqual([x for x in log if x[0] == "patch"][-1][2], {"approved": True})
                 # one file for all the classes of a grade: uploaded once, one item per class, visible at once
                 ups = len([x for x in log if x[0] == "up"])
-                svc.add_publication({"class_ids": ["g4-a", "g4-b"], "kind": "presentation", "title": "Deck", "approved": True, "file": {"filename": "d.pptx", "data_b64": base64.b64encode(b"x" * 50).decode()}})
+                svc.add_publication({"class_ids": ["g4-a", "g4-b"], "kind": "presentation", "title": "Deck", "approved": True, "file": {"filename": "d.pptx", "data_b64": base64.b64encode(_tiny_zip()).decode()}})
                 self.assertEqual(len([x for x in log if x[0] == "up"]), ups + 1)
                 two = [x[1][0] for x in log if x[0] == "ins"][-2:]
                 self.assertEqual(([x["class_id"] for x in two], two[0]["file_path"] == two[1]["file_path"], {x["approved"] for x in two}), (["g4-a", "g4-b"], True, {True}))

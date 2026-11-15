@@ -14,12 +14,18 @@ from datetime import date
 from ..core import paths
 from ..core.cloud import Cloud, clean_url
 from ..core.errors import AppError
+from ..core.upload_check import check_document, check_picture
 
 def _small_jpeg(b64: str, side: int = 1280) -> bytes:
     """A picture from the teacher's computer, made small (free server space is limited)."""
     from PIL import Image
     try:
-        im = Image.open(io.BytesIO(base64.b64decode(b64)))
+        raw = base64.b64decode(b64)
+    except ValueError as e:
+        raise AppError("image_unreadable", "This picture could not be read.", status=400) from e
+    check_picture(raw)
+    try:
+        im = Image.open(io.BytesIO(raw))
         im = im.convert("RGB")
     except Exception as e:
         raise AppError("image_unreadable", "This picture could not be read.", status=400) from e
@@ -322,9 +328,13 @@ class CloudMixin:
                 raise AppError("bad_value", "Write the message.", status=400)
             base["body"] = body
         elif isinstance(f, dict) and f.get("data_b64"):
-            raw = base64.b64decode(f["data_b64"])
+            try:
+                raw = base64.b64decode(f["data_b64"])
+            except ValueError as e:
+                raise AppError("file_unreadable", status=400) from e
             if len(raw) > 15 * 1024 * 1024:
                 raise AppError("file_too_big", "The file is bigger than 15 MB. Share a link instead.", status=400)
+            check_document(str(f.get("filename") or ""), raw)
             name = re.sub(r"[^A-Za-z0-9._-]", "_", str(f.get("filename") or "file"))[-60:]
             path = f"{ids[0]}/{uuid.uuid4().hex[:10]}-{name}"
             c.upload("files", path, raw, "application/octet-stream")

@@ -275,7 +275,7 @@ err_ai_no_vision: "This AI service cannot read pictures. Use Gemini (free) in Se
   err_bad_periods: "Each period needs its own name.", err_trimester_dates: "A trimester ends before it starts. Please check the dates.",
   err_folder_not_writable: "The app cannot save files in that folder. Choose another one.", err_empty_path: "Choose a folder.",
   err_bad_folder_name: "The folder name has characters that are not allowed.", err_not_legacy_folder: "This folder does not contain data from the old version.",
-  err_same_folder: "That is your current data folder.", err_file_unreadable: "This file could not be read.", err_old_excel: "Old .xls files are not supported. Save as .xlsx or paste the names.",
+  err_file_suspicious: "This file does not look like what its name says, so it was not opened.", err_image_too_big: "This picture is too large.", err_same_folder: "That is your current data folder.", err_file_unreadable: "This file could not be read.", err_old_excel: "Old .xls files are not supported. Save as .xlsx or paste the names.",
   err_room_not_found: "That class no longer exists.", err_missing_grade: "A class belongs to a grade that does not exist.", err_missing_stage: "A grade belongs to a stage that does not exist.",
   err_too_big: "The file is too large.", err_bad_token: "Please close the app and open it again.", err_bad_host: "Please close the app and open it again.",
 };

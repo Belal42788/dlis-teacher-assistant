@@ -13,6 +13,7 @@ from datetime import date
 
 from ..core import documents as D
 from ..core.errors import AppError
+from ..core.upload_check import check_document
 
 PARTS = [("behavior", "Behavior"), ("attendance", "Attendance"), ("classwork", "Classwork"), ("homework", "Homework"), ("quiz", "Quiz")]
 
@@ -129,6 +130,7 @@ class GradesMixin:
             raw = base64.b64decode(b.get("data_b64") or "")
         except ValueError as e:
             raise AppError("file_unreadable", status=400) from e
+        check_document(str(b.get("filename", "")), raw)
         rows = [r for r in _table(str(b.get("filename", "")), raw) if any(c for c in r)]
         if len(rows) < 2:
             raise AppError("file_unreadable", "The file has no rows.", status=400)

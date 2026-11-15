@@ -7,6 +7,7 @@ import time
 import uuid
 
 from ..core.errors import AppError
+from ..core.upload_check import check_document
 
 EXT = (".docx", ".pptx", ".xlsx", ".pdf")
 SRC_EXT = (".docx", ".pptx", ".pdf")   # what the AI can read from a file
@@ -335,6 +336,7 @@ class LibraryMixin:
             raise AppError("file_unreadable", "The file is empty.", status=400)
         if len(raw) > MAX_UPLOAD:
             raise AppError("file_too_big", "The file is bigger than 40 MB.", status=400)
+        check_document(name, raw)
         g = self._valid_grade(b.get("g"))
         lib = self._lib()
         root = self._need_store().root

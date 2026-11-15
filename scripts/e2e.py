@@ -6,7 +6,7 @@ from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
 SHOTS = Path(os.environ.get("SHOTS", str(Path(tempfile.gettempdir()) / "shots"))); SHOTS.mkdir(exist_ok=True, parents=True)
 home = tempfile.mkdtemp(); data = Path(tempfile.mkdtemp()) / "My DLIS"
-env = dict(os.environ, DLIS_SCHOOL_DATA=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tests", "fixtures", "school_data"), DLIS_APP_HOME=home, HOME=home, USERPROFILE=home, PYTHONUTF8="1")  # fake home so the folder picker is isolated (HOME on Mac/Linux, USERPROFILE on Windows)
+env = dict(os.environ, DLIS_NO_KEYCHAIN="1", DLIS_SCHOOL_DATA=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tests", "fixtures", "school_data"), DLIS_APP_HOME=home, HOME=home, USERPROFILE=home, PYTHONUTF8="1")  # fake home so the folder picker is isolated (HOME on Mac/Linux, USERPROFILE on Windows)
 (Path(home) / "Documents").mkdir()
 # the server thinks it is a school day (Wed 28 Oct 2026), so the screens do not depend on the weekday the test runs on
 _fake = Path(tempfile.mkdtemp()); (_fake / "sitecustomize.py").write_text(
@@ -110,7 +110,7 @@ FAKE_URL = f"http://127.0.0.1:{_fake.server_address[1]}/v1"
 try:
     with sync_playwright() as p:
         b = p.chromium.launch()
-        ctx = b.new_context(viewport={"width": 1280, "height": 860})
+        ctx = b.new_context(viewport={"width": 1280, "height": 860}, bypass_csp=True)   # the checks below run text as code in the page; the strict-policy step opens its own context
         page = _open_group(ctx.new_page()); page.clock.install(time=_dt.datetime(2026, 10, 28, 9, 0, 0))
         track(page)
         page.on("console", lambda m: errors.append(f"console {m.type}: {m.text}") if m.type in ("error", "warning") else None)
@@ -492,6 +492,15 @@ try:
         late.wait_for_selector(".students li"); late.wait_for_timeout(2500)
         assert late.locator(".students li").count() >= 1 and late.evaluate("location.hash") == "#/classes", "the page opened last was painted over"
         late.close()
+        # the page's security policy (only our own files may run or load) must not break any page: open them all with the policy in force
+        strict = b.new_context(viewport={"width": 1280, "height": 860}); sp = strict.new_page(); csp_errors = []
+        sp.on("console", lambda m: csp_errors.append(m.text) if ("Content Security Policy" in m.text or "Refused to" in m.text) else None)
+        sp.on("pageerror", lambda e: csp_errors.append(str(e)))
+        sp.goto(url); sp.wait_for_selector(".shell")
+        for pid in re.findall(r'\{ id: "(\w+)"[^}]*load:', (ROOT / "app/web/js/main.js").read_text(encoding="utf-8")):
+            sp.goto(f"{url}#/{pid}"); sp.wait_for_timeout(400)
+        assert not csp_errors, f"the security policy blocked something: {csp_errors[:3]}"
+        strict.close()
         # english + unsaved-changes guard
         page.click(".nav a[data-page=settings]"); page.click(".seg-btn[data-tab=me]"); page.wait_for_selector("button[lang=en]"); page.click("button[lang=en]")
         page.wait_for_selector(".tab:has-text('My day')"); assert page.evaluate("document.documentElement.dir") == "ltr"

@@ -15,7 +15,7 @@ from typing import Optional
 
 from ..core import ai_client
 from ..core import documents as D
-from ..core import paths
+from ..core import paths, secret_store
 from ..core.errors import AppError
 from ..core.names import english_name
 from ..core.translit import to_english
@@ -90,18 +90,65 @@ class AiMixin:
     def _ai_path(self):
         return paths.app_support_dir() / "ai.json"
 
-    def _ai_data(self) -> dict:
+    # Keys (the AI services' and the picture services') are kept in the computer's own safe when there is one (core/secret_store.py);
+    # ai.json then holds only the marker "@keychain" in their place. Without a safe they stay in the file, which only its owner can read.
+    _SECRET_KEYS = ("api_key", "api_token", "hf_token")
+    _MARK = "@keychain"
+    _secret_cache: dict = {}
+
+    @classmethod
+    def _secrets_in(cls, node, path=()):
+        """Every (path, holder, key) where a secret sits in the settings."""
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if k in cls._SECRET_KEYS and isinstance(v, str):
+                    yield "/".join(path + (k,)), node, k
+                else:
+                    yield from cls._secrets_in(v, path + (str(k),))
+
+    def _ai_raw(self) -> dict:
         try:
             d = json.loads(self._ai_path().read_text(encoding="utf-8"))
             return d if isinstance(d, dict) else {}
         except (OSError, ValueError):
             return {}
 
+    def _ai_data(self) -> dict:
+        d = self._ai_raw()
+        loose = False
+        for name, holder, k in list(self._secrets_in(d)):
+            if holder[k] == self._MARK:
+                if name not in self._secret_cache:
+                    self._secret_cache[name] = secret_store.load(name)
+                if self._secret_cache[name]:
+                    holder[k] = self._secret_cache[name]
+                else:
+                    del holder[k]               # the safe lost it (a new Windows user, a reset keychain): the teacher types it again
+            elif holder[k]:
+                loose = True
+        if loose and secret_store.backend():    # a file from before: its keys move into the safe now
+            self._ai_write(d)
+        return d
+
     def _ai_write(self, d: dict) -> None:
+        old = {name for name, holder, k in self._secrets_in(self._ai_raw()) if holder[k] == self._MARK}
+        out = json.loads(json.dumps(d))
+        kept = set()
+        for name, holder, k in self._secrets_in(out):
+            value = holder[k]
+            if value and value != self._MARK and secret_store.save(name, value):
+                self._secret_cache[name] = value
+                holder[k] = self._MARK
+                kept.add(name)
+            elif value == self._MARK:
+                kept.add(name)
+        for name in old - kept:                 # a key the teacher cleared must not stay in the safe
+            secret_store.delete(name)
+            self._secret_cache.pop(name, None)
         p = self._ai_path()
         p.parent.mkdir(parents=True, exist_ok=True)
         tmp = p.with_suffix(".tmp")
-        tmp.write_text(json.dumps(d, indent=1), encoding="utf-8")
+        tmp.write_text(json.dumps(out, indent=1), encoding="utf-8")
         try:
             os.chmod(tmp, 0o600)
         except OSError:

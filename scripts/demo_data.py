@@ -11,7 +11,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-os.environ["DLIS_APP_HOME"] = tempfile.mkdtemp()
+os.environ["DLIS_APP_HOME"] = tempfile.mkdtemp(); os.environ["DLIS_NO_KEYCHAIN"] = "1"
 os.environ["DLIS_SCHOOL_DATA"] = str(ROOT / "tests" / "fixtures" / "school_data")   # made-up lists, never a school's real ones
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))

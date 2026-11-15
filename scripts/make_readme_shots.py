@@ -31,7 +31,7 @@ with sync_playwright() as p:
     for lang in ("en", "ar"):
         call("PUT", "/api/prefs", {"language": lang})
         out = OUT / lang; out.mkdir(parents=True, exist_ok=True)
-        ctx = b.new_context(viewport={"width": 1280, "height": 800}, device_scale_factor=1)
+        ctx = b.new_context(viewport={"width": 1280, "height": 800}, device_scale_factor=1, bypass_csp=True)
         pg = ctx.new_page(); pg.clock.set_fixed_time(NOW)
         pg.add_init_script("localStorage.setItem('dlis.lang','%s')" % lang)
         pg.goto(base + "/"); pg.wait_for_timeout(900)

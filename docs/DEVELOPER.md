@@ -26,7 +26,7 @@ Windows installer: `build_windows.bat` (needs Python and Inno Setup) or the GitH
 ## Data (the teacher's folder, default `My DLIS`)
 `config.json`, `structure.json` (grades, classes), `schedule.json` (timetable and one-day changes), `calendar.json`, `tasks.json`, `reminders.json`, `lesson_log.json`, `plans.json` (lesson and trimester topics, slide counts), `weekly.json`, `map.json` (a copy of `resources/school_map.json` once edited), `sources.json`, `chats.json`, `ai_prompts.json`, `rooms/<class>/students.csv`, `Documents/<grade>/…docx|xlsx|csv`, `Documents/Cover_Sheets`, `Slides/…pptx`, `Exports/…zip`, `_backup/` (older copies of changed json files).
 
-Per computer, outside the folder (`paths.app_support_dir`): `ai.json` (API keys and image-service credentials), `source_pages/` (slide pictures), `slide_images/`, `error.log`. Keys never go in the data folder, so syncing it through Drive does not share them.
+Per computer, outside the folder (`paths.app_support_dir`): `ai.json` (AI settings; the keys themselves live in the computer's keychain - Windows Credential Manager / macOS Keychain / Linux `secret-tool` - and ai.json only holds the marker `@keychain`; `core/secret_store.py`, falls back to the file when there is no keychain), `source_pages/` (slide pictures), `slide_images/`, `error.log`. Keys never go in the data folder, so syncing it through Drive does not share them.
 
 All JSON writes go through `Store.write_json` (atomic, with a backup of the old file). Readers pass a `check=` function; a damaged file is replaced by its last good copy.
 
@@ -48,16 +48,16 @@ Feature files (each is a mixin of `Service`):
 | `SeatingMixin` | `app/server/seating_service.py` | 56 |
 | `BehaviorMixin` | `app/server/behavior_service.py` | 89 |
 | `UpdateMixin` | `app/server/update_service.py` | 230 |
-| `InsightsMixin` | `app/server/grades_service.py` | 264 |
-| `GradesMixin` | `app/server/grades_service.py` | 264 |
+| `InsightsMixin` | `app/server/grades_service.py` | 266 |
+| `GradesMixin` | `app/server/grades_service.py` | 266 |
 | `ToolsMixin` | `app/server/tools_service.py` | 65 |
 | `SchemeMixin` | `app/server/scheme_service.py` | 152 |
-| `LibraryMixin` | `app/server/library_service.py` | 592 |
+| `LibraryMixin` | `app/server/library_service.py` | 594 |
 | `ParentWeekMixin` | `app/server/parent_week_service.py` | 74 |
 | `CoverageMixin` | `app/server/coverage_service.py` | 117 |
-| `CloudMixin` | `app/server/cloud_service.py` | 437 |
+| `CloudMixin` | `app/server/cloud_service.py` | 447 |
 | `DocsMixin` | `app/server/docs_service.py` | 418 |
-| `AiMixin` | `app/server/ai_service.py` | 377 |
+| `AiMixin` | `app/server/ai_service.py` | 424 |
 | `AiChatMixin` | `app/server/ai_chat_service.py` | 101 |
 | `ChatsMixin` | `app/server/chats_service.py` | 62 |
 | `AlarmsMixin` | `app/server/alarms_service.py` | 88 |
@@ -66,7 +66,7 @@ Feature files (each is a mixin of `Service`):
 | `SlidesMixin` | `app/server/slides_service.py` | 373 |
 | `RevisionMixin` | `app/server/revision_service.py` | 104 |
 | `MapMixin` | `app/server/map_service.py` | 97 |
-| `SourceMixin` | `app/server/source_service.py` | 513 |
+| `SourceMixin` | `app/server/source_service.py` | 515 |
 | `WeekMixin` | `app/server/week_service.py` | 62 |
 | `WeeklyMixin` | `app/server/weekly_service.py` | 70 |
 <!-- /AUTO:features -->

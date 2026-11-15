@@ -14,6 +14,7 @@ from datetime import date
 
 from ..core import paths
 from ..core.errors import AppError
+from ..core.upload_check import check_document
 from .ai_service import _json_from, registry
 
 MAX_PAGES = 60
@@ -218,6 +219,7 @@ class SourceMixin:
             raise AppError("file_unreadable") from e
         if not raw:
             raise AppError("file_unreadable", "The file is empty.", status=400)
+        check_document(name, raw)
         return self._import_bytes(name, raw, keep=True)
 
     def _import_bytes(self, name: str, raw: bytes, keep: bool = False, file_rel: str = "") -> dict:

@@ -17,7 +17,7 @@ call("PUT", "/api/prefs", {"language": "ar"})
 
 with sync_playwright() as p:
     b = p.chromium.launch()
-    ctx = b.new_context(viewport={"width": 1280, "height": 800})
+    ctx = b.new_context(viewport={"width": 1280, "height": 800}, bypass_csp=True)
     pg = ctx.new_page()
     cdp = ctx.new_cdp_session(pg)
     if SLOW:

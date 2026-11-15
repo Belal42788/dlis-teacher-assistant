@@ -15,6 +15,7 @@ from pydantic import ValidationError
 from ..core import paths
 from ..core.academic import AcademicCalendar
 from ..core.errors import AppError
+from ..core.upload_check import check_document
 from ..core.legacy import import_legacy
 from ..core.models import WEEKDAYS, Calendar, Holiday, Period, Settings, Structure, Timetable, is_safe_id
 from ..core.presets import COMMON_SUBJECTS
@@ -412,6 +413,7 @@ class Service(BellMixin, BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, Up
                 raw = base64.b64decode(body["data_b64"])
             except ValueError as e:
                 raise AppError("file_unreadable") from e
+            check_document(str(body.get("filename", "")), raw)
             return parse_file(body.get("filename", ""), raw)
         return parse_text(body.get("text", ""))
 

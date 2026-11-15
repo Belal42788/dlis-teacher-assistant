@@ -23,6 +23,7 @@ def _where() -> str:
 
 def install() -> None:
     global _done
+    os.environ.setdefault("DLIS_NO_KEYCHAIN", "1")      # the tests must not write into the real keychain of the computer they run on
     if _done:
         return
     _done = True

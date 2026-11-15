@@ -17,6 +17,10 @@ from ..core.errors import AppError
 from .service import Service
 
 MAX_BODY = 40 * 1024 * 1024
+# What the page may load or run: only our own files. Even if some text from outside (a web page the teacher imported, an AI answer)
+# slipped into the page as code, the browser would refuse to run it or to send anything to another website.
+_CSP = ("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; "
+        "connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'")
 _COMPRESSIBLE = {"text/html", "text/css", "text/javascript", "application/javascript", "application/json", "image/svg+xml"}
 _gzip_cache: dict[str, bytes] = {}
 
@@ -79,6 +83,9 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("X-Frame-Options", "DENY")
+        if ctype.startswith("text/html"):
+            self.send_header("Content-Security-Policy", _CSP)
         for k, v in (extra or {}).items():
             self.send_header(k, v)
         self.end_headers()

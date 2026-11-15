@@ -48,7 +48,7 @@ img {{ width: 88%; display: block; margin: 8px auto 0; border: 1px solid #c7d5e2
 with sync_playwright() as p:
     b = p.chromium.launch()
     for lang, name in (("ar", "DLIS_User_Guide_AR.pdf"), ("en", "DLIS_User_Guide_EN.pdf")):
-        pg = b.new_page()
+        pg = b.new_page(bypass_csp=True)
         pg.set_content(page(lang), wait_until="load")
         out = ROOT / "docs" / name
         out.parent.mkdir(exist_ok=True)
