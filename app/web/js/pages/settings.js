@@ -73,7 +73,7 @@ export async function renderSettings(root, { reloadApp }) {
     h("div", { class: "panel" }, h("h3", {}, t("language")),
       h("div", { class: "row" }, [["ar", "العربية"], ["en", "English"]].map(([code, label]) =>
         h("button", { class: `chip${getLang() === code ? " on" : ""}`, "aria-pressed": String(getLang() === code), lang: code, onClick: async () => {
-          await api.put("/api/prefs", { language: code }); setLang(code); state.boot.language = code; reloadApp(false);
+          await api.put("/api/prefs", { language: code }); await setLang(code); state.boot.language = code; reloadApp(false);
         } }, label)))),
     h("div", { class: "panel" }, h("h3", {}, t("fs_title")), h("p", { class: "muted small" }, t("fs_hint")),
       (() => { const row = h("div", { class: "row" }); const draw = () => row.replaceChildren(...[["s", "fs_s"], ["m", "fs_m"], ["l", "fs_l"]].map(([v, k]) =>

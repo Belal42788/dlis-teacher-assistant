@@ -1,13 +1,15 @@
 // Fails if a word used on screen is missing in Arabic or English.
 import fs from "node:fs";
 import path from "node:path";
-import { STR } from "../app/web/js/i18n.mjs";
+import en from "../app/web/js/i18n_en.mjs";
+import ar from "../app/web/js/i18n_ar.mjs";
+const STR = { en, ar };
 
 const root = new URL("../app/web/js/", import.meta.url).pathname;
 const files = [];
 (function walk(d) { for (const f of fs.readdirSync(d, { withFileTypes: true })) f.isDirectory() ? walk(path.join(d, f.name)) : f.name.endsWith(".js") && files.push(path.join(d, f.name)); })(root);
 const used = new Set();
-for (const f of files.filter((x) => !x.endsWith("i18n.js"))) {
+for (const f of files.filter((x) => !/\/i18n(_en|_ar)?\.js$/.test(x))) {
   const src = fs.readFileSync(f, "utf8");
   for (const m of src.matchAll(/(?<![\w.])t\("([A-Za-z0-9_ ]+)"/g)) used.add(m[1]);
   for (const m of src.matchAll(/"(err_[a-z_]+)"/g)) used.add(m[1]);

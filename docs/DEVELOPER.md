@@ -18,7 +18,7 @@ Windows installer: `build_windows.bat` (needs Python and Inno Setup) or the GitH
 |---|---|
 | `app/core` | No web code. `paths` (folders, prefs, log), `store` (reads/writes the data folder, backups), `documents` (fills the Word templates, grade table), `pptx_builder`, `ai_client` (OpenAI-compatible and Anthropic adapters, urllib only), `image_client`, `models` (pydantic), `academic` (calendar, weeks), `timetable`, `translit`. |
 | `app/server` | `Service` is built from one mixin per feature (list below). `http.py` is a small router: a list of `(method, regex, handler)`. |
-| `app/web` | Vanilla ES modules. `js/pages/*` one file per page, `js/components/*` shared pieces, `js/i18n.js` (English and Arabic), `js/help_content.json` (the in-app guide), `css/style.css`. |
+| `app/web` | Vanilla ES modules. `js/pages/*` one file per page, `js/components/*` shared pieces, `js/i18n.js` (lookup) with the words in `js/i18n_en.js` and `js/i18n_ar.js` (only the language in use is loaded), `js/help_content.json` (the in-app guide), `css/style.css`. |
 | `app/launcher.py` | The window, tray icon, single instance, title bar controls (`WindowControls`), native reminder sound. |
 | `resources` | Word templates, logo, bell schedule, official calendar, built-in roster, school map seed, AI provider list and prompts. |
 | `tests`, `scripts` | Unit tests; e2e, i18n check, guide builder. |
@@ -100,9 +100,9 @@ Rules the tests enforce: `app/core` never imports `app/server` or the launcher; 
 Habits that keep it simple: one feature = one `*_service.py` + one page + its keys in both languages + a test; a new data file goes through `Store.read_json/write_json`; when the shape of a data file changes, raise `DATA_VERSION` in `core/store.py` and add the step to `MIGRATIONS`; when you replace something, delete the old one in the same change.
 
 ## Adding things
-* **A page:** `js/pages/x.js` with `export async function renderX(root)`, an entry in `PAGES` in `js/main.js`, keys in `i18n.js` (both languages), a route in `http.py`, a Service method, a test.
+* **A page:** `js/pages/x.js` with `export async function renderX(root)`, an entry in `PAGES` in `js/main.js`, keys in `i18n_en.js` and `i18n_ar.js` (both languages), a route in `http.py`, a Service method, a test.
 * **A provider:** one entry in `ai_providers.json`.
-* **A language:** add a dictionary in `i18n.js` and set `dir` in `setLang`.
+* **A language:** add a dictionary file `js/i18n_xx.js` (same keys as `i18n_en.js`), allow its code in `loadLang`, and set `dir` in `setLang`.
 * **Version:** `app/core/paths.py`, `installer/dlis.iss` and a new entry in `resources/whats_new.json` (`{"1.0.1": {"ar": [...], "en": [...]}}`, the "What is new" window teachers see once after updating). `python scripts/check_release.py v1.0.1` says what is still missing; tests enforce the same.
 
 ## Changing how the data is stored

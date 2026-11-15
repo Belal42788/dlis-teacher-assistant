@@ -49,7 +49,7 @@ export function startWizard(root, onFinished, startAt) {
 
   const STEPS = {
     async language() {
-      const choose = async (lang) => { await api.put("/api/prefs", { language: lang }); setLang(lang); state.boot.language = lang; show("folder"); };
+      const choose = async (lang) => { await api.put("/api/prefs", { language: lang }); await setLang(lang); state.boot.language = lang; show("folder"); };
       return h("div", {},
         h("img", { class: "hero-logo", src: "/resources/logo.png", alt: "DLIS" }),
         h("h1", {}, "مرحبًا · Welcome"),

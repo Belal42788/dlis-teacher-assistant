@@ -54,10 +54,18 @@ class SpeedTests(unittest.TestCase):
             self.assertTrue((ROOT / f"app/web/js/pages/{f}.js").is_file(), f)
         self.assertGreaterEqual(len(re.findall(r'load: \(\) => import\(', main)), 18)
 
+    def test_only_the_language_in_use_is_loaded(self):
+        i18n = (ROOT / "app/web/js/i18n.js").read_text(encoding="utf-8")
+        self.assertLess(len(i18n), 5000)                       # the lookup only: the words are in the two language files
+        first = self.get("/")[0].decode()
+        self.assertNotIn("i18n_ar.js", first); self.assertNotIn("i18n_en.js", first)   # neither is fetched before the language is known
+        for code in ("ar", "en"):
+            self.assertTrue((ROOT / f"app/web/js/i18n_{code}.js").is_file())
+
     def test_text_files_are_compressed_only_when_asked(self):
-        plain, h1 = self.get("/js/i18n.js")
+        plain, h1 = self.get("/js/i18n_ar.js")
         self.assertIsNone(h1.get("Content-Encoding"))
-        packed, h2 = self.get("/js/i18n.js", gz=True)
+        packed, h2 = self.get("/js/i18n_ar.js", gz=True)
         self.assertEqual(h2.get("Content-Encoding"), "gzip")
         self.assertEqual(gzip.decompress(packed), plain)
         self.assertLess(len(packed), len(plain) * 0.5)

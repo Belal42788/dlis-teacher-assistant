@@ -1,6 +1,6 @@
 import { h, icon, confirmBox, modal, toast } from "./dom.js";
 import { api, guarded, inPage, readsFor, warm } from "./api.js";
-import { t, setLang, hasKey } from "./i18n.js";
+import { t, setLang, hasKey, loadLang } from "./i18n.js";
 import { applyFontSize, applyDensity } from "./fontsize.js";
 import { state } from "./state.js";
 import { installValidation } from "./components/validate.js";
@@ -68,8 +68,9 @@ let lastHash = "";
 
 async function boot(forceWizardStep) {
   state.boot = await api.get("/api/bootstrap");
+  if (state.boot.language) await setLang(state.boot.language);
+  else await loadLang("en");          // the first wizard step (choose a language) is drawn in English
   drawTitlebar();
-  if (state.boot.language) setLang(state.boot.language);
   if (!state.boot.language) return startWizard(root, () => boot(), "language");
   if (state.boot.folder_missing && !forceWizardStep) return folderMissingScreen(state.boot.folder_missing);
   if (!state.boot.data_folder) return startWizard(root, () => boot(), "folder");
