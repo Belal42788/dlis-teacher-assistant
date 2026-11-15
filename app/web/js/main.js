@@ -6,32 +6,10 @@ import { state } from "./state.js";
 import { installValidation } from "./components/validate.js";
 import { startWizard } from "./wizard.js";
 import { renderToday } from "./pages/today.js";
-import { renderClasses } from "./pages/classes.js";
-import { renderTimetable } from "./pages/timetable.js";
-import { renderCalendar } from "./pages/calendar.js";
-import { renderSettings } from "./pages/settings.js";
-import { renderDocs } from "./pages/docs.js";
-import { renderTasks } from "./pages/tasks.js";
-import { renderLog } from "./pages/log.js";
-import { renderBehavior } from "./pages/behavior.js";
-import { renderSeating } from "./pages/seating.js";
-import { renderBank } from "./pages/bank.js";
-import { renderLibrary } from "./pages/library.js";
-import { renderScheme } from "./pages/scheme.js";
-import { renderTools } from "./pages/tools.js";
-import { renderGrades } from "./pages/grades.js";
-import { renderInsights } from "./pages/insights.js";
 import { openQuick } from "./components/quick.js";
 import { showWhatsNew } from "./components/whatsnew.js";
 import { drawAiBall, showAiBall } from "./components/ai_ball.js";
 import { mailDeveloper } from "./components/dev_mail.js";
-import { renderMap } from "./pages/map.js";
-import { renderAnnouncements } from "./pages/announcements.js";
-import { renderProgress } from "./pages/progress.js";
-import { renderFollowup } from "./pages/followup.js";
-import { renderChat } from "./pages/chat.js";
-import { renderHelp } from "./pages/help.js";
-import { renderReminders } from "./pages/reminders.js";
 import { startReminders } from "./reminders.js";
 
 installValidation();   // every action button first checks the fields around it
@@ -61,28 +39,28 @@ function drawTitlebar() {
 }
 const PAGES = [
   { id: "today", icon: "today", group: "day", render: renderToday },
-  { id: "timetable", icon: "timetable", group: "day", render: renderTimetable },
-  { id: "calendar", icon: "calendar", group: "day", render: renderCalendar },
-  { id: "tasks", icon: "tasks", group: "day", render: renderTasks },
-  { id: "reminders", nav: "tasks", render: renderReminders },
-  { id: "scheme", icon: "list", group: "prepare", render: renderScheme },
-  { id: "docs", icon: "file", group: "prepare", render: renderDocs },
-  { id: "tools", nav: "docs", render: renderTools },
-  { id: "library", icon: "folder", group: "prepare", render: renderLibrary },
-  { id: "bank", nav: "library", render: renderBank },
-  { id: "chat", icon: "spark", group: "prepare", render: renderChat },
-  { id: "classes", icon: "classes", group: "school", render: renderClasses },
-  { id: "log", nav: "classes", render: renderLog },
-  { id: "progress", nav: "classes", render: renderProgress },
-  { id: "grades", nav: "classes", render: renderGrades },
-  { id: "behavior", nav: "classes", render: renderBehavior },
-  { id: "seating", nav: "classes", render: renderSeating },
-  { id: "insights", nav: "classes", render: renderInsights },
-  { id: "announcements", icon: "megaphone", group: "school", need: "online", render: renderAnnouncements },
-  { id: "followup", icon: "tasks", group: "school", need: "admin", render: renderFollowup },
-  { id: "map", icon: "map", group: "school", render: renderMap },
-  { id: "settings", icon: "settings", group: "end", render: renderSettings },
-  { id: "help", icon: "info", group: "end", render: renderHelp },
+  { id: "timetable", icon: "timetable", group: "day", load: () => import("./pages/timetable.js").then((m) => m.renderTimetable) },
+  { id: "calendar", icon: "calendar", group: "day", load: () => import("./pages/calendar.js").then((m) => m.renderCalendar) },
+  { id: "tasks", icon: "tasks", group: "day", load: () => import("./pages/tasks.js").then((m) => m.renderTasks) },
+  { id: "reminders", nav: "tasks", load: () => import("./pages/reminders.js").then((m) => m.renderReminders) },
+  { id: "scheme", icon: "list", group: "prepare", load: () => import("./pages/scheme.js").then((m) => m.renderScheme) },
+  { id: "docs", icon: "file", group: "prepare", load: () => import("./pages/docs.js").then((m) => m.renderDocs) },
+  { id: "tools", nav: "docs", load: () => import("./pages/tools.js").then((m) => m.renderTools) },
+  { id: "library", icon: "folder", group: "prepare", load: () => import("./pages/library.js").then((m) => m.renderLibrary) },
+  { id: "bank", nav: "library", load: () => import("./pages/bank.js").then((m) => m.renderBank) },
+  { id: "chat", icon: "spark", group: "prepare", load: () => import("./pages/chat.js").then((m) => m.renderChat) },
+  { id: "classes", icon: "classes", group: "school", load: () => import("./pages/classes.js").then((m) => m.renderClasses) },
+  { id: "log", nav: "classes", load: () => import("./pages/log.js").then((m) => m.renderLog) },
+  { id: "progress", nav: "classes", load: () => import("./pages/progress.js").then((m) => m.renderProgress) },
+  { id: "grades", nav: "classes", load: () => import("./pages/grades.js").then((m) => m.renderGrades) },
+  { id: "behavior", nav: "classes", load: () => import("./pages/behavior.js").then((m) => m.renderBehavior) },
+  { id: "seating", nav: "classes", load: () => import("./pages/seating.js").then((m) => m.renderSeating) },
+  { id: "insights", nav: "classes", load: () => import("./pages/insights.js").then((m) => m.renderInsights) },
+  { id: "announcements", icon: "megaphone", group: "school", need: "online", load: () => import("./pages/announcements.js").then((m) => m.renderAnnouncements) },
+  { id: "followup", icon: "tasks", group: "school", need: "admin", load: () => import("./pages/followup.js").then((m) => m.renderFollowup) },
+  { id: "map", icon: "map", group: "school", load: () => import("./pages/map.js").then((m) => m.renderMap) },
+  { id: "settings", icon: "settings", group: "end", load: () => import("./pages/settings.js").then((m) => m.renderSettings) },
+  { id: "help", icon: "info", group: "end", load: () => import("./pages/help.js").then((m) => m.renderHelp) },
 ];
 
 let mode = "";          // "wizard" | "app"
@@ -278,7 +256,23 @@ function listenForTabs() {
 }
 listenForTabs();
 // when a page has appeared, the pages next to it in the same bar get ready while the computer is idle
+// After the first page is on the screen, quietly fetch the other pages one by one, so opening them later is instant.
+let warmed = false;
+function warmPages() {
+  if (warmed) return;
+  warmed = true;
+  const idle = window.requestIdleCallback || ((f) => setTimeout(f, 800));
+  idle(async () => {
+    for (const p of PAGES) {
+      if (p.render || !p.load) continue;
+      try { p.render = await p.load(); } catch { /* it will be tried again when the teacher opens it */ }
+      await new Promise((r) => setTimeout(r, 120));
+    }
+  });
+}
+
 function prepareNeighbours(page) {
+  warmPages();
   const idle = window.requestIdleCallback || ((f) => setTimeout(f, 400));
   idle(() => { [...document.querySelectorAll(`.sub a[data-group="${page.group}"]`)].forEach((a, i) => setTimeout(() => prepare(a.dataset.page), i * 150)); });
 }
@@ -314,7 +308,7 @@ async function route() {
     inPage(page.id);
     const slow = setTimeout(() => document.body.classList.add("slow-nav"), 150);   // a thin progress line, only if loading is not instant
     const skel = setTimeout(() => { if (main.classList.contains("busy")) main.replaceChildren(skeleton()); }, 450);   // still loading after almost half a second: grey blocks, not the old page
-    try { await page.render(main, { reloadApp }); } finally { clearTimeout(slow); clearTimeout(skel); document.body.classList.remove("slow-nav"); main.classList.remove("busy"); main.removeEventListener("input", mark, true); main.removeEventListener("change", mark, true); }
+    try { if (!page.render) page.render = await page.load(); await page.render(main, { reloadApp }); } finally { clearTimeout(slow); clearTimeout(skel); document.body.classList.remove("slow-nav"); main.classList.remove("busy"); main.removeEventListener("input", mark, true); main.removeEventListener("change", mark, true); }
     if (shownPage !== page.id) main.scrollTop = 0; // a new tab starts at the top, not where the last one was scrolled to
     shownPage = page.id;
     showAiBall(page.id);

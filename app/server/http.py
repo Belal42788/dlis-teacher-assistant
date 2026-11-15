@@ -1,6 +1,7 @@
 """A tiny local web server. Only this computer can talk to it, and only with the secret token."""
 from __future__ import annotations
 
+import gzip
 import json
 import mimetypes
 import re
@@ -16,6 +17,16 @@ from ..core.errors import AppError
 from .service import Service
 
 MAX_BODY = 40 * 1024 * 1024
+_COMPRESSIBLE = {"text/html", "text/css", "text/javascript", "application/javascript", "application/json", "image/svg+xml"}
+_gzip_cache: dict[str, bytes] = {}
+
+
+def _gzipped(key: str, data: bytes) -> bytes:
+    if key not in _gzip_cache:
+        if len(_gzip_cache) > 400:
+            _gzip_cache.clear()
+        _gzip_cache[key] = gzip.compress(data, 6, mtime=0)
+    return _gzip_cache[key]
 # Windows can map .js to text/plain, which breaks ES modules, so we state the types ourselves.
 _TYPES = {".js": "application/javascript", ".mjs": "application/javascript", ".css": "text/css",
           ".html": "text/html", ".svg": "image/svg+xml", ".json": "application/json", ".png": "image/png",
@@ -139,13 +150,31 @@ class Handler(BaseHTTPRequestHandler):
     # ------------------------------------------------------------ static files
     _preload_cache: bytes | None = None
 
+    _STATIC_IMPORT = re.compile(r'^\s*(?:import|export)\b[^;]*?\bfrom\s+["\'](\.[^"\']+)["\']|^\s*import\s+["\'](\.[^"\']+)["\']', re.M)
+
+    @classmethod
+    def _first_screen_scripts(cls) -> list[str]:
+        """The scripts main.js needs before it can draw anything: main.js and what it imports at the top, and what those import ...
+        (pages opened later are loaded when needed, so they are not in this list: the first screen opens sooner)."""
+        js = paths.web_dir() / "js"
+        seen: dict[str, None] = {}
+        todo = [js / "main.js"]
+        while todo:
+            f = todo.pop()
+            rel = f.relative_to(js).as_posix()
+            if rel in seen or not f.is_file():
+                continue
+            seen[rel] = None
+            for m in cls._STATIC_IMPORT.finditer(f.read_text(encoding="utf-8")):
+                todo.append((f.parent / (m.group(1) or m.group(2))).resolve())
+        return sorted(seen)
+
     @classmethod
     def _preload_links(cls) -> bytes:
-        """Tell the browser about every script up front. Otherwise it finds them one level at a time (main.js, then what main.js
-        imports, then what those import ...) and each level waits for the one before: slow on a computer that scans every file."""
+        """Tell the browser about the first screen's scripts up front. Otherwise it finds them one level at a time (main.js, then what
+        main.js imports, then what those import ...) and each level waits for the one before: slow on a computer that scans every file."""
         if cls._preload_cache is None:
-            root = paths.web_dir()
-            rows = [f'<link rel="modulepreload" href="/js/{p.relative_to(root / "js").as_posix()}">' for p in sorted((root / "js").rglob("*.js"))]
+            rows = [f'<link rel="modulepreload" href="/js/{rel}">' for rel in cls._first_screen_scripts()]
             rows.append('<link rel="preload" href="/fonts/arabic.ttf" as="font" type="font/ttf" crossorigin>')
             cls._preload_cache = "\n  ".join(rows).encode()
         return cls._preload_cache
@@ -171,7 +200,12 @@ class Handler(BaseHTTPRequestHandler):
         etag = f'"{f.stat().st_mtime_ns:x}-{len(data):x}"' if f.name != "index.html" else ""
         if etag and self.headers.get("If-None-Match") == etag:
             return self._send(304, b"", ctype, {"ETag": etag, "Cache-Control": "no-cache"})
-        self._send(200, data, ctype, {"ETag": etag, "Cache-Control": "no-cache"} if etag else None)
+        extra = {"ETag": etag, "Cache-Control": "no-cache"} if etag else {}
+        if etag and len(data) > 1024 and "gzip" in (self.headers.get("Accept-Encoding") or "") and ctype.split(";")[0] in _COMPRESSIBLE:
+            data = _gzipped(etag, data)          # text shrinks to about a quarter; compressed once per file version, not on every request
+            extra["Content-Encoding"] = "gzip"
+        extra["Vary"] = "Accept-Encoding"
+        self._send(200, data, ctype, extra)
 
     # ------------------------------------------------------------ API
     def _api(self, method: str, path: str, q: dict):
