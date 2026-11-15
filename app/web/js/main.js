@@ -287,7 +287,19 @@ function nameLooseControls(root) {
   });
 }
 
-async function route() {
+// One page is drawn at a time. When a second route starts while the first is still loading (a slow computer: the teacher taps a menu item
+// right after the app opens), the first one used to finish LAST and paint over the page just opened (the menu said Classes, the screen showed Today).
+// Now a new route waits for the one in progress (at most a few seconds, in case a request hangs), and routes that were overtaken are skipped.
+let routing = Promise.resolve();
+let routeWanted = 0;
+function route() {
+  const mine = ++routeWanted;
+  const wait = Promise.race([routing, new Promise((r) => setTimeout(r, 5000))]);
+  routing = wait.then(() => (mine === routeWanted ? showRoute() : undefined), () => (mine === routeWanted ? showRoute() : undefined));
+  return routing;
+}
+
+async function showRoute() {
   if (mode !== "app") return;
   saveDraft(shownPage);
   const id = (location.hash.replace(/^#\//, "") || "today").split("?")[0];

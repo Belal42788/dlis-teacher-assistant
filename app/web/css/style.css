@@ -482,6 +482,10 @@ h1, h2, h3, .top .brand b, h1 { letter-spacing: -.01em; }
 @media (prefers-reduced-motion: no-preference) {
   .ladder .slot { animation: slot-in .16s ease-out both; }
   @keyframes slot-in { from { opacity: 0; } }
+  /* a lesson that was just added or moved drops in, then a soft green ring fades out */
+  .lesson.arrive { animation: arrive-in .45s cubic-bezier(.2, .8, .2, 1) both, arrive-ring 1.8s ease-out .2s both; }
+  @keyframes arrive-in { from { opacity: 0; transform: translateY(-14px) scale(.98); } }
+  @keyframes arrive-ring { 0% { box-shadow: 0 0 0 0 rgba(63, 143, 82, .55); background-color: var(--green-wash); } 100% { box-shadow: 0 0 0 14px rgba(63, 143, 82, 0); } }
 }
 @media (max-width: 640px) { .slot { --rw: 74px; } .slot-time, .slot[data-state="now"] .slot-time { min-width: 60px; padding: .25rem .3rem; border-width: 2px; font-size: .8rem; } .slot[data-state="now"] .slot-time { box-shadow: 0 0 0 3px var(--green), 0 0 0 6px rgba(63,143,82,.22); } .lesson { grid-template-columns: 1fr; } .lesson .acts { justify-content: flex-end; flex-wrap: wrap; } }
 /* ---------- calmer surfaces ---------- */

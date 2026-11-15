@@ -237,7 +237,9 @@ try:
         assert page.locator(".lesson:not(.cancelled)").count() == n0 - 1; shot("17e_cancelled")
         page.click(".lesson.cancelled >> text=رجّعها"); page.wait_for_function("!document.querySelector('.lesson.cancelled')")
         page.click("text=حصة تغطية"); page.fill(".modal input[type=text]", "المدرس غايب"); page.click(".modal footer .btn.primary")
-        page.wait_for_selector(".kind.cover"); shot("17f_cover")
+        page.wait_for_selector(".kind.cover")
+        page.wait_for_selector(".lesson.arrive"); assert page.locator(".lesson.arrive .kind.cover").count() == 1, "the new cover lesson must be the one that animates"
+        shot("17f_cover")
         page.click("text=رجّع الجدول العادي"); page.wait_for_function("!document.querySelector('.kind.cover')")
         assert page.locator(".lesson:not(.cancelled)").count() == n0
         # what was typed survives switching tabs
@@ -484,6 +486,12 @@ try:
             why_stuck(page)   # while the browser is still open: what is it waiting for?
             raise AssertionError(f"students after reload: {seen}") from None
         assert page.locator(".students li").count() == 17, page.locator(".students li").count()
+        # a slow Today must not paint over the page opened right after the app starts (once the menu said Classes and the screen showed Today)
+        late = ctx.new_page(); late.route("**/api/today*", lambda r: (time.sleep(1.5), r.continue_()))
+        late.goto(url); late.wait_for_selector(".shell"); late.evaluate("location.hash='#/classes'")
+        late.wait_for_selector(".students li"); late.wait_for_timeout(2500)
+        assert late.locator(".students li").count() >= 1 and late.evaluate("location.hash") == "#/classes", "the page opened last was painted over"
+        late.close()
         # english + unsaved-changes guard
         page.click(".nav a[data-page=settings]"); page.click(".seg-btn[data-tab=me]"); page.wait_for_selector("button[lang=en]"); page.click("button[lang=en]")
         page.wait_for_selector(".tab:has-text('My day')"); assert page.evaluate("document.documentElement.dir") == "ltr"
