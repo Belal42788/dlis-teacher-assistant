@@ -116,9 +116,7 @@ body.has-titlebar .shell, body.has-titlebar .wiz { top: 34px; }
 .main { padding: 1.5rem clamp(1rem, 3vw, 2.25rem) 4rem; min-width: 0; min-height: 0; height: 100%; overflow-y: auto; overflow-x: hidden; }
 .page { max-width: 1040px; margin-inline: auto; }
 .page-head { margin-bottom: 1.1rem; display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-.page-head h1 { position: relative; padding-inline-start: .7rem; }
-.page-head h1::before { content: ""; position: absolute; inset-inline-start: 0; top: .15em; bottom: .15em; border-radius: 3px; background: linear-gradient(var(--blue), var(--pencil)); }
-.page-head p { color: var(--muted); margin: .2rem 0 0; padding-inline-start: .7rem; }
+.page-head p { color: var(--muted); margin: .2rem 0 0; }
 
 .panel { background: var(--sheet); border: 1px solid var(--rule); padding: 1rem 1.15rem; }
 .panel + .panel { margin-top: .9rem; }
@@ -577,7 +575,6 @@ select option { font-weight: 500; }
 .bubble.user { background: color-mix(in srgb, var(--blue) 12%, white); }
 .bubble.assistant { background: #fff; border: 1px solid var(--rule); box-shadow: 0 1px 2px rgba(28,31,77,.05); }
 .page-head h1 { font-size: var(--step-4); }
-.page-head h1::before { width: 5px; }
 .tasks-table tbody tr:hover td { background: var(--blue-wash); }
 
 .plan-line { margin-top: .15rem; color: var(--ink-2); }
@@ -1159,7 +1156,8 @@ table.grid td select.filled { --tone: var(--blue); background-color: #fff; borde
 .cr-group h3 { margin: 0 0 .5rem; color: var(--indigo); font-size: 1rem; }
 .opts.tiles { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .6rem; }
 .opts.tiles .opt { padding: .7rem .9rem; text-decoration: none; }
-.opts.tiles .opt svg { width: 1.3rem; height: 1.3rem; }
+.opts.tiles .opt svg { display: none; }   /* all of these showed the same spark: it said nothing */
+.opts.tiles .opt { border-width: 1px; border-radius: 10px; border-inline-start: 3px solid var(--blue); }
 .opts.tiles .opt small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .cr-work { display: grid; gap: 1rem; }
 .opts.kinds { grid-template-columns: repeat(4, 1fr); }
@@ -1245,3 +1243,6 @@ html.still *, html.still *::before, html.still *::after { animation: none !impor
   [dir="rtl"] .row-out { transform: translateX(24px); }
   .leaving { overflow: hidden; opacity: 0; margin-block: 0 !important; padding-block: 0 !important; border-width: 0 !important; transition: height .26s ease, opacity .2s ease, margin .26s ease, padding .26s ease; }
 }
+
+/* the little tab icons repeat what the words say: on a wide screen the words are enough (on a phone the icons stay, they are all that fits) */
+@media (min-width: 761px) { .sub a svg { display: none; } }
