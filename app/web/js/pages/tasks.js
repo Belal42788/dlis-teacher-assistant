@@ -10,6 +10,7 @@ export async function renderTasks(root) {
   // fetch what the page needs at the same time, not one after the other
   let [data, weekly] = await Promise.all([api.get("/api/tasks"), weeklyPanel()]);
   const list = h("div", {});
+  let fresh = "";   // the task just added drops into the list
   const title = h("input", { type: "text", placeholder: t("t_what"), "aria-label": t("t_what"), required: true, onKeydown: (e) => e.key === "Enter" && add() });
   const imp = h("select", { "aria-label": t("t_importance") }, ["high", "medium", "low"].map((k) => h("option", { value: k }, t(`imp_${k}`))));
   imp.value = "medium";
@@ -17,10 +18,10 @@ export async function renderTasks(root) {
   async function add() {
     if (!title.value.trim()) { title.focus(); return; }
     const r = await guarded(() => api.post("/api/tasks", { title: title.value, importance: imp.value, deadline: deadline.value }));
-    if (r) { data = r; title.value = ""; deadline.value = ""; draw(); }
+    if (r) { const before = new Set(data.tasks.map((x) => x.id)); data = r; title.value = ""; deadline.value = ""; fresh = (r.tasks.find((x) => !before.has(x.id)) || {}).id || ""; draw(); fresh = ""; }
   }
   function draw() {
-    list.replaceChildren(tasksTable(data, { showDone: true, onChange: (r) => { data = r; draw(); } }));
+    list.replaceChildren(tasksTable(data, { showDone: true, freshId: fresh, onChange: (r) => { data = r; draw(); } }));
   }
 
   draw();   // the list is filled before the page is shown, so nothing jumps afterwards

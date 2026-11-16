@@ -2,6 +2,7 @@ import { h, icon } from "../dom.js";
 import { api, guarded } from "../api.js";
 import { t } from "../i18n.js";
 import { fmtShort, triName } from "../labels.js";
+import { leaveRow } from "../motion.js";
 
 const RANK = { high: 0, medium: 1, low: 2 };
 
@@ -14,7 +15,7 @@ function sortedOpen(data) {
 // One tidy table, used by the Tasks page and the Today page.
 // opts: { limit, showDone, onChange(newData) }
 export function tasksTable(data, opts = {}) {
-  const act = async (fn) => { const r = await guarded(fn); if (r) opts.onChange && opts.onChange(r); };
+  const act = async (fn, rowEl) => { if (rowEl) await leaveRow(rowEl); const r = await guarded(fn); if (r) opts.onChange && opts.onChange(r); else rowEl && rowEl.classList.remove("row-out"); };
   const when = (x) => {
     if (x.done || !x.deadline) return h("span", { class: "muted small" }, x.done ? "" : t("t_no_deadline"));
     const diff = Math.round((new Date(x.deadline + "T00:00:00Z") - new Date(data.today + "T00:00:00Z")) / 86400000);
@@ -32,12 +33,12 @@ export function tasksTable(data, opts = {}) {
         h("td", {}, badge(x.importance)), h("td", {}, when(x)),
         h("td", { class: "c-act" }, h("div", { class: "c-act-in" },
           h("a", { class: "btn small primary", href: `#/docs?grade=${x.grade_id}&tri=${x.trimester}&week=${x.week}` }, t("t_write")),
-          h("button", { class: "btn small ghost", onClick: () => act(() => api.post("/api/tasks/dismiss", { id: x.id })) }, t("t_skip")))));
+          h("button", { class: "btn small ghost", onClick: (e) => act(() => api.post("/api/tasks/dismiss", { id: x.id }), e.currentTarget.closest("tr")) }, t("t_skip")))));
     }
-    return h("tr", { class: `${x.done ? "done" : ""}${late ? " late-row" : ""}` },
-      h("td", { class: "c-chk" }, h("input", { type: "checkbox", checked: x.done, "aria-label": t("t_done"), onChange: (e) => act(() => api.post(`/api/tasks/${x.id}/update`, { done: e.target.checked })) })),
+    return h("tr", { class: `${x.done ? "done" : ""}${late ? " late-row" : ""}${opts.freshId && opts.freshId === x.id ? " fresh" : ""}` },
+      h("td", { class: "c-chk" }, h("input", { type: "checkbox", checked: x.done, "aria-label": t("t_done"), onChange: (e) => act(() => api.post(`/api/tasks/${x.id}/update`, { done: e.target.checked }), e.target.closest("tr")) })),
       h("td", {}, h("b", {}, x.title)), h("td", {}, badge(x.importance)), h("td", {}, when(x)),
-      h("td", { class: "c-act" }, h("button", { class: "btn icon ghost", "aria-label": t("remove"), onClick: () => act(() => api.post(`/api/tasks/${x.id}/delete`, {})) }, icon("trash"))));
+      h("td", { class: "c-act" }, h("button", { class: "btn icon ghost", "aria-label": t("remove"), onClick: (e) => act(() => api.post(`/api/tasks/${x.id}/delete`, {}), e.currentTarget.closest("tr")) }, icon("trash"))));
   };
 
   const table = (rows) => h("div", { class: "paper" }, h("table", { class: "tasks-table" },

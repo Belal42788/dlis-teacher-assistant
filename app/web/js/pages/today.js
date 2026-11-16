@@ -1,4 +1,5 @@
 import { h, icon, toast } from "../dom.js";
+import { motionOn } from "../motion.js";
 import { api, guarded } from "../api.js";
 import { logDialog, lastLine } from "../components/log_dialog.js";
 import { forgetDay } from "../reminders.js";
@@ -47,10 +48,11 @@ export async function renderToday(root) {
   }
 
   const logged = (s) => logInfo.today.find((e) => e.room_id === s.room_id && String(e.period) === String(s.period));
+  let justLogged = "";   // the lesson whose log was just saved: its card glows green once and its button shows a tick
   const openLog = (s) => {
     const mine = logged(s);
     const prev = mine ? null : logInfo.last[s.room_id];
-    logDialog({ room_id: s.room_id, date: day, period: s.period, entry: mine, last: prev || undefined, plan: s.plan, onSaved: () => load() });
+    logDialog({ room_id: s.room_id, date: day, period: s.period, entry: mine, last: prev || undefined, plan: s.plan, onSaved: () => { justLogged = `${s.room_id}|${s.period}`; load().then(() => { justLogged = ""; }); } });
   };
 
   // the lesson just added or moved arrives with a short animation (drops in, a soft green ring) and the page scrolls to it
@@ -63,7 +65,7 @@ export async function renderToday(root) {
     await load();
     const el = document.querySelector(".lesson.arrive");
     if (el) {
-      el.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      el.scrollIntoView({ block: "center", behavior: motionOn() ? "smooth" : "auto" });
       if (body.action === "cover") toast(t("ch_cover_added"));
     }
     arrived = "";
@@ -108,7 +110,7 @@ export async function renderToday(root) {
         const room = structure.rooms.find((r) => r.id === s.room_id);
         const plan = s.plan && s.plan.topic ? h("span", { class: "plan-line small" }, icon("file"), " ", h("b", {}, s.plan.topic), s.plan.slides ? h("span", { class: "muted" }, ` · ${t("tn_slides_n", { n: s.plan.slides })}`) : null) : null;
         const last = lastLine(logInfo.last[s.room_id]);
-        return h("div", { class: `lesson${s.extra ? " extra" : ""}${arrived && String(s.period) === arrived ? " arrive" : ""}` },
+        return h("div", { class: `lesson${s.extra ? " extra" : ""}${arrived && String(s.period) === arrived ? " arrive" : ""}${justLogged === `${s.room_id}|${s.period}` ? " just-logged" : ""}` },
           h("div", { class: "what" },
             h("div", { class: "l1" }, h("b", {}, room ? roomLabel(room, structure) : s.room_id),
               s.kind ? h("span", { class: `kind ${s.kind}` }, t(`ch_kind_${s.kind}`)) : null),

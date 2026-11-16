@@ -1,5 +1,6 @@
 // Small helpers: build DOM nodes, modals, toasts. No framework needed.
 import { t } from "./i18n.js";
+import { play } from "./motion.js";
 
 export function h(tag, props, ...kids) {
   const el = document.createElement(tag);
@@ -80,7 +81,12 @@ export function icon(name) {
   return s;
 }
 
+// The last main button pressed: when a "done" message follows within a few seconds, that button shows a tick for a moment.
+let lastMain = null, lastMainAt = 0;
+document.addEventListener("click", (e) => { const b = e.target.closest && e.target.closest(".btn.primary"); if (b) { lastMain = b; lastMainAt = Date.now(); } }, true);
+
 export function toast(message, kind = "ok") {
+  if (kind !== "error" && lastMain && lastMain.isConnected && Date.now() - lastMainAt < 6000) { play(lastMain, "ok-flash", 1300); lastMain = null; }
   const box = document.getElementById("toasts");
   const el = h("div", { class: `toast ${kind}` }, message);
   box.replaceChildren(el);   // one message at a time, they do not pile up

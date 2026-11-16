@@ -6,6 +6,7 @@ import { state } from "../state.js";
 import { roomLabel, gradeName, stageName, subjectLabel, stageTone } from "../labels.js";
 import { classPicker } from "../components/class_picker.js";
 import { showProblems } from "../components/validate.js";
+import { play, leave } from "../motion.js";
 
 let selectedId = "";
 
@@ -75,7 +76,7 @@ export async function renderClasses(root) {
         onInput: (e) => { english[i] = e.target.value; touch(); } });
       list.replaceChildren(...names.map((n, i) => h("li", {},
         ...(ar ? [arBox(i), enBox(i)] : [enBox(i), arBox(i)]),
-        h("button", { class: "btn icon ghost", "aria-label": t("remove"), onClick: () => { names.splice(i, 1); english.splice(i, 1); auto.splice(i, 1); drawList(); touch(); } }, icon("trash")))));
+        h("button", { class: "btn icon ghost", "aria-label": t("remove"), onClick: (e) => leave(e.currentTarget.closest("li"), () => { names.splice(i, 1); english.splice(i, 1); auto.splice(i, 1); drawList(); touch(); }) }, icon("trash")))));
     }
     drawList();
     const add = h("input", { type: "text", placeholder: t("add_student_ph"), "aria-label": t("add_student_ph"), class: "grow", "data-required": "",
@@ -85,6 +86,7 @@ export async function renderClasses(root) {
       if (!v) return;
       names.push(v); english.push(""); auto.push(""); add.value = ""; drawList(); touch(); add.focus();
       list.lastElementChild?.scrollIntoView({ block: "nearest" });
+      play(list.lastElementChild, "fresh", 700);
     }
 
     return h("div", { class: "panel" },

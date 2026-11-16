@@ -91,7 +91,7 @@ export function trackNow(items, nextBox) {
       el.dataset.state = st;
       const u = el.querySelector(".until");
       if (u && a !== null) { u.textContent = st === "past" ? t("td_done") : st === "now" ? t("td_now") : t("td_in", { x: fmtLeft(a - n) }); u.className = "until" + (st === "past" ? " done" : st === "now" || a - n <= 15 ? " soon" : ""); }
-      if (st === "now") { const big = Math.max(0, Math.ceil(b - n)); el.querySelector(".cd-n")?.replaceChildren(big < 60 ? String(big) : `${Math.floor(big / 60)}:${String(big % 60).padStart(2, "0")}`); el.querySelector(".cd-u")?.replaceChildren(big < 60 ? t("td_cd_min") : t("td_cd_h")); }
+      if (st === "now") { el.querySelector(".cd")?.style.setProperty("--left", String(Math.min(1, Math.max(0, (b - n) / Math.max(1, b - a))).toFixed(3))); const big = Math.max(0, Math.ceil(b - n)); el.querySelector(".cd-n")?.replaceChildren(big < 60 ? String(big) : `${Math.floor(big / 60)}:${String(big % 60).padStart(2, "0")}`); el.querySelector(".cd-u")?.replaceChildren(big < 60 ? t("td_cd_min") : t("td_cd_h")); }
     });
     paintLine(n);
     if (!nextBox) return;

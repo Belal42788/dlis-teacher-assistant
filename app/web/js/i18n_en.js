@@ -136,6 +136,8 @@ export default {
   upd_install_confirm: "The new version will be downloaded and checked, then the program closes and the new version opens by itself. Your data and files are not touched. Continue?",
   upd_title: "A newer version ({v}) is ready", upd_get: "Get it", upd_later: "Later", upd_set_title: "New version notice", upd_set_hint: "The app asks once a day if a newer version is out. It sends nothing about you.", upd_on: "On", upd_off: "Off",
   es_log_text: "Write the topic and the slide where you stopped. Next time you open this class, it reminds you.", lb_none_title: "No files yet", es_src_title: "No sources added yet",
+  sec_short: "s",
+  mo_title: "Animations", mo_hint: "Small movements that show what changed. Turn them off if this computer is slow. For this computer only.", mo_on: "On", mo_off: "Off",
   dn_title: "Screen density", dn_hint: "Compact fits more on a small screen. For this computer only.", dn_comfortable: "Comfortable", dn_compact: "Compact",
   ct_title: "Certificates and cards", ct_lead: "A Word file with the school logo: one certificate per page, or four thank-you cards per page to cut out. The names stay on this computer.", ct_occasion: "Occasion", ct_kind: "Kind", ct_lang: "Language", ct_k_cert: "Certificate (one per page)", ct_k_card: "Thank-you card (four per page)",
   ct_o_excellence: "Excellence", ct_o_improvement: "Most improved", ct_o_behavior: "Good behaviour", ct_o_participation: "Participation", ct_o_attendance: "Perfect attendance", ct_o_thanks: "Thank you", ct_o_custom: "My own words",

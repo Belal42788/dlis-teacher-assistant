@@ -1,5 +1,6 @@
 import { h, icon } from "../dom.js";
 import { t } from "../i18n.js";
+import { play } from "../motion.js";
 
 // "Check before you go on": a button that does something (a primary button, or one marked data-check) first looks over the fields around it.
 // A field is checked when it is marked required (the attribute, or data-required) or has a rule: number min/max, url, email, pattern, minlength.
@@ -65,6 +66,7 @@ export function showProblems(root, list) {
     el.addEventListener("input", done); el.addEventListener("change", done);
   }
   const first = list[0].el; first.scrollIntoView?.({ block: "center" }); first.focus?.();
+  for (const { el } of list) play(el, "shake", 400);
 }
 
 // the form around a button: the nearest dialog, <form>, [data-form], panel or card that has a field with a rule

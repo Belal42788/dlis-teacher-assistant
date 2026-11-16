@@ -492,6 +492,21 @@ try:
         late.wait_for_selector(".students li"); late.wait_for_timeout(2500)
         assert late.locator(".students li").count() >= 1 and late.evaluate("location.hash") == "#/classes", "the page opened last was painted over"
         late.close()
+        # animations: the ring around the time left is drawn, and "Animations: Off" in Settings stops all movement (and is remembered)
+        mp = ctx.new_page(); mp.goto(url); mp.wait_for_selector(".shell"); mp.wait_for_selector(".slot")
+        if mp.locator(".slot[data-state=now] .cd").count():
+            assert mp.evaluate("document.querySelector('.slot[data-state=now] .cd').style.getPropertyValue('--left')") != "", "the ring around the time left must be drawn"
+        mp.evaluate("location.hash='#/settings'"); mp.wait_for_selector(".panel h3")
+        head = mp.locator(".panel h3", has_text=re.compile("Animations|الحركة")).first
+        head.wait_for(); head.locator("xpath=..").locator(".chip").nth(1).click()
+        assert mp.evaluate("document.documentElement.classList.contains('still')"), "turning animations off must stop all movement"
+        mp.reload(); mp.wait_for_selector(".shell")
+        assert mp.evaluate("document.documentElement.classList.contains('still')"), "the choice must be remembered"
+        assert mp.evaluate("[...document.querySelectorAll('.tab, .chip, .btn')].every((e) => getComputedStyle(e).transitionDuration.split(',').every((d) => parseFloat(d) === 0))"), "no transition may run when animations are off"
+        mp.evaluate("location.hash='#/settings'"); mp.wait_for_selector(".panel h3")
+        head = mp.locator(".panel h3", has_text=re.compile("Animations|الحركة")).first; head.locator("xpath=..").locator(".chip").nth(0).click()
+        assert not mp.evaluate("document.documentElement.classList.contains('still')")
+        mp.close()
         # the page's security policy (only our own files may run or load) must not break any page: open them all with the policy in force
         strict = b.new_context(viewport={"width": 1280, "height": 860}); sp = strict.new_page(); csp_errors = []
         sp.on("console", lambda m: csp_errors.append(m.text) if ("Content Security Policy" in m.text or "Refused to" in m.text) else None)

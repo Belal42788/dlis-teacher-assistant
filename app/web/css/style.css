@@ -465,7 +465,10 @@ h1, h2, h3, .top .brand b, h1 { letter-spacing: -.01em; }
 .cd b { display: block; font-size: 1.8rem; font-variant-numeric: tabular-nums; }
 .cd small { font-size: .8rem; }
 /* the lesson running now: the one filled card of the day (the logo's blue), with the time left */
-.slot[data-state="now"] .lesson { margin: .4rem 0; padding: .5rem .9rem; border: 0; border-radius: 16px 16px 16px 5px; color: #fff; background: linear-gradient(135deg, #2f82a8 0%, #3fa6cc 100%); box-shadow: 0 6px 16px rgba(47,130,168,.24); }
+.slot[data-state] .lesson { background-image: linear-gradient(135deg, #2f82a8 0%, #3fa6cc 100%); background-repeat: no-repeat; background-position: left center; background-size: 0% 100%; }
+[dir="rtl"] .slot[data-state] .lesson { background-position: right center; }
+.slot[data-state="now"] .lesson { background-size: 100% 100%; }
+.slot[data-state="now"] .lesson { margin: .4rem 0; padding: .5rem .9rem; border: 0; border-radius: 16px 16px 16px 5px; color: #fff; box-shadow: 0 6px 16px rgba(47,130,168,.24); }
 [dir="rtl"] .slot[data-state="now"] .lesson { border-radius: 16px 16px 5px 16px; }
 .slot[data-state="now"] .lesson .l1 b { font-size: 1.3rem; border-inline-start-color: rgba(255,255,255,.7); }
 .slot[data-state="now"] .lesson .l1 b, .slot[data-state="now"] .lesson .l2, .slot[data-state="now"] .lesson .muted, .slot[data-state="now"] .lesson .small { color: #fff; }
@@ -479,9 +482,14 @@ h1, h2, h3, .top .brand b, h1 { letter-spacing: -.01em; }
 .slot[data-state="now"] .lesson .l2 .last-log .small { font-size: .84rem; }
 .slot[data-state="now"] .lesson .remember { background: rgba(255,255,255,.2); color: #fff; }
    /* "Create" stays in the ⋯ menu here: the card is narrow */
-.slot[data-state="now"] .lesson .cd { display: block; padding: .2rem .75rem; border-radius: 12px; background: #fff; color: var(--indigo); }
-.slot[data-state="now"] .lesson .cd b { font-size: 1.45rem; }
-.slot[data-state="now"] .lesson .cd small { font-size: .74rem; }
+/* the time left is a ring that empties as the lesson goes (--left runs 1 to 0, set by trackNow) */
+@property --left { syntax: "<number>"; inherits: false; initial-value: 1; }
+.slot[data-state="now"] .lesson .cd { position: relative; display: grid; place-content: center; width: 68px; height: 68px; padding: 0; border-radius: 50%; color: var(--indigo);
+  background: conic-gradient(var(--indigo) calc(var(--left) * 360deg), rgba(42, 42, 114, .16) 0); transition: --left 1.2s linear; }
+.slot[data-state="now"] .lesson .cd::before { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: #fff; }
+.slot[data-state="now"] .lesson .cd b, .slot[data-state="now"] .lesson .cd small { position: relative; }
+.slot[data-state="now"] .lesson .cd b { font-size: 1.35rem; line-height: 1; }
+.slot[data-state="now"] .lesson .cd small { font-size: .62rem; line-height: 1.1; max-width: 52px; }
 .slot[data-state="now"] .lesson .until { display: none; }
 .slot[data-state="now"] .lesson .btn.primary { background: #fff; color: var(--indigo); border-color: #fff; }
 .slot[data-state="now"] .lesson .btn:not(.primary) { background: rgba(255,255,255,.18); color: #fff; border-color: rgba(255,255,255,.4); }
@@ -498,6 +506,8 @@ h1, h2, h3, .top .brand b, h1 { letter-spacing: -.01em; }
   .ladder .slot { animation: slot-in .16s ease-out both; }
   @keyframes slot-in { from { opacity: 0; } }
   /* a lesson that was just added or moved drops in, then a soft green ring fades out */
+  .lesson.just-logged { animation: arrive-ring 1.6s ease-out both; }
+  .lesson.just-logged .btn.primary::before { content: "\2713\00a0"; font-weight: 800; display: inline-block; animation: pop-tick .4s ease-out; }
   .lesson.arrive { animation: arrive-in .45s cubic-bezier(.2, .8, .2, 1) both, arrive-ring 1.8s ease-out .2s both; }
   @keyframes arrive-in { from { opacity: 0; transform: translateY(-14px) scale(.98); } }
   @keyframes arrive-ring { 0% { box-shadow: 0 0 0 0 rgba(63, 143, 82, .55); background-color: var(--green-wash); } 100% { box-shadow: 0 0 0 14px rgba(63, 143, 82, 0); } }
@@ -1197,3 +1207,41 @@ input.invalid, textarea.invalid, select.invalid { border-color: var(--margin) !i
 .bk-addmenu { position: relative; }
 .bk-addmenu > summary { list-style: none; cursor: pointer; }
 .bk-addmenu > summary::-webkit-details-marker { display: none; }
+
+/* ---- Motion. The teacher can turn all of it off in Settings (the `still` class on <html>): nothing moves, nothing fades. */
+html.still *, html.still *::before, html.still *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* the lesson that becomes "now" is filled with blue as a wipe from its start edge, and the time on the line turns dark with it */
+  .slot[data-state] .lesson { transition: background-size .5s ease, box-shadow .5s ease, margin .4s ease, padding .4s ease; }
+  .lesson .l1 b, .lesson .l2, .lesson .muted, .lesson .small { transition: color .25s ease .25s; }
+  .slot-time { transition: background-color .5s ease, color .5s ease, box-shadow .5s ease, border-color .5s ease; }
+  /* a new page appears with a short fade, not all at once */
+  .page-in { animation: page-in .2s ease-out; }
+  @keyframes page-in { from { opacity: 0; } }
+  /* dialogs and menus open quickly */
+  .overlay { animation: fade-in .14s ease-out; }
+  .modal { animation: pop-in .16s ease-out; }
+  @keyframes fade-in { from { opacity: 0; } }
+  @keyframes pop-in { from { opacity: 0; transform: translateY(8px) scale(.985); } }
+  /* a field that needs fixing shakes once */
+  .shake { animation: shake .34s ease-in-out; }
+  @keyframes shake { 20% { transform: translateX(-5px); } 45% { transform: translateX(5px); } 70% { transform: translateX(-3px); } 90% { transform: translateX(2px); } }
+  /* a button that was pressed to switch something confirms it */
+  .pulse { animation: pulse .32s ease-out; }
+  @keyframes pulse { 40% { transform: scale(1.1); } }
+  /* a saved button shows a tick for a moment */
+  .ok-flash { background: var(--green) !important; border-color: var(--green) !important; color: #fff !important; transition: background-color .2s ease; }
+  .ok-flash::before { content: "\2713\00a0"; font-weight: 800; animation: pop-tick .35s ease-out; display: inline-block; }
+  @keyframes pop-tick { from { transform: scale(0); } 60% { transform: scale(1.35); } }
+  /* a row that was just added drops into place with a soft glow; one that is removed folds away */
+  .fresh { animation: fresh-in .5s cubic-bezier(.2, .8, .2, 1) both; }
+  @keyframes fresh-in { from { opacity: 0; transform: translateY(-10px); background-color: var(--green-wash); } }
+  /* a button that is busy (the AI is writing, a file is being made) shows a light moving along its bottom edge */
+  .btn.working { position: relative; overflow: hidden; }
+  .btn.working::after { content: ""; position: absolute; inset-inline: 0; bottom: 0; height: 3px; background: linear-gradient(90deg, transparent 0%, var(--blue) 50%, transparent 100%); background-size: 40% 100%; background-repeat: no-repeat; animation: working 1.1s ease-in-out infinite; }
+  @keyframes working { from { background-position: -40% 0; } to { background-position: 140% 0; } }
+  .row-out { opacity: 0; transform: translateX(-24px); transition: opacity .2s ease, transform .22s ease; }
+  [dir="rtl"] .row-out { transform: translateX(24px); }
+  .leaving { overflow: hidden; opacity: 0; margin-block: 0 !important; padding-block: 0 !important; border-width: 0 !important; transition: height .26s ease, opacity .2s ease, margin .26s ease, padding .26s ease; }
+}

@@ -2,6 +2,7 @@ import { h, icon, confirmBox, modal, toast } from "./dom.js";
 import { api, guarded, inPage, readsFor, warm } from "./api.js";
 import { t, setLang, hasKey, loadLang } from "./i18n.js";
 import { applyFontSize, applyDensity } from "./fontsize.js";
+import { applyMotion, play } from "./motion.js";
 import { state } from "./state.js";
 import { installValidation } from "./components/validate.js";
 import { startWizard } from "./wizard.js";
@@ -239,6 +240,7 @@ function restoreDraft(pageId) {
 }
 applyFontSize();
 applyDensity();
+applyMotion();
 let shownPage = null;
 
 // What each page reads first, so the very first visit can also be prepared. After a page has been opened once, what it
@@ -322,7 +324,7 @@ async function showRoute() {
     const slow = setTimeout(() => document.body.classList.add("slow-nav"), 150);   // a thin progress line, only if loading is not instant
     const skel = setTimeout(() => { if (main.classList.contains("busy")) main.replaceChildren(skeleton()); }, 450);   // still loading after almost half a second: grey blocks, not the old page
     try { if (!page.render) page.render = await page.load(); await page.render(main, { reloadApp }); } finally { clearTimeout(slow); clearTimeout(skel); document.body.classList.remove("slow-nav"); main.classList.remove("busy"); main.removeEventListener("input", mark, true); main.removeEventListener("change", mark, true); }
-    if (shownPage !== page.id) main.scrollTop = 0; // a new tab starts at the top, not where the last one was scrolled to
+    if (shownPage !== page.id) { main.scrollTop = 0; play(main, "page-in", 260); } // a new tab starts at the top, not where the last one was scrolled to, and fades in
     shownPage = page.id;
     showAiBall(page.id);
     nameLooseControls(main);
