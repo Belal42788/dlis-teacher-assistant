@@ -486,6 +486,18 @@ try:
             why_stuck(page)   # while the browser is still open: what is it waiting for?
             raise AssertionError(f"students after reload: {seen}") from None
         assert page.locator(".students li").count() == 17, page.locator(".students li").count()
+        # finding a student: the box on the Classes page (Arabic spelling, then English), and Ctrl+K; each opens the class with that row lit up
+        page.fill(".stu-find-input", "سارة"); page.wait_for_selector(".stu-hit")
+        page.click(".stu-hit:has-text('سارة محمد')"); page.wait_for_selector(".students li.hit")
+        assert page.locator(".students li.hit input >> nth=0").input_value() == "سارة محمد", "the lit row is not the student that was picked"
+        assert page.locator(".students li.hit").count() == 1
+        page.fill(".stu-find-input", "omar hany"); page.wait_for_selector(".stu-hit"); page.keyboard.press("Enter"); page.wait_for_selector(".students li.hit")
+        page.fill(".stu-find-input", "zzzzqq"); page.wait_for_selector(".stu-found .quick-none"); page.fill(".stu-find-input", "")
+        page.keyboard.press("Control+k"); page.wait_for_selector(".quick-input"); page.fill(".quick-input", "احمد علي")
+        page.wait_for_selector(".quick-item:has-text('أحمد علي')"); page.keyboard.press("Enter")
+        page.wait_for_selector(".students li.hit"); assert page.locator(".quick-input").count() == 0
+        assert page.evaluate("getComputedStyle(document.querySelector('.students li.hit')).backgroundColor") != "rgba(0, 0, 0, 0)", "the found row is not tinted"
+        shot("19_find_student")
         # a slow Today must not paint over the page opened right after the app starts (once the menu said Classes and the screen showed Today)
         late = ctx.new_page(); late.route("**/api/today*", lambda r: (time.sleep(1.5), r.continue_()))
         late.goto(url); late.wait_for_selector(".shell"); late.evaluate("location.hash='#/classes'")

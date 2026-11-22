@@ -88,6 +88,10 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(f["names"], ["لمى", "يوسف"])
         self.call("PUT", "/api/rooms/g4-a/students", {"names": r["names"]})
         self.assertEqual(self.call("GET", "/api/rooms/g4-a/students")["names"], ["سارة", "عمر"])
+        everyone = self.call("GET", "/api/students/all")["students"]        # the search boxes: one read-only list of every class
+        mine = [x for x in everyone if x["room_id"] == "g4-a"]
+        self.assertEqual([x["ar"] for x in mine], ["سارة", "عمر"])
+        self.assertTrue(all(x["en"] for x in mine))
         self._certificates()
         self._behavior_and_seating()
         self.call("GET", "/api/rooms/nope/students", expect=404)

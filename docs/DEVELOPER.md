@@ -227,6 +227,7 @@ The server listens on 127.0.0.1 only and every request carries the secret token 
 | POST | `/api/structure/build` | `build_structure` |
 | GET | `/api/rooms/([a-z0-9_-]+)/students` | `get_students` |
 | PUT | `/api/rooms/([a-z0-9_-]+)/students` | `put_students` |
+| GET | `/api/students/all` | `all_students` |
 | POST | `/api/students/parse` | `parse_students` |
 | GET | `/api/timetable` | `get_timetable` |
 | PUT | `/api/timetable` | `put_timetable` |

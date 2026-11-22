@@ -7,6 +7,7 @@ import { roomLabel, gradeName, stageName, subjectLabel, stageTone } from "../lab
 import { classPicker } from "../components/class_picker.js";
 import { showProblems } from "../components/validate.js";
 import { play, leave } from "../motion.js";
+import { norm } from "../components/quick.js";
 
 let selectedId = "";
 
@@ -14,7 +15,9 @@ export async function renderClasses(root) {
   let structure = await api.get("/api/structure");
   state.structure = structure;
   const settings = await api.get("/api/settings");
-  const asked = new URLSearchParams((location.hash.split("?")[1]) || "").get("room");
+  const params = new URLSearchParams((location.hash.split("?")[1]) || "");
+  const asked = params.get("room");
+  let pendingFind = params.get("student") || "";      // a student picked in the quick search: the class opens with that name lit up
   if (asked && structure.rooms.some((r) => r.id === asked)) selectedId = asked;
   if (!structure.rooms.some((r) => r.id === selectedId)) selectedId = structure.rooms[0]?.id || "";
 
@@ -52,6 +55,40 @@ export async function renderClasses(root) {
     const grade = structure.grades.find((g) => g.id === room.grade_id);
     const data = await api.get(`/api/rooms/${room.id}/students`);
     detail.replaceChildren(studentsPanel(room, grade, data), optionsPanel(room), gradePanel(grade));
+    if (pendingFind) { lightUp(data.names.indexOf(pendingFind)); pendingFind = ""; }
+  }
+
+  // The row of the student that was searched for: scrolled into view and tinted for a few seconds (works with animations off too).
+  function lightUp(i) {
+    const li = i < 0 ? null : detail.querySelectorAll(".students li")[i];
+    if (!li) return;
+    li.scrollIntoView({ block: "center" });
+    li.classList.add("hit");
+    play(li, "fresh", 700);
+    setTimeout(() => li.classList.remove("hit"), 3500);
+  }
+
+  // ---------------- find a student in any class
+  let everyone = [];
+  const findInput = h("input", { type: "search", class: "stu-find-input", placeholder: t("cs_ph"), "aria-label": t("cs_ph"), autocomplete: "off",
+    onFocus: async () => { const r = await guarded(() => api.get("/api/students/all")); if (r) everyone = r.students; drawFound(); },
+    onInput: () => drawFound(),
+    onKeydown: (e) => {
+      if (e.key === "Escape") { findInput.value = ""; drawFound(); }
+      else if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); foundBox.querySelector("button")?.click(); }
+    } });
+  const foundBox = h("div", { class: "stu-found", hidden: true, onMousedown: (e) => e.preventDefault() });   // clicking a result keeps the focus in the box
+  const findWrap = h("div", { class: "stu-find", role: "search", onFocusout: (e) => { if (!findWrap.contains(e.relatedTarget)) foundBox.hidden = true; } }, icon("search"), findInput, foundBox);
+  function drawFound() {
+    const words = norm(findInput.value).split(" ").filter(Boolean);
+    foundBox.hidden = !words.length;
+    if (!words.length) return;
+    const ar = getLang() === "ar", rooms = new Map(structure.rooms.map((r) => [r.id, r]));
+    const hits = everyone.filter((x) => rooms.has(x.room_id) && words.every((w) => norm(`${x.ar} ${x.en} ${roomLabel(rooms.get(x.room_id), structure)}`).includes(w))).slice(0, 12);
+    foundBox.replaceChildren(...(hits.length ? hits.map((x) => h("button", { class: "stu-hit", onClick: () => {
+      pendingFind = x.ar; selectedId = x.room_id; findInput.value = ""; foundBox.hidden = true; drawTree(); drawDetail();
+    } }, h("span", { class: "grow" }, ar ? x.ar : x.en, h("span", { class: "muted small" }, " · ", ar ? x.en : x.ar)),
+      h("span", { class: "quick-kind" }, roomLabel(rooms.get(x.room_id), structure)))) : [h("div", { class: "quick-none" }, t("cs_none"))]));
   }
 
   // ---------------- students
@@ -202,6 +239,7 @@ export async function renderClasses(root) {
   root.replaceChildren(h("div", { class: "page" }, hubTabs("classes", "classes"),
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_classes")), h("p", {}, t("classes_page_lead"))),
       h("button", { class: "btn primary", onClick: addClasses }, icon("plus"), t("add_classes"))),
+    findWrap,
     h("div", { class: "split" }, treeBox, detail)));
   drawTree(); await drawDetail();
 }

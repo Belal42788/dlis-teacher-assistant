@@ -376,6 +376,17 @@ class Service(BellMixin, BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, Up
         return {"room_id": room_id, "names": [x["name"] for x in full], "english": [x["english"] for x in full],
                 "auto": [to_english(x["name"]) for x in full]}
 
+    def all_students(self) -> dict:
+        """Every student of every class in one list, for the search boxes. Read-only (nothing is rewritten) and it never leaves this computer."""
+        from ..core.translit import to_english
+        store = self._need_store()
+        out = []
+        for r in store.load_structure().rooms:
+            for i, x in enumerate(store.load_students_full(r.id)):
+                if x["name"]:
+                    out.append({"room_id": r.id, "i": i, "ar": x["name"], "en": x["english"] or to_english(x["name"])})
+        return {"students": out}
+
     def put_students(self, room_id: str, names: list, english: Optional[list] = None) -> dict:
         from ..core.translit import to_english, to_arabic, _AR
         store = self._need_store()

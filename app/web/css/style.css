@@ -150,6 +150,13 @@ body.has-titlebar .shell, body.has-titlebar .wiz { top: 34px; }
 .students { list-style: none; margin: 0; padding: 0; counter-reset: s; }
 .students li { display: grid; grid-template-columns: 2.2em 1fr 1fr auto; gap: .4em; align-items: center; padding: 1px 0; counter-increment: s; }
 .students li::before { content: counter(s); text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; font-size: .85rem; }
+.stu-find { position: relative; margin-bottom: 1rem; max-width: 30rem; }
+.stu-find > .i { position: absolute; inset-inline-start: .8rem; top: 50%; transform: translateY(-50%); width: 1.05rem; height: 1.05rem; color: var(--muted); pointer-events: none; }
+.stu-find .stu-find-input { width: 100%; padding-inline-start: 2.5rem; }
+.stu-found { position: absolute; z-index: 30; inset-inline: 0; top: calc(100% + 4px); background: var(--sheet); border: 1px solid var(--rule-strong); border-radius: var(--radius); box-shadow: var(--shadow); padding: .3rem; max-height: 50vh; overflow-y: auto; }
+.stu-hit { display: flex; align-items: center; gap: .6rem; width: 100%; padding: .5rem .7rem; border: 0; border-radius: 6px; background: transparent; color: var(--ink); font: inherit; text-align: start; cursor: pointer; min-height: 38px; }
+.stu-hit:hover, .stu-hit:focus-visible { background: var(--blue-wash); }
+.students li.hit { background: var(--blue-wash); border-radius: 6px; }
 .students input { border-color: transparent; background: transparent; }
 .students input:hover { border-color: var(--rule-strong); background: #fff; }
 .saved { color: var(--green); font-weight: 600; font-size: var(--step--1); }

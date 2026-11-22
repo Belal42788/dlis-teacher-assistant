@@ -4,14 +4,14 @@ import { t, getLang } from "../i18n.js";
 import { roomLabel } from "../labels.js";
 
 // Ctrl+K: one box to jump to a page, a tool, a class, a file or a source. With nothing typed it shows the recent files.
-const norm = (s) => String(s || "").toLowerCase().normalize("NFKD").replace(/[ً-ٰٟـ̀-ͯ]/g, "")
+export const norm = (s) => String(s || "").toLowerCase().normalize("NFKD").replace(/[ً-ٰٟـ̀-ͯ]/g, "")
   .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/\s+/g, " ").trim();
 
 const safe = (p) => p.catch(() => null);
 
 async function collect(pages) {
   const lang = getLang(), L = (o) => (o && (o[lang] || o.en)) || "";
-  const [cat, structure, lib, src] = await Promise.all([safe(api.get("/api/tools")), safe(api.get("/api/structure")), safe(api.get("/api/library")), safe(api.get("/api/sources"))]);
+  const [cat, structure, lib, src, stu] = await Promise.all([safe(api.get("/api/tools")), safe(api.get("/api/structure")), safe(api.get("/api/library")), safe(api.get("/api/sources")), safe(api.get("/api/students/all"))]);
   const go = (hash) => () => { location.hash = hash; };
   const out = [];
   for (const p of pages) {
@@ -22,6 +22,14 @@ async function collect(pages) {
   }
   if (cat) for (const x of cat.tools) out.push({ kind: "tool", label: L(x.name), hint: L(x.desc), ico: "tool", run: go(`#/tools?tool=${x.id}`) });
   if (structure) for (const r of structure.rooms) out.push({ kind: "class", label: roomLabel(r, structure), hint: "", ico: "classes", run: go(`#/classes?room=${encodeURIComponent(r.id)}`) });
+  if (structure && stu) {   // a student: found by the Arabic or the English spelling, opens the class with the name lit up
+    const rooms = new Map(structure.rooms.map((r) => [r.id, r]));
+    for (const x of stu.students) {
+      const r = rooms.get(x.room_id); if (!r) continue;
+      const where = roomLabel(r, structure), ar = lang === "ar";
+      out.push({ kind: "student", label: ar ? x.ar : x.en, hint: `${ar ? x.en : x.ar} ${where}`, tag: where, ico: "user", run: go(`#/classes?room=${encodeURIComponent(x.room_id)}&student=${encodeURIComponent(x.ar)}`) });
+    }
+  }
   let files = [];
   if (lib) {
     files = lib.items.map((f) => ({ kind: "file", label: f.name, hint: f.folder || "", ico: "file", mtime: f.mtime, run: () => guarded(() => api.post("/api/open", { path: lib.root + "/" + f.rel })) }));
@@ -66,7 +74,7 @@ export async function openQuick(pages) {
       const head = q ? "" : (it.kind === "file" ? t("qk_recent") : t("qk_pages"));
       if (head && head !== last) { rows.push(h("div", { class: "quick-head" }, head)); last = head; }
       rows.push(h("div", { class: `quick-item${i === active ? " on" : ""}`, role: "option", "aria-selected": i === active ? "true" : "false", onMousemove: () => { if (active !== i) { active = i; mark(); } }, onClick: () => run(it) },
-        icon(it.ico), h("span", { class: "quick-label" }, it.label), h("span", { class: "quick-kind" }, t(`qk_${it.kind}`))));
+        icon(it.ico), h("span", { class: "quick-label" }, it.label), h("span", { class: "quick-kind" }, it.tag || t(`qk_${it.kind}`))));
     });
     list.replaceChildren(...(rows.length ? rows : [h("div", { class: "quick-none" }, t("qk_none"))]));
   }
