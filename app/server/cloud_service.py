@@ -45,7 +45,7 @@ class CloudMixin:
         d = self._need_store().read_json(self._cloud_path(), {}, check=lambda x: isinstance(x, dict) or (_ for _ in ()).throw(ValueError("bad"))) or {}
         # the school can ship its own address and public key inside the app (resources/school_server.json), so teachers type nothing
         base = {}
-        f = paths.resources_dir() / "school_server.json"
+        f = paths.school_file("school_server.json")
         if f.is_file():
             try:
                 base = json.loads(f.read_text(encoding="utf-8"))

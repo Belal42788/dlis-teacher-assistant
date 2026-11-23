@@ -53,7 +53,7 @@ def is_newer(candidate: str, current: str) -> bool:
 
 class UpdateMixin:
     def _update_sources(self) -> dict:
-        f = paths.resources_dir() / "school_server.json"
+        f = paths.school_file("school_server.json")
         try:
             d = json.loads(f.read_text(encoding="utf-8")) if f.is_file() else {}
         except ValueError:
