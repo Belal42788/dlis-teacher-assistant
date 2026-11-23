@@ -4,13 +4,13 @@
 const CFG = window.PORTAL || {};
 const T = {
   ar: { brand: "بوابة أولياء الأمور · DLIS", login: "تسجيل الدخول", signup: "إنشاء حساب", email: "الإيميل", pass: "كلمة السر", code: "كود الطالب (من المدرسة)", haveAcc: "عندي حساب", noAcc: "أول مرة؟ أنشئ حساب", forgot: "نسيت كلمة السر", sent: "اتبعتلك رابط على الإيميل لو الحساب موجود.", out: "خروج", lang: "English",
-    badLogin: "الإيميل أو كلمة السر مش صح.", badCode: "الكود مش صح أو اتستخدم قبل كده. اطلب كود جديد من المدرسة.", net: "مش قادر أوصل للسيرفر. اتأكد من النت.", notSet: "البوابة لسه ما اتظبطتش (عنوان السيرفر ناقص).",
+    unconfirmed: "الإيميل ده لسه متأكدش. اطلب من المدرسة تأكيده.", rate: "السيرفر بعت إيميلات كتير. استنى ساعة وجرّب تاني.", badLogin: "الإيميل أو كلمة السر مش صح.", badCode: "الكود مش صح أو اتستخدم قبل كده. اطلب كود جديد من المدرسة.", net: "مش قادر أوصل للسيرفر. اتأكد من النت.", notSet: "البوابة لسه ما اتظبطتش (عنوان السيرفر ناقص).",
     kids: "أبنائي", addKid: "إضافة ابن/ابنة بكود", add: "إضافة", grades: "الدرجات", files: "الملفات", week: "الأسبوع", news: "الإعلانات", noKids: "لسه ما ربطتش أي ابن. اكتب الكود اللي اتسلّمتهولك المدرسة.",
     noGrades: "مفيش درجات متسجلة لسه.", noFiles: "مفيش ملفات متاحة دلوقتي.", moreFiles: "ملفات عامة", wkWord: "الأسبوع", weekFiles: "ملفات الأسبوع", noWeek: "خطة الأسبوع لسه ما اتنشرتش.", noNews: "مفيش إعلانات.", homework: "الواجبات", material: "مواد إضافية", quizzes: "تنبيهات الكويزات", trimester: "الفصل الدراسي", open: "فتح", pw8: "كلمة السر 8 حروف على الأقل.",
     kind: { presentation: "بريزنتيشن", quiz: "كويز", revision: "مراجعة", link: "رابط", other: "ملف", message: "رسالة من المدرس" },
     items: { Behavior: "السلوك", Attendance: "الحضور", Classwork: "شغل الفصل", Homework: "الواجب", Quiz: "الكويز", Total: "المجموع" }, loading: "جارٍ التحميل…" },
   en: { brand: "Parents' portal · DLIS", login: "Sign in", signup: "Create account", email: "Email", pass: "Password", code: "Student code (from the school)", haveAcc: "I have an account", noAcc: "First time? Create an account", forgot: "Forgot password", sent: "If the account exists, a link was sent to your email.", out: "Sign out", lang: "العربية",
-    badLogin: "The email or password is not right.", badCode: "The code is wrong or already used. Ask the school for a new one.", net: "Could not reach the server. Check the internet.", notSet: "The portal is not set up yet (server address missing).",
+    unconfirmed: "This email is not confirmed yet. Ask the school to confirm it.", rate: "The server sent too many emails. Wait an hour and try again.", badLogin: "The email or password is not right.", badCode: "The code is wrong or already used. Ask the school for a new one.", net: "Could not reach the server. Check the internet.", notSet: "The portal is not set up yet (server address missing).",
     kids: "My children", addKid: "Add a child with a code", add: "Add", grades: "Grades", files: "Files", week: "This week", news: "Announcements", noKids: "No child linked yet. Type the code the school gave you.",
     noGrades: "No grades yet.", noFiles: "Nothing shared right now.", moreFiles: "General files", wkWord: "Week", weekFiles: "This week's files", noWeek: "The week plan is not published yet.", noNews: "No announcements.", homework: "Homework", material: "Extra material", quizzes: "Quiz alerts", trimester: "Term", open: "Open", pw8: "Password must be at least 8 characters.",
     kind: { presentation: "Presentation", quiz: "Quiz", revision: "Revision", link: "Link", other: "File", message: "Message from the teacher" },
@@ -37,7 +37,7 @@ async function raw(method, path, body, token, extra) {
     res = await fetch(CFG.url + path, { method, headers: { apikey: CFG.key, "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}), ...(extra || {}) }, body: body === undefined ? undefined : JSON.stringify(body) });
   } catch { throw new NetErr(); }
   const text = await res.text(); let data = null; try { data = text ? JSON.parse(text) : null; } catch { /* not json */ }
-  if (!res.ok) { const e = new Error((data && (data.msg || data.message || data.error_description)) || "error"); e.status = res.status; throw e; }
+  if (!res.ok) { const e = new Error((data && (data.msg || data.message || data.error_description)) || "error"); e.status = res.status; e.code = (data && data.error_code) || ""; throw e; }
   return data;
 }
 async function auth(path, body) { const j = await raw("POST", "/auth/v1/" + path, body); if (j && j.access_token) store.set({ access: j.access_token, refresh: j.refresh_token, exp: Date.now() + (j.expires_in || 3000) * 1000 - 60000 }); return j; }
@@ -66,7 +66,7 @@ function loginScreen(signup) {
         try { await api("POST", "/rest/v1/rpc/claim_student", { p_code: code.value }); } catch (e) { if (!(e instanceof NetErr)) say(msg, t("badCode"), true); }
       } else await auth("token?grant_type=password", { email: em.value.trim(), password: pw.value });
       home();
-    } catch (e) { say(msg, signup && e.status === 422 ? e.message : e.status === 400 || e.status === 401 ? t("badLogin") : errText(e), true); }
+    } catch (e) { say(msg, signup && e.status === 422 ? e.message : e.code === "email_not_confirmed" ? t("unconfirmed") : e.status === 429 || /rate_limit/.test(e.code) ? t("rate") : e.status === 400 || e.status === 401 ? t("badLogin") : errText(e), true); }
   };
   app.replaceChildren(h("div", { class: "card" }, h("h1", {}, signup ? t("signup") : t("login")),
     h("label", {}, t("email")), em, h("label", {}, t("pass")), pw, signup ? [h("label", {}, t("code")), code] : null, msg,

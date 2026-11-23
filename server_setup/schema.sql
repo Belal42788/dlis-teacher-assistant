@@ -47,6 +47,7 @@ create table if not exists grades (
 );
 alter table grades add column if not exists teacher_id uuid references auth.users default auth.uid();
 
+-- A teacher reads and writes only their OWN grades, files and week plans (policies below); the administration sees all.
 -- files and links the teacher approved for parents (presentations, quizzes, revision sheets, videos, sites)
 create table if not exists publications (
   id uuid primary key default gen_random_uuid(),
@@ -104,17 +105,18 @@ drop policy if exists p_ps_read on parent_students;  create policy p_ps_read on 
 drop policy if exists p_ps_write on parent_students; create policy p_ps_write on parent_students for all using (my_role() = 'admin') with check (my_role() = 'admin');
 
 drop policy if exists p_grades_read on grades;
-create policy p_grades_read on grades for select using (my_role() in ('admin','teacher') or student_code in (select student_code from parent_students where parent_id = auth.uid()));
+create policy p_grades_read on grades for select using (my_role() = 'admin' or (my_role() = 'teacher' and teacher_id = auth.uid()) or student_code in (select student_code from parent_students where parent_id = auth.uid()));
 drop policy if exists p_grades_write on grades;      create policy p_grades_write on grades for all using (my_role() = 'admin' or (my_role() = 'teacher' and teacher_id = auth.uid())) with check (my_role() = 'admin' or (my_role() = 'teacher' and teacher_id = auth.uid()));
 
 drop policy if exists p_pub_read on publications;
 create policy p_pub_read on publications for select using (
-  my_role() in ('admin','teacher') or (approved and class_id in (select my_classes()) and (visible_from is null or visible_from <= now()) and (visible_until is null or visible_until >= now())));
+  my_role() = 'admin' or (my_role() = 'teacher' and teacher_id = auth.uid())
+  or (approved and class_id in (select my_classes()) and (visible_from is null or visible_from <= now()) and (visible_until is null or visible_until >= now())));
 drop policy if exists p_pub_write on publications;
 create policy p_pub_write on publications for all using (my_role() = 'admin' or (my_role() = 'teacher' and teacher_id = auth.uid())) with check (my_role() = 'admin' or (my_role() = 'teacher' and teacher_id = auth.uid()));
 
 drop policy if exists p_wp_read on week_plans;
-create policy p_wp_read on week_plans for select using (my_role() in ('admin','teacher') or (approved and class_id in (select my_classes())));
+create policy p_wp_read on week_plans for select using (my_role() = 'admin' or (my_role() = 'teacher' and teacher_id = auth.uid()) or (approved and class_id in (select my_classes())));
 drop policy if exists p_wp_write on week_plans;      create policy p_wp_write on week_plans for all using (my_role() = 'admin' or (my_role() = 'teacher' and teacher_id = auth.uid())) with check (my_role() = 'admin' or (my_role() = 'teacher' and teacher_id = auth.uid()));
 
 -- private storage for the approved files
@@ -122,7 +124,8 @@ insert into storage.buckets (id, name, public) values ('files', 'files', false) 
 drop policy if exists p_files_staff on storage.objects;
 create policy p_files_staff on storage.objects for all using (bucket_id = 'files' and my_role() in ('admin','teacher')) with check (bucket_id = 'files' and my_role() in ('admin','teacher'));
 drop policy if exists p_files_parent on storage.objects;
-create policy p_files_parent on storage.objects for select using (bucket_id = 'files' and my_role() = 'parent' and name in (select file_path from publications where approved and class_id in (select my_classes())));
+create policy p_files_parent on storage.objects for select using (bucket_id = 'files' and my_role() = 'parent' and name in (select file_path from publications where approved and class_id in (select my_classes())
+  and (visible_from is null or visible_from <= now()) and (visible_until is null or visible_until >= now())));
 
 -- public pictures for announcements (only the administration uploads)
 insert into storage.buckets (id, name, public) values ('announce', 'announce', true) on conflict do nothing;

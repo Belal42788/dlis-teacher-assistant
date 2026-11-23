@@ -39,14 +39,21 @@ class Cloud:
             with urllib.request.urlopen(req, timeout=self.timeout) as r:
                 raw = r.read()
         except urllib.error.HTTPError as e:
-            msg = ""
+            msg = why = ""
             try:
                 j = json.loads(e.read() or b"{}")
                 msg = str(j.get("msg") or j.get("message") or j.get("error_description") or j.get("error") or "")
+                why = str(j.get("error_code") or "")
             except Exception:
                 pass
-            if e.code in (400, 401, 403) and "/auth/" in path:
-                raise AppError("cloud_bad_login", "The email or password is not right.", status=401) from None
+            if "/auth/" in path:      # tell the three common sign-in failures apart: they need three different fixes
+                low = f"{why} {msg}".lower()
+                if "email_not_confirmed" in low or "not confirmed" in low:
+                    raise AppError("cloud_email_unconfirmed", "This email is not confirmed yet. Ask the administrator to confirm it (or turn off Confirm email on the server).", status=401) from None
+                if e.code == 429 or "rate_limit" in low or "rate limit" in low:
+                    raise AppError("cloud_rate_limited", "The server sent too many emails or sign-in tries. Wait a while, then try again.", status=429) from None
+                if e.code in (400, 401, 403):
+                    raise AppError("cloud_bad_login", "The email or password is not right.", status=401) from None
             raise AppError("cloud_error", f"The server said no ({e.code}). {msg}".strip(), status=502) from None
         except (urllib.error.URLError, TimeoutError, OSError):
             raise AppError("cloud_offline", "Could not reach the server. Check the internet and the server address.", status=502) from None

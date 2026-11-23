@@ -30,7 +30,11 @@ class TestCloud(unittest.TestCase):
             def _go(self, body=None):
                 seen.append((self.command, self.path, self.headers.get("apikey"), self.headers.get("Authorization")))
                 if self.path.startswith("/auth/v1/token?grant_type=password"):
-                    if body.get("password") != "good":
+                    if body.get("password") == "unconfirmed":
+                        out, code = {"error_code": "email_not_confirmed", "msg": "Email not confirmed"}, 400
+                    elif body.get("password") == "limit":
+                        out, code = {"error_code": "over_email_send_rate_limit", "msg": "email rate limit exceeded"}, 429
+                    elif body.get("password") != "good":
                         out, code = {"error_description": "Invalid login"}, 400
                     else:
                         out, code = {"access_token": "AT", "refresh_token": "RT", "expires_in": 3600, "user": {"id": "u1"}}, 200
@@ -56,6 +60,10 @@ class TestCloud(unittest.TestCase):
                 with self.assertRaises(AppError) as cm:
                     svc.cloud_login({"email": "a@b.c", "password": "bad"})
                 self.assertEqual(cm.exception.code, "cloud_bad_login")
+                for pw, want in (("unconfirmed", "cloud_email_unconfirmed"), ("limit", "cloud_rate_limited")):   # each failure gets its own message
+                    with self.assertRaises(AppError) as cm:
+                        svc.cloud_login({"email": "a@b.c", "password": pw})
+                    self.assertEqual(cm.exception.code, want)
                 out = svc.cloud_login({"email": "a@b.c", "password": "good"})
                 self.assertEqual((out["signed_in"], out["role"], out["mode"]), (True, "teacher", "online"))
                 self.assertNotIn("good", (svc._cloud_path()).read_text())            # the password is never saved
