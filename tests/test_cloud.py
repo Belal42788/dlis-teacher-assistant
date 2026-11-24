@@ -215,7 +215,7 @@ class TestCloud(unittest.TestCase):
             def do_GET(self): self._out([{"role": role["v"]}] if "/profiles" in self.path else [])
             def do_POST(self):
                 body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
-                if "grant_type" in self.path: return self._out({"access_token": "AT", "refresh_token": "RT", "expires_in": 3600})
+                if "grant_type" in self.path: return self._out({"access_token": "AT", "refresh_token": "RT", "expires_in": 3600, "user": {"id": "u1"}})
                 posted.append((self.path.split("?")[0], body)); self._out(body)
 
         srv = HTTPServer(("127.0.0.1", 0), H); threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -227,6 +227,10 @@ class TestCloud(unittest.TestCase):
                     svc.cloud_login({"email": "p@b.c", "password": "x"})
                 self.assertEqual(cm.exception.code, "cloud_parent_blocked")
                 self.assertFalse(svc.get_cloud()["signed_in"])                       # a parent never stays signed in to the teachers' program
+                role["v"] = "student"
+                with self.assertRaises(AppError) as cm:
+                    svc.cloud_login({"email": "s@b.c", "password": "x"})
+                self.assertEqual(cm.exception.code, "cloud_parent_blocked")          # nor does a student
                 role["v"] = "admin"; svc.cloud_login({"email": "a@b.c", "password": "x"})
                 svc.build_structure({"kg1": ["A"], "g4": ["A"]}); svc.put_students("g4-a", ["Ali Hassan", "Sara Omar"])
                 r1 = svc.prepare_codes()
@@ -235,9 +239,20 @@ class TestCloud(unittest.TestCase):
                 self.assertGreaterEqual(n1, 2)
                 self.assertTrue(all(len(c["code"]) == 8 for c in codes1) and len({c["code"] for c in codes1}) == n1)
                 self.assertTrue(r1["path"].endswith("Parent_Codes.docx"))
+                kinds = [c["kind"] for c in codes1]
+                self.assertEqual(kinds.count("student"), 2)                              # the two Grade 4 students get their own login code; KG children (the ready-made roster) do not
+                self.assertGreaterEqual(kinds.count("parent"), 4)
+                self.assertTrue(all(c["max_uses"] == 1 for c in codes1 if c["kind"] == "student"))
+                self.assertEqual(r1["student_logins"], 2)
                 svc.prepare_codes()                                                   # running it again changes nothing for old students
                 self.assertEqual(len([row for path, rows in posted if path.endswith("/activation_codes") for row in rows]), n1)
+                tt = svc.store.load_timetable(); tt.grid = {"Sunday": {"1": "g4-a", "2": "g4-a"}, "Monday": {"1": "", "2": "kg1-a"}}; svc.store.save_timetable(tt)
+                svc.put_settings({"teacher_name": "Mr Omar", "subject": "ICT"})
                 role["v"] = "teacher"; svc.cloud_login({"email": "t@b.c", "password": "x"})
+                mine = [row for path, rows in posted if path.endswith("/teacher_classes") for row in rows]     # signing in tells the server which classes this teacher has
+                self.assertEqual(sorted(r["class_id"] for r in mine), ["g4-a", "kg1-a"])
+                self.assertTrue(all(r["teacher_id"] == "u1" and r["subject"] == "ICT" and r["teacher_name"] == "Mr Omar" for r in mine))
+                self.assertFalse(any("name" in r and r["name"] for r in mine))                                  # never a student name
                 with self.assertRaises(AppError):
                     svc.prepare_codes()
         finally:

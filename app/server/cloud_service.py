@@ -119,13 +119,38 @@ class CloudMixin:
         c = self._cloud_client()
         c.sign_in(email, password)
         role = c.role()
-        if role == "parent":
+        if role in ("parent", "student"):
             self._cloud_live = None
-            raise AppError("cloud_parent_blocked", "This is the teachers' program. Parents use the parents' portal.", status=403)
+            raise AppError("cloud_parent_blocked", "This is the teachers' program. Parents and students use the portal.", status=403)
         cfg = self._cloud_cfg()
         cfg.update(email=email, refresh=c.refresh, role=role, mode="online", uid=str((c.user or {}).get("id", "")))
         self._cloud_save(cfg)
+        try:
+            self.cloud_sync_classes()          # so parents and students can pick this teacher; a failure here never blocks the sign-in
+        except Exception:
+            pass
         return self.get_cloud()
+
+    def cloud_sync_classes(self) -> dict:
+        """Tell the school server which classes this teacher teaches (class and subject only, no student names), so the families can write to the right teacher."""
+        cfg = self._cloud_cfg()
+        if cfg["role"] not in ("teacher", "admin") or not cfg.get("uid"):
+            raise AppError("cloud_staff_only", "Sign in with a teacher account first.", status=403)
+        store = self._need_store()
+        tt = store.load_timetable()
+        rooms = {r for day in tt.grid.values() for r in day.values() if r}
+        for o in tt.overrides.values():
+            rooms |= {e.get("room_id") for e in o.get("extra", []) if e.get("room_id")}
+        known = {r.id for r in store.load_structure().rooms}
+        rooms &= known
+        st = store.load_settings()
+        uid, c = cfg["uid"], self._cloud_client()
+        mine = {(r, st.subject) for r in rooms}
+        c.upsert("teacher_classes", [{"teacher_id": uid, "class_id": r, "subject": sub, "teacher_name": st.teacher_name} for r, sub in sorted(mine)], "teacher_id,class_id,subject")
+        for row in c.select("teacher_classes", f"select=class_id,subject&teacher_id=eq.{uid}"):
+            if (row["class_id"], row["subject"]) not in mine:             # a class the teacher no longer has
+                c.delete("teacher_classes", f"teacher_id=eq.{uid}&class_id=eq.{urllib.parse.quote(row['class_id'], safe='')}&subject=eq.{urllib.parse.quote(row['subject'], safe='')}")
+        return {"classes": len(mine)}
 
     def cloud_logout(self) -> dict:
         cfg = self._cloud_cfg()
@@ -398,17 +423,18 @@ class CloudMixin:
         return {"students": len(d), "role": self._cloud_cfg()["role"]}
 
     def prepare_codes(self) -> dict:
-        """Give every student a code (new ones only), save the students on the school server, and make the sheet to print."""
+        """Give every student a code for the parents (and, from Grade 1, a second one for the student's own login), save the students on the school server, and make the sheet to print."""
         if self._cloud_cfg()["role"] != "admin":
             raise AppError("cloud_admin_only", "Only the administration can do this.", status=403)
         store = self._need_store()
         c = self._cloud_client()
         mapping = store.read_json(self._codes_path(), {}) or {}
-        taken = {v["activation"] for v in mapping.values()}
+        taken = {v["activation"] for v in mapping.values()} | {v["student_activation"] for v in mapping.values() if v.get("student_activation")}
         structure = store.load_structure()
         new_students, new_codes, sheet = [], [], []
         for room in structure.rooms:
             names = self.get_students(room.id)["names"]
+            has_login = not room.grade_id.startswith("kg")             # KG children are too young: their parents' account is enough
             rows = []
             for name in names:
                 key = f"{room.id}|{name}"
@@ -416,16 +442,21 @@ class CloudMixin:
                     act = self._new_activation(taken); taken.add(act)
                     mapping[key] = {"student": "s" + secrets.token_hex(5), "activation": act}
                     new_students.append({"code": mapping[key]["student"], "class_id": room.id, "grade_id": room.grade_id, "display_name": name})
-                    new_codes.append({"code": act, "student_code": mapping[key]["student"]})
-                rows.append((name, mapping[key]["activation"]))
+                    new_codes.append({"code": act, "student_code": mapping[key]["student"], "kind": "parent", "max_uses": 2})
+                if has_login and not mapping[key].get("student_activation"):
+                    sact = self._new_activation(taken); taken.add(sact)
+                    mapping[key]["student_activation"] = sact
+                    new_codes.append({"code": sact, "student_code": mapping[key]["student"], "kind": "student", "max_uses": 1})
+                rows.append((name, mapping[key]["activation"], mapping[key].get("student_activation", "")))
             if rows:
                 sheet.append((room, rows))
         if new_students:
             c.upsert("students", new_students, "code")
+        if new_codes:
             c.upsert("activation_codes", new_codes, "code")
         store.write_json(self._codes_path(), mapping)
         out = self._codes_sheet(sheet)
-        return {**self._result(out), "new": len(new_students), "total": len(mapping)}
+        return {**self._result(out), "new": len(new_students), "total": len(mapping), "student_logins": sum(1 for v in mapping.values() if v.get("student_activation"))}
 
     def _codes_sheet(self, sheet):
         from docx import Document
@@ -435,12 +466,14 @@ class CloudMixin:
                 doc.add_page_break()
             doc.add_heading(room.name, level=1)
             doc.add_paragraph("Parents: open the DLIS parents' portal, create your account, and type the code of your child. / ولي الأمر: افتح بوابة الأولياء، اعمل حساب، واكتب كود ابنك.")
-            tb = doc.add_table(rows=1, cols=3); tb.style = "Table Grid"
-            for cell, txt in zip(tb.rows[0].cells, ("#", "Student / الطالب", "Code / الكود")):
+            if any(x[2] for x in rows):
+                doc.add_paragraph("Students (Grade 1 and up): open the same portal, create your own account, and type your student code. / الطالب (من الصف الأول): افتح نفس البوابة، اعمل حسابك، واكتب كود الطالب.")
+            tb = doc.add_table(rows=1, cols=4); tb.style = "Table Grid"
+            for cell, txt in zip(tb.rows[0].cells, ("#", "Student / الطالب", "Parent code / كود ولي الأمر", "Student code / كود الطالب")):
                 cell.text = txt
-            for n, (name, act) in enumerate(rows, 1):
+            for n, (name, act, sact) in enumerate(rows, 1):
                 cells = tb.add_row().cells
-                cells[0].text, cells[1].text, cells[2].text = str(n), name, f"{act[:4]}-{act[4:]}"
+                cells[0].text, cells[1].text, cells[2].text, cells[3].text = str(n), name, f"{act[:4]}-{act[4:]}", (f"{sact[:4]}-{sact[4:]}" if sact else "-")
         out = self._need_store().root / "Documents" / "Parent_Codes.docx"
         out.parent.mkdir(parents=True, exist_ok=True)
         doc.save(out)

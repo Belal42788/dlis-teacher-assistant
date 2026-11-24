@@ -55,7 +55,7 @@ Feature files (each is a mixin of `Service`):
 | `LibraryMixin` | `app/server/library_service.py` | 594 |
 | `ParentWeekMixin` | `app/server/parent_week_service.py` | 74 |
 | `CoverageMixin` | `app/server/coverage_service.py` | 117 |
-| `CloudMixin` | `app/server/cloud_service.py` | 447 |
+| `CloudMixin` | `app/server/cloud_service.py` | 480 |
 | `DocsMixin` | `app/server/docs_service.py` | 418 |
 | `AiMixin` | `app/server/ai_service.py` | 424 |
 | `AiChatMixin` | `app/server/ai_chat_service.py` | 101 |
@@ -189,6 +189,7 @@ The server listens on 127.0.0.1 only and every request carries the secret token 
 | GET | `/api/cloud` | `get_cloud` |
 | PUT | `/api/cloud` | `put_cloud` |
 | POST | `/api/cloud/code` | `cloud_code_make` |
+| POST | `/api/cloud/classes` | `cloud_sync_classes` |
 | POST | `/api/cloud/join` | `cloud_join` |
 | POST | `/api/cloud/forget` | `cloud_forget_school` |
 | POST | `/api/cloud/login` | `cloud_login` |

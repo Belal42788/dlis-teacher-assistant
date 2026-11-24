@@ -278,6 +278,7 @@ class Handler(BaseHTTPRequestHandler):
             ("GET", r"/api/cloud", lambda m, b: svc.get_cloud()),
             ("PUT", r"/api/cloud", lambda m, b: svc.put_cloud(b)),
             ("POST", r"/api/cloud/code", lambda m, b: svc.cloud_code_make()),
+            ("POST", r"/api/cloud/classes", lambda m, b: svc.cloud_sync_classes()),
             ("POST", r"/api/cloud/join", lambda m, b: svc.cloud_join(b)),
             ("POST", r"/api/cloud/forget", lambda m, b: svc.cloud_forget_school()),
             ("POST", r"/api/cloud/login", lambda m, b: svc.cloud_login(b)),
