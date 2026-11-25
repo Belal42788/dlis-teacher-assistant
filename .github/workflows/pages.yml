@@ -1,5 +1,7 @@
 # Publishes ONLY the "portal" folder (the parents' website) to GitHub Pages.
 # One-time: GitHub repo -> Settings -> Pages -> Source: "GitHub Actions".
+# Two jobs (the layout GitHub recommends): one uploads the site, a second one publishes it.
+# GitHub sometimes answers "no artifact found" for a few seconds after the upload, so the second job waits and tries up to 3 times.
 name: Publish parents portal
 on:
   push:
@@ -10,20 +12,41 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: read
 concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: portal
-      - id: deployment
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.final.outputs.page_url || steps.second.outputs.page_url || steps.first.outputs.page_url }}
+    steps:
+      - name: Wait for the uploaded site to be listed
+        run: sleep 25
+      - id: first
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - name: Wait and try again
+        if: steps.first.outcome == 'failure'
+        run: sleep 40
+      - id: second
+        if: steps.first.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - name: Wait and try the last time
+        if: steps.first.outcome == 'failure' && steps.second.outcome == 'failure'
+        run: sleep 60
+      - id: final
+        if: steps.first.outcome == 'failure' && steps.second.outcome == 'failure'
         uses: actions/deploy-pages@v4
