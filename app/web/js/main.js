@@ -58,6 +58,7 @@ const PAGES = [
   { id: "seating", nav: "classes", load: () => import("./pages/seating.js").then((m) => m.renderSeating) },
   { id: "insights", nav: "classes", load: () => import("./pages/insights.js").then((m) => m.renderInsights) },
   { id: "announcements", icon: "megaphone", group: "school", need: "online", load: () => import("./pages/announcements.js").then((m) => m.renderAnnouncements) },
+  { id: "messages", icon: "mail", group: "school", need: "online", load: () => import("./pages/messages.js").then((m) => m.renderMessages) },
   { id: "followup", icon: "tasks", group: "school", need: "admin", load: () => import("./pages/followup.js").then((m) => m.renderFollowup) },
   { id: "map", icon: "map", group: "school", load: () => import("./pages/map.js").then((m) => m.renderMap) },
   { id: "settings", icon: "settings", group: "end", load: () => import("./pages/settings.js").then((m) => m.renderSettings) },
@@ -84,6 +85,7 @@ async function boot(forceWizardStep) {
   if (state.boot.upgraded_from) { const n = h("div", { class: "notice", role: "status" }, icon("info"), h("div", { class: "grow" }, t("upgraded_note")), h("button", { class: "btn small", onClick: () => n.remove() }, t("ok"))); document.body.append(n); }
   api.get("/api/cloud").then((c) => {
     document.querySelectorAll(".nav a[data-need]").forEach((a) => { a.hidden = a.dataset.need === "admin" ? !(c.signed_in && c.role === "admin") : !(c.signed_in && c.role); });
+    if (c.signed_in && c.role) watchUnread();
     const today = new Date().toISOString().slice(0, 10);
     if (c.signed_in && (c.role === "teacher" || c.role === "admin") && localStorage.getItem("pushed") !== today) { localStorage.setItem("pushed", today); api.post("/api/status/push", {}).catch(() => {}); }
     const el = document.getElementById("net-chip"); if (!el) return; el.hidden = false;
@@ -186,9 +188,18 @@ function setGroup(g) {
   document.querySelectorAll(".tab").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.group === g)));
   document.querySelectorAll(".sub a").forEach((a) => a.classList.toggle("off", a.dataset.group !== g));
 }
+// The little number on «الرسائل»: unread conversations. The page itself reports changes straight away; this checks in the background.
+const setUnread = (n) => document.querySelectorAll('.nav a[data-page="messages"] .nav-dot').forEach((el) => { el.textContent = n > 9 ? "9+" : String(n || ""); el.hidden = !n; });
+document.addEventListener("ms-unread", (e) => setUnread(e.detail));
+let unreadTimer = null;
+function watchUnread() {
+  if (unreadTimer) return;
+  const check = () => api.get("/api/messages/unread").then((d) => setUnread(d.unread || 0)).catch(() => {});
+  check(); unreadTimer = setInterval(check, 45000);
+}
 function drawShell() {
   const s = state.settings;
-  const link = (p) => h("a", { href: `#/${p.id}`, "data-page": p.id, "data-group": p.group, "data-need": p.need || null, hidden: p.need ? true : null, title: t(`nav_${p.id}`) }, icon(p.icon), h("span", {}, t(`nav_${p.id}`)));
+  const link = (p) => h("a", { href: `#/${p.id}`, "data-page": p.id, "data-group": p.group, "data-need": p.need || null, hidden: p.need ? true : null, title: t(`nav_${p.id}`) }, icon(p.icon), h("span", {}, t(`nav_${p.id}`)), p.id === "messages" ? h("b", { class: "nav-dot", hidden: true }) : null);
   root.replaceChildren(h("div", { class: "shell" },
     h("header", { class: "top" },
       h("div", { class: "brand" }, h("span", { class: "mark" }, h("img", { src: "/resources/logo-mark.png", alt: "" })), h("div", {}, h("b", {}, t("app_name")), h("small", {}, s.school_name))),

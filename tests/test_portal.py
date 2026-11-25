@@ -40,3 +40,11 @@ class TestPortal(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestMessagesPage(unittest.TestCase):
+    @unittest.skipUnless(HAVE, "playwright is not installed")
+    def test_messages_page_in_a_browser(self):
+        out = subprocess.run([sys.executable, str(ROOT / "scripts/messages_check.py")], cwd=ROOT, capture_output=True, text=True, timeout=280)
+        self.assertEqual(out.returncode, 0, out.stdout[-1500:] + out.stderr[-2500:])
+        self.assertIn("messages ok", out.stdout)

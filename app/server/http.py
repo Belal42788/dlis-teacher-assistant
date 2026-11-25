@@ -37,7 +37,7 @@ _TYPES = {".js": "application/javascript", ".mjs": "application/javascript", ".c
           ".ico": "image/x-icon", ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf", ".otf": "font/otf"}
 
 
-_SLOW = re.compile(r"/api/ai/(chat|test|models|lesson|quiz|trimester|revision)|/api/tools/run|/api/grades/upload|/api/slides/(source|plan|image|image-test)|/api/sources/use|/api/cloud/(login|test|backup)|/api/announcements|/api/publications|/api/library/|/api/codes/prepare|/api/inspection-pack|/api/parent-week/|/api/status/|/api/sources/(import|url|[0-9a-f]+/(read|digest))")
+_SLOW = re.compile(r"/api/ai/(chat|test|models|lesson|quiz|trimester|revision)|/api/tools/run|/api/grades/upload|/api/slides/(source|plan|image|image-test)|/api/sources/use|/api/cloud/(login|test|backup)|/api/announcements|/api/messages|/api/reports/|/api/publications|/api/library/|/api/codes/prepare|/api/inspection-pack|/api/parent-week/|/api/status/|/api/sources/(import|url|[0-9a-f]+/(read|digest))")
 
 
 class AppServer(ThreadingHTTPServer):
@@ -287,6 +287,16 @@ class Handler(BaseHTTPRequestHandler):
             ("POST", r"/api/announcements", lambda m, b: svc.post_announcement(b)),
             ("POST", r"/api/announcements/([0-9a-f-]{36})/update", lambda m, b: svc.update_announcement(m.group(1), b)),
             ("POST", r"/api/announcements/([0-9a-f-]{36})/delete", lambda m, b: svc.delete_announcement(m.group(1))),
+            ("GET", r"/api/messages", lambda m, b: svc.msg_threads()),
+            ("GET", r"/api/messages/unread", lambda m, b: svc.msg_unread()),
+            ("GET", r"/api/messages/students", lambda m, b: svc.msg_students()),
+            ("GET", r"/api/messages/reports", lambda m, b: svc.msg_reports()),
+            ("POST", r"/api/messages/start", lambda m, b: svc.msg_start(b)),
+            ("POST", r"/api/messages/send", lambda m, b: svc.msg_send(b)),
+            ("POST", r"/api/messages/read", lambda m, b: svc.msg_read(b)),
+            ("GET", r"/api/messages/([0-9a-f-]{36})", lambda m, b: svc.msg_thread(m.group(1))),
+            ("POST", r"/api/messages/([0-9a-f-]{36})/hide", lambda m, b: svc.msg_hide(m.group(1), b)),
+            ("POST", r"/api/reports/([0-9a-f-]{36})/done", lambda m, b: svc.msg_report_done(m.group(1), b)),
             ("GET", r"/api/publications", lambda m, b: svc.list_publications()),
             ("POST", r"/api/publications", lambda m, b: svc.add_publication(b)),
             ("POST", r"/api/publications/([0-9a-f-]{36})", lambda m, b: svc.set_publication(m.group(1), b)),

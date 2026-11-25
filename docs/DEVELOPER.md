@@ -56,6 +56,7 @@ Feature files (each is a mixin of `Service`):
 | `ParentWeekMixin` | `app/server/parent_week_service.py` | 74 |
 | `CoverageMixin` | `app/server/coverage_service.py` | 117 |
 | `CloudMixin` | `app/server/cloud_service.py` | 480 |
+| `MessagesMixin` | `app/server/messages_service.py` | 163 |
 | `DocsMixin` | `app/server/docs_service.py` | 418 |
 | `AiMixin` | `app/server/ai_service.py` | 424 |
 | `AiChatMixin` | `app/server/ai_chat_service.py` | 101 |
@@ -74,7 +75,7 @@ Feature files (each is a mixin of `Service`):
 Pages:
 
 <!-- AUTO:pages -->
-Menu pages: `today`, `timetable`, `calendar`, `tasks`, `scheme`, `docs`, `library`, `chat`, `classes`, `announcements`, `followup`, `map`, `settings`, `help`.
+Menu pages: `today`, `timetable`, `calendar`, `tasks`, `scheme`, `docs`, `library`, `chat`, `classes`, `announcements`, `messages`, `followup`, `map`, `settings`, `help`.
 
 Tabs inside a menu page: `reminders` (tab of `tasks`), `tools` (tab of `docs`), `bank` (tab of `library`), `log` (tab of `classes`), `progress` (tab of `classes`), `grades` (tab of `classes`), `behavior` (tab of `classes`), `seating` (tab of `classes`), `insights` (tab of `classes`).
 <!-- /AUTO:pages -->
@@ -198,6 +199,16 @@ The server listens on 127.0.0.1 only and every request carries the secret token 
 | POST | `/api/announcements` | `post_announcement` |
 | POST | `/api/announcements/([0-9a-f-]{36})/update` | `update_announcement` |
 | POST | `/api/announcements/([0-9a-f-]{36})/delete` | `delete_announcement` |
+| GET | `/api/messages` | `msg_threads` |
+| GET | `/api/messages/unread` | `msg_unread` |
+| GET | `/api/messages/students` | `msg_students` |
+| GET | `/api/messages/reports` | `msg_reports` |
+| POST | `/api/messages/start` | `msg_start` |
+| POST | `/api/messages/send` | `msg_send` |
+| POST | `/api/messages/read` | `msg_read` |
+| GET | `/api/messages/([0-9a-f-]{36})` | `msg_thread` |
+| POST | `/api/messages/([0-9a-f-]{36})/hide` | `msg_hide` |
+| POST | `/api/reports/([0-9a-f-]{36})/done` | `msg_report_done` |
 | GET | `/api/publications` | `list_publications` |
 | POST | `/api/publications` | `add_publication` |
 | POST | `/api/publications/([0-9a-f-]{36})` | `set_publication` |

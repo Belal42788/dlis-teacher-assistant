@@ -31,6 +31,7 @@ from .parent_week_service import ParentWeekMixin
 from .coverage_service import CoverageMixin
 from .update_service import UpdateMixin
 from .cloud_service import CloudMixin
+from .messages_service import MessagesMixin
 from .changes_service import ChangesMixin
 from .docs_service import DocsMixin
 from .library_service import LibraryMixin
@@ -62,7 +63,7 @@ def _validate(model, data):
         raise AppError("invalid_data", f"{where}: {first.get('msg', 'invalid')}", field=where) from e
 
 
-class Service(BellMixin, BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, UpdateMixin, InsightsMixin, GradesMixin, ToolsMixin, SchemeMixin, LibraryMixin, ParentWeekMixin, CoverageMixin, CloudMixin, DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesMixin, LogMixin, SlidesMixin, RevisionMixin, MapMixin, SourceMixin, WeekMixin, WeeklyMixin):
+class Service(BellMixin, BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, UpdateMixin, InsightsMixin, GradesMixin, ToolsMixin, SchemeMixin, LibraryMixin, ParentWeekMixin, CoverageMixin, CloudMixin, MessagesMixin, DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesMixin, LogMixin, SlidesMixin, RevisionMixin, MapMixin, SourceMixin, WeekMixin, WeeklyMixin):
     def __init__(self):
         self.store: Optional[DataStore] = None
         folder = paths.read_prefs().get("data_folder")
@@ -140,7 +141,7 @@ class Service(BellMixin, BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, Up
 
     # ------------------------------------------------------------ how the app is used (stays on this computer: page counts and the teacher's own notes, no names)
     PAGE_IDS = ("today", "timetable", "calendar", "tasks", "reminders", "scheme", "docs", "tools", "library", "chat", "classes", "log", "progress", "grades",
-                "behavior", "seating", "insights", "announcements", "bank", "followup", "map", "settings", "help")   # a test keeps this equal to the pages in main.js
+                "behavior", "seating", "insights", "announcements", "messages", "bank", "followup", "map", "settings", "help")   # a test keeps this equal to the pages in main.js
 
     def record_usage(self, page: str) -> dict:
         if page in self.PAGE_IDS:
