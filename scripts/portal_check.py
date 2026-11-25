@@ -32,6 +32,8 @@ class Fake(http.server.BaseHTTPRequestHandler):
         for k, v in {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "*", "Content-Type": "application/json", "Content-Length": str(len(raw))}.items(): self.send_header(k, v)
         self.end_headers(); self.wfile.write(raw)
     def do_OPTIONS(self): self._send({})
+    def do_PUT(self):
+        n = int(self.headers.get("Content-Length", 0)); body = json.loads(self.rfile.read(n) or b"{}"); seen.append(("PUT", self.path, body)); self._send({"id": UID()})
     def do_GET(self):
         seen.append(("GET", self.path)); url = urllib.parse.urlparse(self.path); name = url.path.split("/rest/v1/")[1]; qs = urllib.parse.parse_qs(url.query)
         if name == "profiles": return self._send([{"role": ROLE["v"]}])
@@ -125,6 +127,16 @@ with sync_playwright() as p:
     pg.click("text=رسالة جديدة"); pg.click(".pick .row >> text=Mr Ahmed"); pg.wait_for_selector(".compose")
     assert any(s[0] == "POST" and s[1].startswith("/rest/v1/threads") and s[2]["kind"] == "student_teacher" for s in seen), "a student talk must be the student's kind"
     pg.fill(".compose textarea", "May I ask something?"); pg.click(".compose .btn.primary"); pg.wait_for_selector(".bubble.mine >> text=May I ask something?"); assert "الطالب" in pg.inner_text(".bubble.mine .who")
+    assert not errs, errs; pg.context.close()
+    # ------------------------------------------------ the link in the "forgot password" email: a new password screen, then straight in
+    ROLE["v"] = "parent"; seen.clear(); pg, errs = fresh(b, 1280)
+    pg.goto(f"http://127.0.0.1:{site.server_port}/index.html#access_token=e30.e30.x&refresh_token=RT&expires_in=3600&type=recovery")
+    pg.reload(); pg.wait_for_selector("text=اكتب كلمة سر جديدة"); assert "access_token" not in pg.url, "the token must not stay in the address"; shot(pg, "14-new-password")
+    pg.fill("#np1", "short"); pg.fill("#np2", "short"); pg.click("button[type=submit]"); pg.wait_for_selector("text=8 حروف")
+    pg.fill("#np1", "longenough1"); pg.fill("#np2", "different11"); pg.click("button[type=submit]"); pg.wait_for_selector("text=مش زي بعض")
+    pg.fill("#np2", "longenough1"); pg.click("button[type=submit]"); pg.wait_for_selector("text=أهلًا، علي حسن")
+    assert any(x[0] == "PUT" and x[2] == {"password": "longenough1"} for x in seen), "the new password was not sent"
+    pg.goto(f"http://127.0.0.1:{site.server_port}/index.html#error=access_denied&error_code=otp_expired"); pg.reload(); pg.wait_for_selector("text=رابط الاستعادة انتهى")
     assert not errs, errs; pg.context.close()
     # ------------------------------------------------ a teacher account is turned away
     ROLE["v"] = "teacher"; pg, errs = fresh(b, 1280); pg.fill("#em", "t@x.com"); pg.fill("#pw", "password1"); pg.click("button[type=submit]"); pg.wait_for_selector("text=حساب مدرس")

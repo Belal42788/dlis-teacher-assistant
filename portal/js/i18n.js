@@ -9,6 +9,7 @@ const ar = {
   welcomeTitle: "أهلًا بك في بوابة الأسرة", welcomeText: "درجات وملفات وخطة الأسبوع والرسائل مع المدرسين، في مكان واحد.",
   unconfirmed: "البريد ده لسه متأكدش. اطلب من المدرسة تأكيده.", rate: "السيرفر بعت رسائل كتير. استنى ساعة وجرّب تاني.", badLogin: "البريد أو كلمة السر مش صح.",
   badCode: "الكود مش صح أو اتستخدم قبل كده. اطلب كود جديد من المدرسة.", net: "مش قادر أوصل للسيرفر. اتأكد من النت.", notSet: "البوابة لسه ما اتظبطتش (عنوان السيرفر ناقص).",
+  newPassTitle: "اكتب كلمة سر جديدة", newPassLead: "اختار كلمة سر جديدة لحسابك (8 حروف على الأقل).", newPass: "كلمة السر الجديدة", newPass2: "اكتبها تاني", savePass: "حفظ كلمة السر", passSaved: "اتغيّرت كلمة السر.", passDiff: "الكلمتين مش زي بعض.", linkOld: "رابط الاستعادة انتهى أو اتستخدم قبل كده. اطلب رابط جديد من «نسيت كلمة السر».",
   staffAccount: "ده حساب مدرس أو إدارة. استخدم برنامج المدرس على الكمبيوتر.", loading: "جارٍ التحميل…", retry: "إعادة المحاولة",
   // roles and account
   parent: "ولي الأمر", student: "الطالب", teacher: "المدرس", admin: "الإدارة", parentAcc: "حساب ولي الأمر", studentAcc: "حساب الطالب",
@@ -41,6 +42,7 @@ const en = {
   welcomeTitle: "Welcome to the family portal", welcomeText: "Grades, files, the week plan and messages with teachers, in one place.",
   unconfirmed: "This email is not confirmed yet. Ask the school to confirm it.", rate: "The server sent too many emails. Wait an hour and try again.", badLogin: "The email or password is not right.",
   badCode: "The code is wrong or already used. Ask the school for a new one.", net: "Could not reach the server. Check the internet.", notSet: "The portal is not set up yet (server address missing).",
+  newPassTitle: "Choose a new password", newPassLead: "Choose a new password for your account (at least 8 characters).", newPass: "New password", newPass2: "Type it again", savePass: "Save password", passSaved: "Your password was changed.", passDiff: "The two passwords are not the same.", linkOld: "The reset link has expired or was already used. Ask for a new one with “Forgot password”.",
   staffAccount: "This is a teacher or office account. Use the teacher app on the computer.", loading: "Loading…", retry: "Try again",
   parent: "Parent", student: "Student", teacher: "Teacher", admin: "School office", parentAcc: "Parent account", studentAcc: "Student account",
   account: "My account", signedAs: "Signed in as", out: "Sign out", lang: "العربية", children: "Children", myself: "My details",

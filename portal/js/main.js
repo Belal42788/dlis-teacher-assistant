@@ -1,6 +1,6 @@
 "use strict";
 // The family portal: sign in, then Home / Study / Talk. One page, no build step.
-import { h, clear, icon, t, state, setLang, api, raw, auth, store, me, NetErr, errText, say, CFG } from "./core.js";
+import { h, clear, icon, t, state, setLang, raw, api, auth, store, me, NetErr, errText, say, toast, CFG } from "./core.js";
 import "./i18n.js";
 import { S, kid, kidName, loadAccount, forget, refreshUnread } from "./data.js";
 import { viewHome, viewWeek, viewFiles, viewGrades, viewNews } from "./study.js";
@@ -47,6 +47,23 @@ function loginScreen(signup, note) {
   clear(app, h("div", { class: "top" }, h("div", { class: "brand" }, h("span", { class: "mark" }, h("img", { src: "img/logo-mark.png", alt: "" })), h("div", {}, h("b", {}, t("app")), h("small", {}, school()))), h("span", { class: "grow" }),
     h("button", { class: "pill", id: "lang", onclick: () => { setLang(state.lang === "ar" ? "en" : "ar"); loginScreen(signup); } }, t("lang"))),
     h("main", {}, h("div", { class: "login" }, h("img", { class: "logo", src: "img/logo.png", alt: "DLIS" }), form)));
+}
+
+// ---------------------------------------------------------------- the link in the "forgot password" email
+// The email opens this page with #access_token=...&type=recovery in the address; we keep that session only to set the new password.
+function newPasswordScreen(access, refresh, expires) {
+  stopAll(); clearInterval(poll); setTitle();
+  const p1 = h("input", { type: "password", autocomplete: "new-password", dir: "ltr", id: "np1" }), p2 = h("input", { type: "password", autocomplete: "new-password", dir: "ltr", id: "np2" }), msg = h("div", {});
+  const form = h("form", { class: "card", onsubmit: async (ev) => {
+    ev.preventDefault();
+    if (p1.value.length < 8) return say(msg, t("pw8"), true);
+    if (p1.value !== p2.value) return say(msg, t("passDiff"), true);
+    try { await raw("PUT", "/auth/v1/user", { password: p1.value }, access); await auth("token?grant_type=refresh_token", { refresh_token: refresh }); toast(t("passSaved")); boot(); } catch (e) { say(msg, e.status === 401 || e.status === 403 ? t("linkOld") : errText(e), true); }
+  } }, h("h1", {}, t("newPassTitle")), h("p", { class: "lead" }, t("newPassLead")),
+    h("label", { class: "f", for: "np1" }, t("newPass")), p1, h("label", { class: "f", for: "np2" }, t("newPass2")), p2, msg, h("button", { class: "btn primary", type: "submit" }, t("savePass")));
+  clear(app, h("div", { class: "top" }, h("div", { class: "brand" }, h("span", { class: "mark" }, h("img", { src: "img/logo-mark.png", alt: "" })), h("div", {}, h("b", {}, t("app")), h("small", {}, school())))),
+    h("main", {}, h("div", { class: "login" }, h("img", { class: "logo", src: "img/logo.png", alt: "DLIS" }), form)));
+  store.set({ access, refresh, exp: Date.now() + (expires || 3000) * 1000 - 60000, uid: "", email: "" });
 }
 
 // ---------------------------------------------------------------- the page after sign in
@@ -107,4 +124,9 @@ async function boot() {
 }
 
 setLang(state.lang);
-if (store.get()) boot(); else loginScreen(false);
+const link = new URLSearchParams(location.hash.replace(/^#/, ""));
+if (link.get("type") === "recovery" && link.get("access_token")) {
+  const [a, r, e] = [link.get("access_token"), link.get("refresh_token"), +link.get("expires_in")];
+  history.replaceState(null, "", location.pathname + location.search); newPasswordScreen(a, r, e);
+} else if (link.get("error_code") || link.get("error")) { history.replaceState(null, "", location.pathname + location.search); loginScreen(false, t("linkOld")); }
+else if (store.get()) boot(); else loginScreen(false);
