@@ -332,7 +332,8 @@ class Service(BellMixin, BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, Up
         for room in structure.rooms:
             names = roster.get(room.id)
             if names and not store.students_path(room.id).exists():
-                store.save_students(room.id, names)
+                # a student is a plain Arabic name, or ["Arabic name", "English spelling"] when the school wrote the English one itself
+                store.save_students_full(room.id, [{"name": n, "english": ""} if isinstance(n, str) else {"name": n[0], "english": n[1] if len(n) > 1 else ""} for n in names])
 
     def get_structure(self) -> dict:
         store = self._need_store()

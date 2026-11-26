@@ -49,7 +49,7 @@
 ## بيانات المدرسة السرّية (أسماء الطلاب وجداول المدرسين)
 - **مش موجودة في الكود العام.** ملفين `resources/school_roster.json` (قوايم الطلاب الجاهزة) و`resources/teacher_timetables.json` (جداول المدرسين الجاهزة) ممنوعين في `.gitignore`، واختبار بيمنع رجوعهم.
 - البرنامج بيقراهم لو موجودين جنب الموارد، ولو مش موجودين بيشتغل عادي وكل مدرس يلصق قايمة طلابه بنفسه.
-- **علشان البناء على GitHub يحطهم جوه المثبّت:** من الريبو ← Settings ← Secrets and variables ← Actions ← New repository secret. اعمل سر باسم `SCHOOL_ROSTER_JSON` ومحتواه نص ملف الطلاب كامل، وسر باسم `SCHOOL_TIMETABLES_JSON` ومحتواه نص ملف الجداول.
+- **علشان البناء على GitHub يحطهم جوه المثبّت:** من الريبو ← Settings ← Secrets and variables ← Actions ← New repository secret. اعمل سر باسم `SCHOOL_ROSTER_JSON` ومحتواه نص ملف الطلاب كامل (كل فصل فيه قايمة، والطالب إما اسم عربي بس أو زوج `["الاسم العربي", "English name"]` لو المدرسة كاتبة الإنجليزي بنفسها)، وسر باسم `SCHOOL_TIMETABLES_JSON` ومحتواه نص ملف الجداول.
 - **علشان البناء على جهازك:** حط الملفين في فولدر `resources` قبل `build_windows.bat` أو `build_mac.sh`.
 - الاختبارات و`scripts/e2e.py` والصور بتستخدم بيانات وهمية من `tests/fixtures/school_data/`.
 - **لقطات الشاشة في صفحة GitHub:** `python scripts/make_readme_shots.py` بيعيد عملها كلها ببيانات وهمية في `docs/images/`.

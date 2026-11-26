@@ -2,7 +2,7 @@
 import io
 import unittest
 
-import helpers  # noqa: F401
+import helpers
 from app.core.students import parse_file, parse_text
 
 
@@ -43,3 +43,25 @@ class TestNamesWithEnglish(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestRosterWithEnglish(helpers.AiCase):
+    def test_a_new_install_starts_with_the_english_spelling_the_school_wrote(self):
+        import json
+        import os
+        import tempfile
+        from pathlib import Path
+        from app.core.store import DataStore
+        from app.server.service import Service
+        school = tempfile.mkdtemp()
+        Path(school, "school_roster.json").write_text(json.dumps({"g4-a": [["ملك اشرف محمد", "Malak Ashraf Mohamed"], "سارة علي حسن", ["سيف سامي", "Seif Samy"]]}, ensure_ascii=False), encoding="utf-8")
+        old = os.environ["DLIS_SCHOOL_DATA"]; os.environ["DLIS_SCHOOL_DATA"] = school
+        try:
+            fresh = Service(); fresh.store = DataStore(tempfile.mkdtemp())
+            fresh.put_settings({"teacher_name": "T", "subject": "ICT"}); fresh.build_structure({"g4": ["A"]})
+            fresh.get_structure()
+            got = fresh.get_students("g4-a")
+        finally:
+            os.environ["DLIS_SCHOOL_DATA"] = old
+        self.assertEqual(got["names"], ["ملك اشرف محمد", "سارة علي حسن", "سيف سامي"])
+        self.assertEqual(got["english"], ["Malak Ashraf Mohamed", "", "Seif Samy"])
