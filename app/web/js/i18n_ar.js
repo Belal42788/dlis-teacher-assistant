@@ -88,7 +88,7 @@ export default {
   classes_page_lead: "فصولك وطلابها.", students: "طالب", student_n: "الطالب {n}",
   add_student_ph: "اكتب اسمًا واضغط Enter", no_students_yet: "لا يوجد طلاب في هذا الفصل بعد. الصق قائمة من Excel أو أضف الأسماء واحدًا واحدًا.",
   paste_or_import: "لصق أو استيراد قائمة", paste_here: "الصق الأسماء هنا، اسم في كل سطر (يمكنك نسخها مباشرة من Excel).",
-  import_help: "الصق قائمة أسماء، أو اختر ملف Excel (‏.xlsx) أو CSV أو نص. الأرقام وسطر العنوان يتم تجاهلها.",
+  import_help: "الصق قائمة أسماء، أو اختر ملف Excel (‏.xlsx) أو CSV أو نص. الأرقام وسطر العنوان يتم تجاهلها. لو كتبت الاسم الإنجليزي جنب العربي (في عمود تاني أو بعده في نفس السطر) بيتحفظ معاه.",
   or_choose_file: "أو اختر ملفًا:", choose_file: "اختيار ملف", import_waiting: "ستظهر هنا نتيجة فحص الأسماء التي تلصقها.",
   found_students: "تم العثور على {n} طالب", duplicates_skipped: "تم تجاهل {n} اسم مكرر", import_nothing: "لم يتم العثور على أسماء بعد.",
   replace_current: "استبدال الـ {n} طالب الموجودين في هذا الفصل", add_to_class: "إضافة إلى الفصل", add_selected: "إضافة المحدد",
@@ -286,4 +286,5 @@ err_ai_no_vision: "خدمة الـ AI دي مابتقراش الصور. استخ
   ms_reason: "السبب", ms_closed: "تم قفل البلاغ", ms_keep: "تمام، سيب الرسالة", ms_hide_close: "إخفاء الرسالة وقفل البلاغ", ms_done: "تم", ms_reports_none: "مفيش بلاغات.",
   export_class: "تصدير الفصل (Excel)", export_all: "تصدير كل الطلبة (Excel)", exported_n: "اتصدّر {n} طالب وفتحنا الملف.",
   err_no_students_yet: "مفيش طلبة لسه.",
+  found_english: "منهم {n} ومعاهم الاسم الإنجليزي",
 };

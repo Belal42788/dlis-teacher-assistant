@@ -92,7 +92,7 @@ export default {
   classes_page_lead: "Your classes and their students.", students: "students", student_n: "Student {n}",
   add_student_ph: "Type a name and press Enter", no_students_yet: "No students in this class yet. Paste a list from Excel, or add names one by one.",
   paste_or_import: "Paste or import a list", paste_here: "Paste the names here, one per line (you can copy them straight from Excel).",
-  import_help: "Paste a list of names, or choose an Excel (.xlsx), CSV or text file. Numbers and a header row are ignored.",
+  import_help: "Paste a list of names, or choose an Excel (.xlsx), CSV or text file. Numbers and a header row are ignored. An English spelling written next to the Arabic name (next column, or after it on the same line) is kept with it.",
   or_choose_file: "Or choose a file:", choose_file: "Choose a file", import_waiting: "The names you paste will be checked here.",
   found_students: "{n} students found", duplicates_skipped: "{n} repeated names skipped", import_nothing: "No names found yet.",
   replace_current: "Replace the {n} students already in this class", add_to_class: "Add to class", add_selected: "Add selected",
@@ -293,4 +293,5 @@ err_ai_no_vision: "This AI service cannot read pictures. Use Gemini (free) in Se
   ms_reason: "Reason", ms_closed: "Report closed", ms_keep: "Fine, keep the message", ms_hide_close: "Hide message and close", ms_done: "Done", ms_reports_none: "No reports.",
   export_class: "Export class (Excel)", export_all: "Export all students (Excel)", exported_n: "{n} students exported; the file is open.",
   err_no_students_yet: "There are no students yet.",
+  found_english: "{n} of them come with their English spelling",
 };

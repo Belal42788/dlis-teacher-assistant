@@ -131,7 +131,7 @@ export async function renderClasses(root) {
     return h("div", { class: "panel" },
       h("div", { class: "row between", style: { marginBottom: ".9rem" } },
         h("div", {}, h("h2", {}, roomLabel(room, structure)), h("div", { class: "muted" }, gradeName(grade), " · ", countEl, " ", t("students"))),
-        h("div", { class: "row" }, status, names.length ? h("button", { class: "btn", onClick: () => exportNames(room.id) }, icon("file"), t("export_class")) : null, h("button", { class: "btn", onClick: () => importDialog(room, names, (merged) => { const keep = new Map(names.map((n, i) => [n, english[i]])); names = merged; english = merged.map((n) => keep.get(n) || ""); auto = merged.map(() => ""); drawList(); touch(); }) }, icon("upload"), t("paste_or_import")))),
+        h("div", { class: "row" }, status, names.length ? h("button", { class: "btn", onClick: () => exportNames(room.id) }, icon("file"), t("export_class")) : null, h("button", { class: "btn", onClick: () => importDialog(room, names, (merged, given) => { const keep = new Map(names.map((n, i) => [n, english[i]])); names = merged; english = merged.map((n) => given.get(n) || keep.get(n) || ""); auto = merged.map(() => ""); drawList(); touch(); }) }, icon("upload"), t("paste_or_import")))),
       names.length ? null : h("div", { class: "banner info" }, icon("info"), h("div", {}, t("no_students_yet"))),
       list,
       h("div", { class: "row", "data-form": "", style: { marginTop: ".8rem" } }, add, h("button", { class: "btn", "data-check": "", onClick: addOne }, icon("plus"), t("add"))));
@@ -147,7 +147,8 @@ export async function renderClasses(root) {
       info.replaceChildren(p.names.length
         ? h("div", { class: "banner ok" }, icon("check"), h("div", {}, h("b", {}, t("found_students", { n: p.names.length })),
           p.duplicates.length ? h("div", { class: "small" }, t("duplicates_skipped", { n: p.duplicates.length })) : null,
-          h("div", { class: "small muted" }, p.names.slice(0, 5).join(" · ") + (p.names.length > 5 ? " …" : ""))))
+          p.english?.some(Boolean) ? h("div", { class: "small" }, t("found_english", { n: p.english.filter(Boolean).length })) : null,
+          h("div", { class: "small muted" }, p.names.slice(0, 5).map((n, i) => (p.english?.[i] ? `${n} = ${p.english[i]}` : n)).join(" · ") + (p.names.length > 5 ? " …" : ""))))
         : h("div", { class: "muted" }, t("import_nothing")));
     };
     const parseText = debounce(async () => { const r = await guarded(() => api.post("/api/students/parse", { text: ta.value })); r && show(r); }, 350);
@@ -167,7 +168,8 @@ export async function renderClasses(root) {
         if (!parsed.names.length) { showProblems(ta.closest(".modal"), [{ el: ta, label: t("paste_here"), reason: t("import_nothing") }]); return false; }
         const base = replace.checked ? [] : current.filter((x) => x.trim());
         const have = new Set(base.map((x) => x.toLowerCase()));
-        apply([...base, ...parsed.names.filter((n) => !have.has(n.toLowerCase()))]);
+        const given = new Map(parsed.names.map((n, i) => [n, parsed.english?.[i] || ""]));    // the English spelling that came with a name
+        apply([...base, ...parsed.names.filter((n) => !have.has(n.toLowerCase()) || given.get(n))].filter((n, i, all) => all.findIndex((x) => x.toLowerCase() === n.toLowerCase()) === i), given);
       } }],
     });
   }
