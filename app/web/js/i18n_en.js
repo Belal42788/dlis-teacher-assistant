@@ -291,4 +291,6 @@ err_ai_no_vision: "This AI service cannot read pictures. Use Gemini (free) in Se
   ms_parent_note: "Father and mother see this same conversation. The administration can review it.", ms_student_note: "The student and their parents both see this. The administration can review it.",
   ms_readonly: "The administration only reviews this conversation.", ms_loading: "Loading…", ms_no_msgs: "Start with the first message.",
   ms_reason: "Reason", ms_closed: "Report closed", ms_keep: "Fine, keep the message", ms_hide_close: "Hide message and close", ms_done: "Done", ms_reports_none: "No reports.",
+  export_class: "Export class (Excel)", export_all: "Export all students (Excel)", exported_n: "{n} students exported; the file is open.",
+  err_no_students_yet: "There are no students yet.",
 };

@@ -163,28 +163,46 @@ alter table activation_codes enable row level security;
 drop policy if exists p_codes_admin on activation_codes;
 create policy p_codes_admin on activation_codes for all using (my_role() = 'admin') with check (my_role() = 'admin');
 
+-- wrong guesses of activation codes, per account: after 20 the account is locked until the administration clears the row.
+-- (A wrong code cannot raise an error: the error would roll the count back. So the function answers '!bad' or '!locked' instead.)
+create table if not exists claim_attempts (user_id uuid primary key references auth.users on delete cascade, wrong int not null default 0, last_at timestamptz not null default now());
+alter table claim_attempts enable row level security;
+drop policy if exists p_claim_attempts_admin on claim_attempts;
+create policy p_claim_attempts_admin on claim_attempts for all using (my_role() = 'admin') with check (my_role() = 'admin');
+
+create or replace function claim_fail() returns text language plpgsql security definer set search_path = public as
+$$
+begin
+  insert into claim_attempts (user_id, wrong) values (auth.uid(), 1)
+    on conflict (user_id) do update set wrong = claim_attempts.wrong + 1, last_at = now();
+  return '!bad';
+end $$;
+revoke all on function claim_fail() from public, anon, authenticated;
+
 create or replace function claim_student(p_code text) returns text language plpgsql security definer set search_path = public as
 $$
-declare v activation_codes%rowtype; me text;
+declare v activation_codes%rowtype; me text; n int;
 begin
   if auth.uid() is null then raise exception 'not signed in'; end if;
+  select wrong into n from claim_attempts where user_id = auth.uid();
+  if coalesce(n, 0) >= 20 then return '!locked'; end if;
   select * into v from activation_codes where code = upper(replace(trim(p_code), '-', '')) for update;
-  if not found then raise exception 'bad code'; end if;
+  if not found then return claim_fail(); end if;
   me := my_role();
   if v.kind = 'student' then                                  -- the student's own code: a brand-new account becomes that student's login
     if exists (select 1 from student_accounts where user_id = auth.uid() and student_code = v.student_code) then return v.student_code; end if;
-    if me <> 'parent' or exists (select 1 from parent_students where parent_id = auth.uid()) then raise exception 'bad code'; end if;
-    if v.uses >= v.max_uses or exists (select 1 from student_accounts where student_code = v.student_code) then raise exception 'bad code'; end if;
+    if me <> 'parent' or exists (select 1 from parent_students where parent_id = auth.uid()) then return claim_fail(); end if;
+    if v.uses >= v.max_uses or exists (select 1 from student_accounts where student_code = v.student_code) then return claim_fail(); end if;
     update activation_codes set uses = uses + 1, used_by = auth.uid(), used_at = now() where code = v.code;
     insert into student_accounts (user_id, student_code) values (auth.uid(), v.student_code);
     update profiles set role = 'student' where id = auth.uid();
     return v.student_code;
   end if;
-  if me = 'student' then raise exception 'bad code'; end if;   -- a student's account never becomes a parent's
+  if me = 'student' then return claim_fail(); end if;          -- a student's account never becomes a parent's
   if exists (select 1 from parent_students where parent_id = auth.uid() and student_code = v.student_code) then
     return v.student_code;                                   -- the same parent typing it again: nothing changes
   end if;
-  if v.uses >= v.max_uses then raise exception 'bad code'; end if;   -- usually two parents per child
+  if v.uses >= v.max_uses then return claim_fail(); end if;    -- usually two parents per child
   update activation_codes set uses = uses + 1, used_by = auth.uid(), used_at = now() where code = v.code;
   insert into parent_students (parent_id, student_code) values (auth.uid(), v.student_code) on conflict do nothing;
   return v.student_code;

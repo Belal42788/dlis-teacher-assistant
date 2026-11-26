@@ -52,6 +52,7 @@ alter default privileges in schema public grant all on functions to anon, authen
 ADMIN, T1, T2 = "00000000-0000-0000-0000-0000000000a1", "00000000-0000-0000-0000-0000000000b1", "00000000-0000-0000-0000-0000000000b2"
 P1, P2, P3 = "00000000-0000-0000-0000-0000000000c1", "00000000-0000-0000-0000-0000000000c2", "00000000-0000-0000-0000-0000000000c3"
 S1, S2 = "00000000-0000-0000-0000-0000000000d1", "00000000-0000-0000-0000-0000000000d2"
+LOCK = "00000000-0000-0000-0000-0000000000d4"   # a new account that guesses codes until it is locked
 KID = "00000000-0000-0000-0000-0000000000d3"     # a brand-new account that will try the student code
 THREAD_P, THREAD_S = "00000000-0000-0000-0000-00000000f001", "00000000-0000-0000-0000-00000000f002"
 MSG1 = "00000000-0000-0000-0000-00000000e001"
@@ -76,7 +77,7 @@ class TestServerRules(unittest.TestCase):
         cls.run_sql(SCHEMA.read_text(encoding="utf-8"))
         cls.run_sql(SCHEMA.read_text(encoding="utf-8"))          # running it again must change nothing and not fail
         cls.run_sql(f"""
-            insert into auth.users (id, email) values ('{ADMIN}','admin'),('{T1}','t1'),('{T2}','t2'),('{P1}','p1'),('{P2}','p2'),('{P3}','p3'),('{S1}','s1'),('{S2}','s2'),('{KID}','kid');
+            insert into auth.users (id, email) values ('{ADMIN}','admin'),('{T1}','t1'),('{T2}','t2'),('{P1}','p1'),('{P2}','p2'),('{P3}','p3'),('{S1}','s1'),('{S2}','s2'),('{KID}','kid'),('{LOCK}','lock');
             update profiles set role = 'admin' where id = '{ADMIN}';
             update profiles set role = 'teacher' where id in ('{T1}','{T2}');
             insert into students (code, class_id, grade_id, display_name) values ('st1','c1','g4','Sara'),('st2','c2','g5','Omar'),('st3','c1','g4','Mona');
@@ -117,6 +118,10 @@ class TestServerRules(unittest.TestCase):
         r = self.psql(sql, who)
         self.assertNotEqual(r.returncode, 0, f"{who[-2:]} should be refused: {sql}\n{r.stdout}")
 
+    def refused(self, who, code, answer="!bad"):
+        """A wrong activation code does not raise an error (an error would roll the wrong-guess count back): the answer is '!bad' or '!locked'."""
+        self.assertEqual(self.ok(who, f"select claim_student('{code}');").splitlines()[-1], answer, f"{who[-2:]} must be turned away with {answer}: {code}")
+
     def untouched(self, who, update_sql):
         """Row level security does not raise an error for an UPDATE it does not allow, it simply changes no rows."""
         body = update_sql.rstrip().rstrip(";")
@@ -131,16 +136,29 @@ class TestServerRules(unittest.TestCase):
         self.assertEqual(self.ok(P1, "select claim_student('parent-01');").splitlines()[-1], "st1")      # dashes and case do not matter
         self.assertEqual(self.ok(P1, "select claim_student('PARENT01');").splitlines()[-1], "st1")      # typing it again changes nothing
         self.ok(P2, "select claim_student('PARENT02');")
-        self.no(P3, "select claim_student('NOPE1234');")
+        self.refused(P3, "NOPE1234")
         self.no("anon", "select claim_student('PARENT01');")                                           # not signed in
         self.ok(S1, "select claim_student('STUDENT1');")
         self.assertEqual(self.run_sql(f"select role from profiles where id = '{S1}';"), "student")
-        self.no(S2, "select claim_student('STUDENT1');")               # a student code works once
-        self.no(S1, "select claim_student('PARENT02');")               # a student's account never becomes a parent's
-        self.no(P1, "select claim_student('STUDENT3');")               # an account that already has a child is not a student
-        self.no(T1, "select claim_student('STUDENT3');")               # a teacher's account is not a student's
+        self.refused(S2, "STUDENT1")               # a student code works once
+        self.refused(S1, "PARENT02")               # a student's account never becomes a parent's
+        self.refused(P1, "STUDENT3")               # an account that already has a child is not a student
+        self.refused(T1, "STUDENT3")               # a teacher's account is not a student's
         self.ok(KID, "select claim_student('STUDENT3');")              # a brand-new account is
         self.assertEqual(self.count(S1, "student_accounts"), 1)
+
+    def test_01b_twenty_wrong_guesses_lock_the_account(self):
+        for i in range(20):
+            self.refused(LOCK, f"GUESS{i:03d}")
+        self.assertEqual(self.run_sql(f"select wrong from claim_attempts where user_id = '{LOCK}';"), "20")
+        self.refused(LOCK, "PARENT02", "!locked")                      # even the right code is refused now
+        self.assertEqual(self.count(LOCK, "parent_students"), 0)
+        self.assertEqual(self.count(LOCK, "claim_attempts"), 0)         # nobody sees the counter but the administration
+        self.untouched(LOCK, f"update claim_attempts set wrong = 0 where user_id = '{LOCK}';")
+        self.assertEqual(self.count(ADMIN, "claim_attempts", f"user_id = '{LOCK}'"), 1)   # the administration sees the counter
+        self.ok(ADMIN, f"update claim_attempts set wrong = 0 where user_id = '{LOCK}';")     # the administration lets the account try again
+        self.refused(LOCK, "GUESSAGAIN")                                # turned away, but no longer locked
+        self.no(LOCK, "select claim_fail();")                           # the counter cannot be raised by hand
 
     def test_02_nobody_can_make_themselves_more_important(self):
         self.untouched(P1, f"update profiles set role = 'admin' where id = '{P1}';")

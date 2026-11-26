@@ -6,6 +6,7 @@
 | `classes` | الفصول | — |
 | `students` | الطلاب (كود، اسم، فصل) | `class_id` ← classes |
 | `activation_codes` | كود تفعيل لكل طالب: كود لأولياء الأمور (يخدم ولي أمرين) وكود تاني لحساب الطالب نفسه (مرة واحدة، من الصف الأول) | `student_code` ← students |
+| `claim_attempts` | عدّاد محاولات الكود الغلط لكل حساب. بعد 20 محاولة غلط الحساب بيتقفل، والإدارة بتفتحه (`update claim_attempts set wrong = 0 where user_id = ...`) | `user_id` ← auth.users |
 | `parent_students` | أي ولي أمر مربوط بأي طالب | `user_id` ← profiles، `student_code` ← students |
 | `student_accounts` | حساب الطالب نفسه (من الصف الأول)، حساب واحد لكل طالب | `user_id` ← حسابات Supabase، `student_code` ← students |
 | `teacher_classes` | المدرس بيدرّس أنهي فصول (فصل ومادة واسم المدرس بس، من غير أسماء طلبة)، البرنامج بيبعتها لما المدرس يسجل دخول | `teacher_id`، `class_id` |

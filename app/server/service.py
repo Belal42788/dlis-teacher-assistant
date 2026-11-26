@@ -388,6 +388,37 @@ class Service(BellMixin, BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, Up
                     out.append({"room_id": r.id, "i": i, "ar": x["name"], "en": x["english"] or to_english(x["name"])})
         return {"students": out}
 
+    def export_students(self, room_id: str = "") -> dict:
+        """The students as one Excel file: one class, or every class (then each class is its own sheet and the first sheet lists everyone)."""
+        from datetime import datetime
+        from openpyxl import Workbook
+        from openpyxl.styles import Font
+        from ..core.translit import to_english
+        store = self._need_store()
+        rooms = [self._room(room_id)] if room_id else store.load_structure().rooms
+        wb = Workbook(); everyone = wb.active; everyone.title = "All" if not room_id else rooms[0].name[:31]
+        everyone.sheet_view.rightToLeft = True
+        everyone.append(["Class", "Name", "English name"])
+        total = 0
+        for room in rooms:
+            for x in store.load_students_full(room.id):
+                everyone.append([room.name, x["name"], x["english"] or to_english(x["name"])]); total += 1
+        if not total:
+            raise AppError("no_students_yet", "There are no students yet.")
+        for c in everyone[1]:
+            c.font = Font(bold=True)
+        for col, w in zip("ABC", (24, 36, 36)):
+            everyone.column_dimensions[col].width = w
+        everyone.freeze_panes = "A2"
+        store.exports_dir().mkdir(parents=True, exist_ok=True)
+        label = rooms[0].id if room_id else "all"
+        dest = store.exports_dir() / f"Students_{label}_{datetime.now():%Y-%m-%d_%H%M}.xlsx"
+        wb.save(dest)
+        return {**self._export_result(dest), "count": total}
+
+    def _export_result(self, path) -> dict:
+        return {"path": str(path), "name": path.name, "folder": str(path.parent)}
+
     def put_students(self, room_id: str, names: list, english: Optional[list] = None) -> dict:
         from ..core.translit import to_english, to_arabic, _AR
         store = self._need_store()

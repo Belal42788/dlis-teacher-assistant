@@ -32,7 +32,7 @@ function loginScreen(signup, note) {
         if (!code.value.trim()) return say(msg, t("badCode"), true);
         await auth("signup", { email: em.value.trim(), password: pw.value });
         if (!store.get()) await auth("token?grant_type=password", { email: em.value.trim(), password: pw.value });
-        try { await api("POST", "/rest/v1/rpc/claim_student", { p_code: code.value }); } catch (e) { S.flash = e instanceof NetErr ? t("net") : t("badCode"); }
+        try { const r = await api("POST", "/rest/v1/rpc/claim_student", { p_code: code.value }); if (typeof r === "string" && r.startsWith("!")) S.flash = r === "!locked" ? t("locked") : t("badCode"); } catch (e) { S.flash = e instanceof NetErr ? t("net") : t("badCode"); }
       } else await auth("token?grant_type=password", { email: em.value.trim(), password: pw.value });
       boot();
     } catch (e) { say(msg, signup && e.status === 422 ? e.message : e.code === "email_not_confirmed" ? t("unconfirmed") : e.status === 429 || /rate_limit/.test(e.code) ? t("rate") : e.status === 400 || e.status === 401 ? t("badLogin") : errText(e), true); }
@@ -87,7 +87,7 @@ function subBar() {
 const addKidBox = () => {
   const code = h("input", { type: "text", dir: "ltr", autocapitalize: "characters", placeholder: "XXXX-XXXX", "aria-label": t("code") }), msg = h("div", {});
   return h("div", { class: "card" }, h("h2", {}, icon("plus"), t("addKid")), h("p", { class: "muted" }, S.kids.length ? t("addKidText") : t("noKids")), code, msg,
-    h("button", { class: "btn primary", style: "margin-top:.6rem", onclick: async () => { try { await api("POST", "/rest/v1/rpc/claim_student", { p_code: code.value }); forget(); S.flash = ""; await loadAccount(); render(); } catch (e) { say(msg, e instanceof NetErr ? t("net") : t("badCode"), true); } } }, t("add")));
+    h("button", { class: "btn primary", style: "margin-top:.6rem", onclick: async () => { try { const r = await api("POST", "/rest/v1/rpc/claim_student", { p_code: code.value }); if (typeof r === "string" && r.startsWith("!")) return say(msg, r === "!locked" ? t("locked") : t("badCode"), true); forget(); S.flash = ""; await loadAccount(); render(); } catch (e) { say(msg, e instanceof NetErr ? t("net") : t("badCode"), true); } } }, t("add")));
 };
 function account(box) {
   const s = me();

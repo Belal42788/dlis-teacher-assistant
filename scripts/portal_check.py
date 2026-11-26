@@ -37,7 +37,7 @@ class Fake(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         seen.append(("GET", self.path)); url = urllib.parse.urlparse(self.path); name = url.path.split("/rest/v1/")[1]; qs = urllib.parse.parse_qs(url.query)
         if name == "profiles": return self._send([{"role": ROLE["v"]}])
-        if name == "parent_students": return self._send([{"student_code": "s1"}] if ROLE["v"] == "parent" else [])
+        if name == "parent_students": return self._send([{"student_code": "s1"}] if ROLE["v"] == "parent" and not ROLE.get("nokids") else [])
         if name == "student_accounts": return self._send([{"student_code": "s1"}] if ROLE["v"] == "student" else [])
         rows = list(DB.get(name, []))
         for col in ("thread_id", "student_code"):
@@ -49,7 +49,7 @@ class Fake(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         n = int(self.headers.get("Content-Length", 0)); body = json.loads(self.rfile.read(n) or b"{}"); seen.append(("POST", self.path, body))
         if "/auth/v1/signup" in self.path or "grant_type" in self.path: return self._send({"access_token": "e30." + __import__("base64").urlsafe_b64encode(json.dumps({"sub": UID()}).encode()).decode().rstrip("=") + ".x", "refresh_token": "RT", "expires_in": 3600, "user": {"email": "p@x.com"}})
-        if "/rpc/claim_student" in self.path: return self._send("s1")
+        if "/rpc/claim_student" in self.path: return self._send("!locked" if body.get("p_code") == "LOCK-0000" else "!bad" if body.get("p_code") == "WRONG-000" else "s1")
         if "/storage/v1/object/sign/" in self.path: return self._send({"signedURL": "/object/sign/files/x?token=1"})
         if "/rest/v1/threads" in self.path:
             row = {"id": "th-new", "kind": body["kind"], "teacher_id": body["teacher_id"], "student_code": body["student_code"], "last_at": "2026-11-24T09:00:00Z"}; DB["threads"].append(row); return self._send([row], 201)
@@ -140,5 +140,10 @@ with sync_playwright() as p:
     assert not errs, errs; pg.context.close()
     # ------------------------------------------------ a teacher account is turned away
     ROLE["v"] = "teacher"; pg, errs = fresh(b, 1280); pg.fill("#em", "t@x.com"); pg.fill("#pw", "password1"); pg.click("button[type=submit]"); pg.wait_for_selector("text=حساب مدرس")
+    # ------------------------------------------------ wrong codes: told plainly, and a locked account is told to ask the school
+    ROLE.update(v="parent", nokids=True); pg, errs = fresh(b, 390)
+    pg.click("text=أول مرة"); pg.fill("input[type=email]", "n@x.com"); pg.fill("input[type=password]", "password1"); pg.fill("#cd", "WRONG-000"); pg.click("button[type=submit]")
+    pg.wait_for_selector("text=الكود مش صح")
+    pg.fill(".card input[dir=ltr]", "LOCK-0000"); pg.click("text=إضافة"); pg.wait_for_selector("text=اتقفل")
     b.close()
 print("portal ok")

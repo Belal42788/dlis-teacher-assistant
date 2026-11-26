@@ -9,6 +9,8 @@ import { showProblems } from "../components/validate.js";
 import { play, leave } from "../motion.js";
 import { norm } from "../components/quick.js";
 
+const exportNames = (room) => guarded(async () => { const r = await api.post("/api/students/export", room ? { room_id: room } : {}); await api.post("/api/open", { path: r.path }); toast(t("exported_n", { n: r.count })); });
+
 let selectedId = "";
 
 export async function renderClasses(root) {
@@ -129,7 +131,7 @@ export async function renderClasses(root) {
     return h("div", { class: "panel" },
       h("div", { class: "row between", style: { marginBottom: ".9rem" } },
         h("div", {}, h("h2", {}, roomLabel(room, structure)), h("div", { class: "muted" }, gradeName(grade), " · ", countEl, " ", t("students"))),
-        h("div", { class: "row" }, status, h("button", { class: "btn", onClick: () => importDialog(room, names, (merged) => { const keep = new Map(names.map((n, i) => [n, english[i]])); names = merged; english = merged.map((n) => keep.get(n) || ""); auto = merged.map(() => ""); drawList(); touch(); }) }, icon("upload"), t("paste_or_import")))),
+        h("div", { class: "row" }, status, names.length ? h("button", { class: "btn", onClick: () => exportNames(room.id) }, icon("file"), t("export_class")) : null, h("button", { class: "btn", onClick: () => importDialog(room, names, (merged) => { const keep = new Map(names.map((n, i) => [n, english[i]])); names = merged; english = merged.map((n) => keep.get(n) || ""); auto = merged.map(() => ""); drawList(); touch(); }) }, icon("upload"), t("paste_or_import")))),
       names.length ? null : h("div", { class: "banner info" }, icon("info"), h("div", {}, t("no_students_yet"))),
       list,
       h("div", { class: "row", "data-form": "", style: { marginTop: ".8rem" } }, add, h("button", { class: "btn", "data-check": "", onClick: addOne }, icon("plus"), t("add"))));
@@ -238,7 +240,7 @@ export async function renderClasses(root) {
 
   root.replaceChildren(h("div", { class: "page" }, hubTabs("classes", "classes"),
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_classes")), h("p", {}, t("classes_page_lead"))),
-      h("button", { class: "btn primary", onClick: addClasses }, icon("plus"), t("add_classes"))),
+      h("div", { class: "row" }, h("button", { class: "btn", onClick: () => exportNames("") }, icon("file"), t("export_all")), h("button", { class: "btn primary", onClick: addClasses }, icon("plus"), t("add_classes")))),
     findWrap,
     h("div", { class: "split" }, treeBox, detail)));
   drawTree(); await drawDetail();
