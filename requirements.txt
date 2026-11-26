@@ -1,4 +1,4 @@
-pydantic>=2.14.3
+pydantic>=2.14.4
 openpyxl>=3.1.5
 # App window (optional: without it the app opens in your normal browser)
 pywebview>=6.2.1
