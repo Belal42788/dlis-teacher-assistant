@@ -137,8 +137,17 @@ drop policy if exists p_wp_write on week_plans;      create policy p_wp_write on
 
 -- private storage for the approved files
 insert into storage.buckets (id, name, public) values ('files', 'files', false) on conflict do nothing;
+-- the administration sees and manages every file; a teacher uploads files and reads or deletes only the files he uploaded himself
+-- (Supabase stamps the uploader on every object: owner_id, and the older owner column)
 drop policy if exists p_files_staff on storage.objects;
-create policy p_files_staff on storage.objects for all using (bucket_id = 'files' and my_role() in ('admin','teacher')) with check (bucket_id = 'files' and my_role() in ('admin','teacher'));
+drop policy if exists p_files_admin on storage.objects;
+create policy p_files_admin on storage.objects for all using (bucket_id = 'files' and my_role() = 'admin') with check (bucket_id = 'files' and my_role() = 'admin');
+drop policy if exists p_files_teacher_add on storage.objects;
+create policy p_files_teacher_add on storage.objects for insert with check (bucket_id = 'files' and my_role() = 'teacher');
+drop policy if exists p_files_teacher_own on storage.objects;
+create policy p_files_teacher_own on storage.objects for all
+  using (bucket_id = 'files' and my_role() = 'teacher' and coalesce(owner_id, owner::text) = auth.uid()::text)
+  with check (bucket_id = 'files' and my_role() = 'teacher' and coalesce(owner_id, owner::text) = auth.uid()::text);
 drop policy if exists p_files_parent on storage.objects;
 create policy p_files_parent on storage.objects for select using (bucket_id = 'files' and my_role() in ('parent','student') and name in (select file_path from publications where approved and class_id in (select my_classes())
   and (visible_from is null or visible_from <= now()) and (visible_until is null or visible_until >= now())));

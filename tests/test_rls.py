@@ -40,7 +40,7 @@ create table auth.users (id uuid primary key default gen_random_uuid(), email te
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
 create schema storage;
 create table storage.buckets (id text primary key, name text, public boolean default false);
-create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text, owner uuid);
+create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text, owner uuid, owner_id text);
 alter table storage.objects enable row level security;
 grant usage on schema public, auth, storage to anon, authenticated;
 grant all on storage.objects to anon, authenticated;
@@ -267,11 +267,25 @@ class TestServerRules(unittest.TestCase):
     def test_08_files_follow_the_same_rules(self):
         self.run_sql("insert into publications (class_id, kind, title, approved, file_path, teacher_id, visible_until) values "
                      f"('c1','presentation','old',true,'c1/old.pdf','{T1}', now() - interval '1 day'), ('c1','presentation','now',true,'c1/now.pdf','{T1}', null);"
-                     "insert into storage.objects (bucket_id, name) values ('files','c1/old.pdf'),('files','c1/now.pdf'),('files','c2/x.pdf');")
+                     f"insert into storage.objects (bucket_id, name, owner_id) values ('files','c1/old.pdf','{T1}'),('files','c1/now.pdf','{T1}'),('files','c2/x.pdf','{T2}');")
         for who, want in ((P1, ["c1/now.pdf"]), (S1, ["c1/now.pdf"]), (P2, []), (P3, [])):
             got = self.ok(who, "select name from storage.objects where bucket_id = 'files' order by name;").splitlines()
             self.assertEqual(got, want, who[-2:])
-        self.assertEqual(self.count(T1, "storage.objects"), 3)
+        self.assertEqual(self.count(ADMIN, "storage.objects"), 3)
+
+    def test_09_a_teacher_touches_only_his_own_files(self):
+        self.run_sql(f"insert into storage.objects (bucket_id, name, owner_id) values ('files','c1/mine.pdf','{T1}'),('files','c2/hers.pdf','{T2}');")
+        his = self.ok(T1, "select name from storage.objects where bucket_id = 'files';").splitlines()
+        hers = self.ok(T2, "select name from storage.objects where bucket_id = 'files';").splitlines()
+        self.assertIn("c1/mine.pdf", his); self.assertNotIn("c2/hers.pdf", his); self.assertNotIn("c2/x.pdf", his)
+        self.assertIn("c2/hers.pdf", hers); self.assertNotIn("c1/mine.pdf", hers); self.assertNotIn("c1/now.pdf", hers)
+        self.ok(T1, f"insert into storage.objects (bucket_id, name, owner_id) values ('files','c1/new.pdf','{T1}');")          # uploading is allowed
+        self.untouched(T1, "delete from storage.objects where name = 'c2/hers.pdf';")                                          # her file stays
+        self.untouched(T1, "update storage.objects set name = 'c1/taken.pdf' where name = 'c2/hers.pdf';")
+        self.ok(T1, "delete from storage.objects where name = 'c1/mine.pdf';")                                                # his own can go
+        self.assertEqual(self.count(ADMIN, "storage.objects", "name = 'c1/mine.pdf'"), 0)
+        self.assertEqual(self.count(ADMIN, "storage.objects", "name = 'c2/hers.pdf'"), 1)
+        self.assertEqual(self.count(P1, "storage.objects", "name = 'c1/mine.pdf'"), 0)                                        # a parent never sees unpublished files
 
 
 if __name__ == "__main__":
