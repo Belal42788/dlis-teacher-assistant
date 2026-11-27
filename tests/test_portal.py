@@ -48,3 +48,11 @@ class TestMessagesPage(unittest.TestCase):
         out = subprocess.run([sys.executable, str(ROOT / "scripts/messages_check.py")], cwd=ROOT, capture_output=True, text=True, timeout=280)
         self.assertEqual(out.returncode, 0, out.stdout[-1500:] + out.stderr[-2500:])
         self.assertIn("messages ok", out.stdout)
+
+
+class TestYearEndPage(unittest.TestCase):
+    @unittest.skipUnless(HAVE, "playwright is not installed")
+    def test_year_end_in_a_browser(self):
+        out = subprocess.run([sys.executable, str(ROOT / "scripts/yearend_check.py")], cwd=ROOT, capture_output=True, text=True, timeout=280)
+        self.assertEqual(out.returncode, 0, out.stdout[-1500:] + out.stderr[-2500:])
+        self.assertIn("yearend ok", out.stdout)

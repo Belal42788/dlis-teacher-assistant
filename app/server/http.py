@@ -327,6 +327,8 @@ class Handler(BaseHTTPRequestHandler):
             ("POST", r"/api/structure/build", lambda m, b: svc.build_structure(b.get("selection", {}))),
             ("GET", r"/api/rooms/([a-z0-9_-]+)/students", lambda m, b: svc.get_students(m.group(1))),
             ("PUT", r"/api/rooms/([a-z0-9_-]+)/students", lambda m, b: svc.put_students(m.group(1), b.get("names", []), b.get("english"))),
+            ("GET", r"/api/yearend", lambda m, b: svc.yearend_preview()),
+            ("POST", r"/api/yearend", lambda m, b: svc.yearend_run(b)),
             ("POST", r"/api/students/export", lambda m, b: svc.export_students(str(b.get("room_id", "")))),
             ("GET", r"/api/students/all", lambda m, b: svc.all_students()),
             ("POST", r"/api/students/parse", lambda m, b: svc.parse_students(b)),

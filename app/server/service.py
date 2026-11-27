@@ -48,6 +48,7 @@ from .tools_service import ToolsMixin
 from .grades_service import GradesMixin, InsightsMixin
 from .slides_service import SlidesMixin
 from .source_service import SourceMixin
+from .yearend_service import YearEndMixin
 from .week_service import WeekMixin
 from .weekly_service import WeeklyMixin
 
@@ -63,7 +64,7 @@ def _validate(model, data):
         raise AppError("invalid_data", f"{where}: {first.get('msg', 'invalid')}", field=where) from e
 
 
-class Service(BellMixin, BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, UpdateMixin, InsightsMixin, GradesMixin, ToolsMixin, SchemeMixin, LibraryMixin, ParentWeekMixin, CoverageMixin, CloudMixin, MessagesMixin, DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesMixin, LogMixin, SlidesMixin, RevisionMixin, MapMixin, SourceMixin, WeekMixin, WeeklyMixin):
+class Service(BellMixin, BankMixin, HealthMixin, SeatingMixin, BehaviorMixin, UpdateMixin, InsightsMixin, GradesMixin, ToolsMixin, SchemeMixin, LibraryMixin, ParentWeekMixin, CoverageMixin, CloudMixin, MessagesMixin, YearEndMixin, DocsMixin, AiMixin, AiChatMixin, ChatsMixin, AlarmsMixin, ChangesMixin, LogMixin, SlidesMixin, RevisionMixin, MapMixin, SourceMixin, WeekMixin, WeeklyMixin):
     def __init__(self):
         self.store: Optional[DataStore] = None
         folder = paths.read_prefs().get("data_folder")
