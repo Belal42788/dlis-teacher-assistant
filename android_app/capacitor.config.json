@@ -1,0 +1,7 @@
+{
+  "appId": "com.dlis.family",
+  "appName": "DLIS",
+  "webDir": "www",
+  "android": { "allowMixedContent": false },
+  "server": { "androidScheme": "https" }
+}

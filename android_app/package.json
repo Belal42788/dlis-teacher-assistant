@@ -1,0 +1,14 @@
+{
+  "name": "dlis-family-android",
+  "private": true,
+  "version": "1.0.0",
+  "description": "The DLIS family portal as an Android app (a thin shell around the portal folder).",
+  "dependencies": {
+    "@capacitor/android": "^7.4.0",
+    "@capacitor/cli": "^7.4.0",
+    "@capacitor/core": "^7.4.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5"
+  }
+}
