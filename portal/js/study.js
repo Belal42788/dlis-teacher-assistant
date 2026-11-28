@@ -1,7 +1,7 @@
 "use strict";
 // Home, this week, files (term -> week), grades and announcements.
 import { h, clear, icon, t, api, CFG, safeUrl, fmtDay, errText, toast } from "./core.js";
-import { S, kid, kidName, pubs, plans, grades, news, weekIndex } from "./data.js";
+import { S, kid, kidShort, pubs, plans, grades, news, weekIndex } from "./data.js";
 import { enter, lastSeen, isNew } from "./fresh.js";
 import { upcoming, upcomingRow, todayLine } from "./calendar.js";
 
@@ -40,8 +40,8 @@ export async function viewHome(box, go) {
   const [files, planRows, notes, soon, today] = await Promise.all([pubs(k), plans(k), news(), upcoming(3).catch(() => []), todayLine()]);
   const seenFiles = lastSeen(k.code, "files"), seenNews = lastSeen("all", "news");
   const weeks = weekIndex(files, planRows), now = weeks[0];
-  const hello = h("div", { class: "card hero" }, h("img", { src: "img/logo-mark.png", alt: "" }), h("div", {}, h("h1", {}, `${t("hello")}، ${kidName(k)}`),
-    h("div", { class: "muted" }, S.role === "student" ? t("studentAcc") : `${t("parentAcc")} · ${t("following")} ${kidName(k)}`),
+  const hello = h("div", { class: "card hero" }, h("img", { src: "img/logo-mark.png", alt: "" }), h("div", {}, h("h1", {}, `${t("hello")}، ${kidShort(k)}`),
+    h("div", { class: "muted" }, S.role === "student" ? t("studentAcc") : `${t("parentAcc")} · ${t("following")} ${kidShort(k)}`),
     h("div", { class: "chips hero-chips" }, today.map((x, i) => h("span", { class: "chip" + (i === 1 ? " green" : "") }, x)))));
   const weekCard = h("div", { class: "card span2" }, h("h2", {}, icon("week"), t("homeWeek")), now ? [h("p", { class: "muted" }, `${termName(now.tri)} · ${weekName(now)}`),
     now.plans.length ? now.plans.slice(0, 2).map((w) => [w.subject ? h("span", { class: "chip" }, w.subject) : null, (w.homework || []).length ? list(w.homework.slice(0, 3)) : h("p", { class: "muted" }, "—")]) : h("p", { class: "muted" }, t("noWeek")),

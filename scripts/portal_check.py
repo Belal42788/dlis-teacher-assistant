@@ -7,7 +7,7 @@ SHOTS = os.environ.get("SHOTS", "")
 PARENT, STUDENT, TEACHER = "u-parent", "u-student", "u-teacher"
 ROLE = {"v": "parent"}
 DB = {
-    "students": [{"code": "s1", "class_id": "g4-a", "grade_id": "g4", "display_name": "علي حسن"}],
+    "students": [{"code": "s1", "class_id": "g4-a", "grade_id": "g4", "display_name": "علي حسن محمد إبراهيم السيد", "display_name_en": "Ali Hassan Mohamed Ibrahim El-Sayed"}],
     "grades": [{"trimester": 0, "week": w, "subject": "ICT", "item": it, "score": sc, "max_score": mx} for w, rows in ((8, (("Behavior", 5, 5), ("Homework", 4, 5), ("Quiz", 17, 20), ("Total", 26, 30))), (7, (("Behavior", 5, 5), ("Homework", 5, 5), ("Total", 10, 10)))) for it, sc, mx in rows]
               + [{"trimester": 0, "week": 8, "subject": "Math", "item": "Total", "score": 9, "max_score": 10}],
     "publications": [
@@ -83,8 +83,10 @@ with sync_playwright() as p:
     pg.click("text=أول مرة"); pg.fill("input[type=email]", "p@x.com"); pg.fill("input[type=password]", "password1"); pg.fill("#cd", "K7M2-9QX4"); pg.click("button[type=submit]")
     pg.wait_for_selector("text=أهلًا، علي حسن"); assert pg.is_visible(".top img[src='img/logo-mark.png']"), "logo missing"
     assert any(s[0] == "POST" and "claim_student" in s[1] and s[2] == {"p_code": "K7M2-9QX4"} for s in seen), seen
-    assert pg.inner_text(".pill.role").strip() == "ولي الأمر", "the account must say it is a parent"
+    assert pg.inner_text(".pill.who b").strip() == "ولي الأمر", "the account must say it is a parent"
     shot(pg, "02-home")
+    assert pg.inner_text(".pill.who").replace("\n", " ").strip() == "ولي الأمر · علي حسن محمد", "role and short name in one box: " + pg.inner_text(".pill.who")
+    assert not pg.is_visible("text=السيد"), "the whole long name must not be shown in the small places"
     pg.wait_for_selector(".tabs [data-n=study]:not([hidden])"); assert pg.inner_text(".tabs [data-n=study]").strip() == "1", "the Study tab must say one new file"
     assert pg.is_visible(".card:has(h2:has-text('قريبًا في المدرسة'))"), "the home page must show what is coming up at school"
     nav(pg, "الدراسة"); pg.wait_for_selector("text=Page 12"); pg.wait_for_selector("text=Quiz on Sunday"); shot(pg, "03-week")
@@ -94,7 +96,8 @@ with sync_playwright() as p:
     pg.click(".tree >> text=الأسبوع 6"); pg.wait_for_selector("text=Quiz 3"); assert not pg.is_visible("text=Video lesson")
     pg.click(".tree >> text=ملفات عامة"); pg.wait_for_selector("text=Term books list")
     sub(pg, "الدرجات"); pg.wait_for_selector("text=17"); pg.wait_for_selector("h2:has-text('Math')"); shot(pg, "05-grades")
-    sub(pg, "التقويم"); pg.wait_for_selector("text=الفصل الدراسي 2 · الأسبوع 1"); pg.wait_for_selector("text=إجازة الشتاء"); pg.wait_for_selector("text=KG – G5")
+    sub(pg, "التقويم"); pg.wait_for_selector(".cal-card >> text=الفصل الدراسي 2 · الأسبوع 1"); pg.wait_for_selector(".mo-wk >> text=1"); pg.wait_for_selector(".mo-side >> text=إجازة"); pg.wait_for_selector(".day-panel >> text=KG – G5")
+    pg.click(".mo-d:not(.mute):has(.mo-n:text-is('29'))"); pg.wait_for_selector(".day-panel .chip >> text=بداية الدراسة"); assert not pg.is_visible(".day-panel .chip >> text=امتحانات ومراجعة"), "the first day of a term is not an exam day"
     assert not pg.is_visible("text=(G6 – G8)") and not pg.is_visible("text=Staff"), "events of other grades and staff days must not show"; shot(pg, "05b-calendar")
     nav(pg, "التواصل"); pg.wait_for_selector(".thread"); pg.click(".thread"); pg.wait_for_selector("text=Ali did well today")
     assert "المدرس" in pg.inner_text(".bubble .who"), "the teacher's message must be labelled"; shot(pg, "06-chat")
@@ -109,24 +112,30 @@ with sync_playwright() as p:
     pg.click(".pick .row >> text=Ms Mona"); pg.wait_for_selector(".compose")
     assert any(s[0] == "POST" and s[1].startswith("/rest/v1/threads") and s[2]["kind"] == "parent_teacher" and s[2]["teacher_id"] == "u-t2" for s in seen), "a parent talk must be the parents' kind"
     nav(pg, "التواصل"); sub(pg, "الإعلانات"); pg.wait_for_selector("text=Bring food")
-    pg.click(".pill.role"); pg.wait_for_selector("text=حساب ولي الأمر"); shot(pg, "08-account")
+    pg.click("#settings"); pg.wait_for_selector("text=حساب ولي الأمر"); shot(pg, "08-account")
+    pg.click(".seg button >> text=كبير جدًا"); assert pg.evaluate("parseFloat(getComputedStyle(document.documentElement).fontSize)") > 19, "the text size button must make the text bigger"
+    pg.click(".seg button >> text=عادي")
     assert pg.evaluate("document.documentElement.scrollWidth <= innerWidth"), "horizontal overflow"
     pg.click("#lang"); pg.wait_for_selector("text=Family portal"); shot(pg, "09-english")
-    pg.click("text=Sign out"); pg.wait_for_selector("text=Sign in")
+    assert pg.inner_text(".pill.who").replace("\n", " ").strip() == "Parent · Ali Hassan Mohamed", "the child's name must turn English with the page: " + pg.inner_text(".pill.who")
+    pg.click("text=Sign out"); pg.wait_for_selector("text=Sign in"); assert pg.input_value("#em") == "p@x.com", "the email of the last sign in must be remembered"
     assert not errs, errs; pg.context.close()
     # ------------------------------------------------ the same family on a phone
     ROLE["v"] = "parent"; DB["threads"] = DB["threads"][:1]
     pg, errs = fresh(b, 390); pg.fill("#em", "p@x.com"); pg.fill("#pw", "password1"); pg.click("button[type=submit]"); pg.wait_for_selector("text=أهلًا، علي حسن")
     assert pg.evaluate("document.documentElement.scrollWidth <= innerWidth"), "overflow on the phone (home)"; shot(pg, "10-phone-home")
+    pg.evaluate("window.scrollTo(0, 400)"); assert pg.evaluate("document.querySelector('.sticky').getBoundingClientRect().top") == 0, "the top bar must stay put when the page scrolls"; pg.evaluate("window.scrollTo(0, 0)")
     nav(pg, "الدراسة"); sub(pg, "الملفات"); pg.wait_for_selector("text=Video lesson"); assert pg.evaluate("document.documentElement.scrollWidth <= innerWidth"), "overflow on the phone (files)"; shot(pg, "11-phone-files")
     sub(pg, "الدرجات"); pg.wait_for_selector("text=17"); assert pg.evaluate("document.documentElement.scrollWidth <= innerWidth"), "overflow on the phone (grades)"
+    sub(pg, "التقويم"); pg.wait_for_selector(".mo-grid"); assert pg.evaluate("document.documentElement.scrollWidth <= innerWidth"), "overflow on the phone (calendar)"; shot(pg, "11b-phone-calendar")
+    pg.click(".mo-d:not(.mute):has(.mo-n:text-is('30'))"); pg.wait_for_selector(".day-panel >> text=KG – G5")
     nav(pg, "التواصل"); pg.wait_for_selector(".thread"); pg.click(".thread"); pg.wait_for_selector(".compose"); assert not pg.is_visible(".threads"); shot(pg, "12-phone-chat")
     assert pg.evaluate("document.documentElement.scrollWidth <= innerWidth"), "overflow on the phone (chat)"
     assert not errs, errs; pg.context.close()
     # ------------------------------------------------ the student: the same things, but talks as the student
     ROLE["v"] = "student"; seen.clear(); DB["threads"] = DB["threads"][:1]
     pg, errs = fresh(b, 1280); pg.fill("#em", "s@x.com"); pg.fill("#pw", "password1"); pg.click("button[type=submit]"); pg.wait_for_selector("text=أهلًا، علي حسن")
-    assert pg.inner_text(".pill.role").strip() == "الطالب", "the account must say it is a student"
+    assert pg.inner_text(".pill.who b").strip() == "الطالب", "the account must say it is a student"
     nav(pg, "الدراسة"); sub(pg, "الدرجات"); pg.wait_for_selector("text=17"); sub(pg, "الملفات"); pg.wait_for_selector("text=Video lesson")
     nav(pg, "التواصل"); pg.click(".thread"); pg.wait_for_selector("text=Ali did well today")
     assert pg.is_visible("text=تقدر تقراها بس") and not pg.is_visible(".compose"), "a parents' talk is read-only for the student"; shot(pg, "13-student-readonly")

@@ -36,6 +36,8 @@ alter table announcements add column if not exists image_path text not null defa
 create table if not exists students (
   code text primary key, class_id text not null, grade_id text not null default '', display_name text not null default ''
 );
+-- the English spelling of the name, so a family that reads the portal in English sees the name in English
+alter table students add column if not exists display_name_en text not null default '';
 create table if not exists parent_students (
   parent_id uuid not null references auth.users on delete cascade,
   student_code text not null references students(code) on delete cascade,

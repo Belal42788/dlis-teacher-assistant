@@ -1,10 +1,21 @@
 "use strict";
 // What the portal reads from the school server, with a short cache so switching tabs does not ask again.
-import { api, me, NetErr } from "./core.js";
+import { api, me, NetErr, state } from "./core.js";
 
 export const S = { role: "", kids: [], cur: 0, unread: 0, flash: "" };
 export const kid = () => S.kids[S.cur];
-export const kidName = (k) => (k && (k.display_name || k.code)) || "";
+// the child's name in the language of the page (the English spelling comes from the school's list; without one the Arabic is shown)
+export const kidName = (k) => (!k ? "" : (state.lang === "en" && k.display_name_en) || k.display_name || k.code || "");
+// small places show the first two names, or three when they are short; "Abd / Abu / Bin ..." stay with the name after them
+const JOIN = /^(عبد|عبدال|أبو|ابو|أم|ام|بن|ابن|abd|abdel|abdul|abu|bin|ibn|um)$/i;
+export function shortName(full) {
+  const w = String(full || "").trim().split(/\s+/).filter(Boolean), units = [];
+  for (let i = 0; i < w.length; i++) { let u = w[i]; while (JOIN.test(w[i]) && i + 1 < w.length) u += " " + w[++i]; units.push(u); }
+  let out = units.slice(0, 2).join(" ");
+  if (units[2] && out.length < 11) out += " " + units[2];
+  return out;
+}
+export const kidShort = (k) => shortName(kidName(k));
 const q = encodeURIComponent;
 
 const cache = new Map();
@@ -19,7 +30,7 @@ export async function loadAccount() {
   S.role = (prof[0] && prof[0].role) || "parent";
   if (S.role !== "parent" && S.role !== "student") return;
   const links = await api("GET", S.role === "student" ? "/rest/v1/student_accounts?select=student_code" : "/rest/v1/parent_students?select=student_code");
-  S.kids = links.length ? await api("GET", "/rest/v1/students?select=code,class_id,grade_id,display_name&code=in.(" + links.map((l) => q(l.student_code)).join(",") + ")") : [];
+  S.kids = links.length ? await api("GET", "/rest/v1/students?select=*&code=in.(" + links.map((l) => q(l.student_code)).join(",") + ")") : [];
   S.cur = Math.min(S.cur, Math.max(0, S.kids.length - 1));
 }
 

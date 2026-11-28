@@ -39,6 +39,7 @@ const ICONS = {
   logout: '<path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   cal: '<rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 3v3M16 3v3M9 15l2 2 4-4"/>',
+  gear: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
   lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
 };
 export function icon(name) {
@@ -46,6 +47,13 @@ export function icon(name) {
   s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("class", name === "back" || name === "chevron" || name === "send" ? "i dir" : "i"); s.setAttribute("aria-hidden", "true");
   s.innerHTML = ICONS[name] || ""; return s;
 }
+
+// ---------------------------------------------------------------- text size (kept on this device)
+export const SIZES = [0.9, 1, 1.15, 1.3];
+export const getSize = () => { try { const n = localStorage.getItem("size"); return n === null ? 1 : Math.min(SIZES.length - 1, Math.max(0, +n || 0)); } catch { return 1; } };
+export function setSize(i) { document.documentElement.style.setProperty("--fs", SIZES[i]); try { localStorage.setItem("size", i); } catch { /* private window */ } }
+// the last email typed to sign in, so the next sign in only needs the password
+export const lastEmail = { get() { try { return localStorage.getItem("email") || ""; } catch { return ""; } }, set(v) { try { localStorage.setItem("email", v); } catch { /* private window */ } } };
 
 // ---------------------------------------------------------------- language
 export const state = { lang: (() => { try { return localStorage.getItem("lang") || "ar"; } catch { return "ar"; } })(), dict: { ar: {}, en: {} } };

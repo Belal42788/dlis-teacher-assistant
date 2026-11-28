@@ -431,13 +431,15 @@ class CloudMixin:
         mapping = store.read_json(self._codes_path(), {}) or {}
         taken = {v["activation"] for v in mapping.values()} | {v["student_activation"] for v in mapping.values() if v.get("student_activation")}
         structure = store.load_structure()
-        new_students, new_codes, sheet = [], [], []
+        new_students, new_codes, sheet, everyone = [], [], [], []
         for room in structure.rooms:
-            names = self.get_students(room.id)["names"]
+            got = self.get_students(room.id)
+            names = got["names"]
             has_login = not room.grade_id.startswith("kg")             # KG children are too young: their parents' account is enough
             rows = []
-            for name in names:
+            for i, name in enumerate(names):
                 key = f"{room.id}|{name}"
+                english = (got["english"][i] if i < len(got["english"]) else "") or (got["auto"][i] if i < len(got["auto"]) else "")
                 if key not in mapping:
                     act = self._new_activation(taken); taken.add(act)
                     mapping[key] = {"student": "s" + secrets.token_hex(5), "activation": act}
@@ -448,10 +450,11 @@ class CloudMixin:
                     mapping[key]["student_activation"] = sact
                     new_codes.append({"code": sact, "student_code": mapping[key]["student"], "kind": "student", "max_uses": 1})
                 rows.append((name, mapping[key]["activation"], mapping[key].get("student_activation", "")))
+                everyone.append({"code": mapping[key]["student"], "class_id": room.id, "grade_id": room.grade_id, "display_name": name, "display_name_en": english})
             if rows:
                 sheet.append((room, rows))
-        if new_students:
-            c.upsert("students", new_students, "code")
+        if everyone:                                   # every student, every time: a changed English spelling reaches the server too
+            c.upsert("students", everyone, "code")
         if new_codes:
             c.upsert("activation_codes", new_codes, "code")
         store.write_json(self._codes_path(), mapping)

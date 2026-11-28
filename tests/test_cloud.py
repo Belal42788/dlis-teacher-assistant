@@ -244,6 +244,8 @@ class TestCloud(unittest.TestCase):
                 self.assertGreaterEqual(kinds.count("parent"), 4)
                 self.assertTrue(all(c["max_uses"] == 1 for c in codes1 if c["kind"] == "student"))
                 self.assertEqual(r1["student_logins"], 2)
+                studs = [row for path, rows in posted if path.endswith("/students") for row in rows]
+                self.assertTrue(studs and all(r.get("display_name_en") for r in studs), "the server gets the English spelling of every student too")
                 svc.prepare_codes()                                                   # running it again changes nothing for old students
                 self.assertEqual(len([row for path, rows in posted if path.endswith("/activation_codes") for row in rows]), n1)
                 tt = svc.store.load_timetable(); tt.grid = {"Sunday": {"1": "g4-a", "2": "g4-a"}, "Monday": {"1": "", "2": "kg1-a"}}; svc.store.save_timetable(tt)

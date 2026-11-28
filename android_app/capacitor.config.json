@@ -2,6 +2,12 @@
   "appId": "com.dlis.family",
   "appName": "DLIS",
   "webDir": "www",
-  "android": { "allowMixedContent": false },
-  "server": { "androidScheme": "https" }
+  "android": {
+    "allowMixedContent": false,
+    "adjustMarginsForEdgeToEdge": "force"
+  },
+  "server": {
+    "androidScheme": "https"
+  },
+  "backgroundColor": "#eef5fa"
 }

@@ -107,6 +107,11 @@ class MessagesMixin:
         """The teacher's classes and the students in them (from the server), to start a conversation with."""
         c, cfg = self._msg_cloud()
         rooms = {r.id: r.name for r in self._need_store().load_structure().rooms}
+        if cfg["role"] in ("teacher", "admin") and cfg.get("uid"):
+            try:
+                self.cloud_sync_classes()              # the classes of today's timetable, not the ones of the last sign-in
+            except Exception:
+                pass
         mine = c.select("teacher_classes", f"select=class_id,subject&teacher_id=eq.{_Q(cfg['uid'])}") if cfg["role"] == "teacher" else c.select("teacher_classes", "select=class_id,subject&limit=500")
         ids = sorted({r["class_id"] for r in mine})
         if not ids:

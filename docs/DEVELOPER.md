@@ -55,8 +55,8 @@ Feature files (each is a mixin of `Service`):
 | `LibraryMixin` | `app/server/library_service.py` | 594 |
 | `ParentWeekMixin` | `app/server/parent_week_service.py` | 74 |
 | `CoverageMixin` | `app/server/coverage_service.py` | 117 |
-| `CloudMixin` | `app/server/cloud_service.py` | 480 |
-| `MessagesMixin` | `app/server/messages_service.py` | 163 |
+| `CloudMixin` | `app/server/cloud_service.py` | 483 |
+| `MessagesMixin` | `app/server/messages_service.py` | 168 |
 | `YearEndMixin` | `app/server/yearend_service.py` | 167 |
 | `SchoolStudentsMixin` | `app/server/school_students_service.py` | 75 |
 | `DocsMixin` | `app/server/docs_service.py` | 418 |

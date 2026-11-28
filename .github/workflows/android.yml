@@ -25,8 +25,25 @@ jobs:
       - run: npm install
       - name: Create the Android project
         run: npx cap add android
-      - name: App icon
-        run: npx capacitor-assets generate --android --iconBackgroundColor '#eef5fa' --iconBackgroundColorDark '#eef5fa'
+      - name: App icon and loading screen (the school logo)
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#ffffff' --iconBackgroundColorDark '#ffffff' --splashBackgroundColor '#eef5fa' --splashBackgroundColorDark '#eef5fa'
+      - name: The page text keeps its own size (the portal has a text size setting; the phone's font size must not double it)
+        run: |
+          cat > android/app/src/main/java/com/dlis/family/MainActivity.java <<'JAVA'
+          package com.dlis.family;
+
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onStart() {
+                  super.onStart();
+                  if (getBridge() != null && getBridge().getWebView() != null) {
+                      getBridge().getWebView().getSettings().setTextZoom(100);
+                  }
+              }
+          }
+          JAVA
       - name: Put the portal into the app
         run: npx cap sync android
       - name: Build the APK
