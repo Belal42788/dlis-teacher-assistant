@@ -33,6 +33,9 @@ const ar = {
   readOnly: "دي محادثة {who}. تقدر تقراها بس.", writeHere: "اكتب رسالتك…", sendBtn: "إرسال", noMsgs: "لسه ما فيش رسائل. ابدأ بالسلام.", back: "رجوع",
   report: "إبلاغ", reportWhy: "سبب البلاغ (اختياري)", reportSend: "إرسال البلاغ", reportDone: "وصل البلاغ للإدارة.", reportAgain: "أنت بلّغت عن الرسالة دي قبل كده.", cancel: "إلغاء",
   watched: "إدارة المدرسة تقدر تراجع المحادثات للحماية. الرسائل نص فقط، وما بتتعدلش بعد الإرسال.", you: "أنت", sendFail: "الرسالة ما اتبعتتش. جرّب تاني.",
+  // calendar and new
+  calendar: "التقويم", comingUp: "قريبًا في المدرسة", today: "النهارده", tomorrow: "بكرة", inDays: "بعد {n} يوم", noTerm: "إحنا دلوقتي بين فصلين دراسيين أو في الإجازة.", calKind: { holiday: "إجازة", exam: "امتحانات ومراجعة", event: "فعالية" },
+  calNote: "ده تقويم المدرسة. المواعيد ممكن تتغير، والمدرسة بتعلن أي تغيير في الإعلانات.", newWord: "جديد",
   forWho: "لـ", textOnly: "نص فقط", chars: "حرف",
 };
 const en = {
@@ -60,6 +63,8 @@ const en = {
   readOnly: "This is the {who} conversation. You can read it only.", writeHere: "Write your message…", sendBtn: "Send", noMsgs: "No messages yet. Start by saying hello.", back: "Back",
   report: "Report", reportWhy: "Reason (optional)", reportSend: "Send report", reportDone: "The report reached the school office.", reportAgain: "You already reported this message.", cancel: "Cancel",
   watched: "The school office can review conversations for safety. Messages are text only and cannot be edited after sending.", you: "You", sendFail: "The message was not sent. Try again.",
+  calendar: "Calendar", comingUp: "Coming up at school", today: "Today", tomorrow: "Tomorrow", inDays: "in {n} days", noTerm: "We are between terms or on holiday right now.", calKind: { holiday: "Holiday", exam: "Exams and revision", event: "Event" },
+  calNote: "This is the school calendar. Dates can change, and the school announces any change in Announcements.", newWord: "New",
   forWho: "To", textOnly: "Text only", chars: "chars",
 };
 state.dict.ar = ar; state.dict.en = en;

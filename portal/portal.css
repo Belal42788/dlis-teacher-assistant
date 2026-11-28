@@ -174,3 +174,11 @@ th:first-child { background: #f3f7fa; } td.tot { font-weight: 700; color: var(--
   .hero { flex-direction: column; text-align: center; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* calendar and "new" marks */
+.dot.new { background: var(--green); } .chip.new { font-weight: 700; padding-inline: .5rem; }
+.month { padding: 0; } .month summary { padding: .8rem 1rem; cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: .3rem; } .month summary::-webkit-details-marker { display: none; }
+.month summary::after { content: ""; margin-inline-start: auto; width: .55rem; height: .55rem; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(45deg); transition: transform .15s; } .month[open] summary::after { transform: rotate(-135deg); }
+.month .row { padding-inline: 1rem; } .row.cal.past { opacity: .6; }
+.row .ic.k-holiday { background: var(--green-wash); color: #2f7541; } .row .ic.k-exam { background: #ececf8; color: var(--indigo); } .row .ic.k-event { background: var(--blue-wash); color: var(--blue-dark); }
+@media (prefers-reduced-motion: reduce) { .month summary::after { transition: none; } }

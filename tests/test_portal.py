@@ -22,13 +22,13 @@ class TestPortal(unittest.TestCase):
         self.assertIn("portal ok", out.stdout)
 
     def test_portal_files_are_all_there(self):
-        for rel in ("index.html", "portal.css", "config.js", "js/main.js", "js/core.js", "js/data.js", "js/study.js", "js/talk.js", "js/i18n.js",
+        for rel in ("index.html", "portal.css", "config.js", "js/main.js", "js/core.js", "js/data.js", "js/study.js", "js/talk.js", "js/i18n.js", "js/calendar.js", "js/fresh.js", "calendar.json",
                     "img/logo-mark.png", "img/logo.png", "fonts/Cairo-Regular.ttf", "fonts/Cairo-Bold.ttf"):
             self.assertTrue((ROOT / "portal" / rel).is_file(), rel)
 
     def test_every_portal_text_exists_in_both_languages(self):
         import re
-        js = "".join((ROOT / "portal/js" / f).read_text(encoding="utf-8") for f in ("main.js", "study.js", "talk.js"))
+        js = "".join((ROOT / "portal/js" / f).read_text(encoding="utf-8") for f in ("main.js", "study.js", "talk.js", "calendar.js"))
         text = (ROOT / "portal/js/i18n.js").read_text(encoding="utf-8")
         ar, en = text.split("const en = {")
         keys = lambda block: set(re.findall(r"\b([A-Za-z_][A-Za-z0-9_]*):", block))
@@ -36,6 +36,20 @@ class TestPortal(unittest.TestCase):
         self.assertFalse(used - keys(ar), f"missing in Arabic: {used - keys(ar)}")
         self.assertFalse(used - keys(en), f"missing in English: {used - keys(en)}")
         self.assertFalse(keys(ar) ^ keys(en), f"Arabic and English differ: {keys(ar) ^ keys(en)}")
+
+    def test_the_portal_calendar_matches_the_school_calendar(self):
+        out = subprocess.run([sys.executable, str(ROOT / "scripts/make_portal_calendar.py"), "--check"], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(out.returncode, 0, out.stdout)
+
+    def test_the_portal_calendar_knows_which_grades_an_event_is_for(self):
+        sys.path.insert(0, str(ROOT / "scripts"))
+        from make_portal_calendar import build, grades_of
+        self.assertEqual(grades_of("Book Week Middle School (G6 – G8)"), ["g6", "g7", "g8"])
+        self.assertEqual(grades_of("Character Day Event (KG1 – G5)")[:2], ["kg1", "kg2"])
+        self.assertIsNone(grades_of("Sports Day For All School"))
+        cal = build()
+        self.assertFalse([e for e in cal["events"] if "staff" in e["en"].lower()], "staff-only days must not reach the parents")
+        self.assertTrue(all(h["ar"] for h in cal["holidays"]))
 
 
 if __name__ == "__main__":

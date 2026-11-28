@@ -27,7 +27,7 @@ const cls = (k) => q(k.class_id);
 export const pubs = (k) => cached("pubs" + k.code, () => api("GET", `/rest/v1/publications?select=id,kind,title,url,file_path,created_at,note,trimester,week,body&class_id=eq.${cls(k)}&order=created_at.desc&limit=300`));
 export const plans = (k) => cached("plans" + k.code, () => api("GET", `/rest/v1/week_plans?select=trimester,week,subject,homework,material,quiz_alerts&class_id=eq.${cls(k)}&order=trimester.desc,week.desc&limit=120`));
 export const grades = (k) => cached("grades" + k.code, () => api("GET", `/rest/v1/grades?select=trimester,week,subject,item,score,max_score&student_code=eq.${q(k.code)}&order=trimester,subject,week.desc,item&limit=1000`));
-export const news = () => cached("news", () => api("GET", "/rest/v1/announcements?select=title,body,starts_on,image_path&order=starts_on.desc,created_at.desc&limit=40"));
+export const news = () => cached("news", () => api("GET", "/rest/v1/announcements?select=title,body,starts_on,image_path,created_at&order=starts_on.desc,created_at.desc&limit=40"));
 export const teachers = (k) => cached("teachers" + k.code, async () => {
   const rows = await api("GET", `/rest/v1/teacher_classes?select=teacher_id,subject,teacher_name&class_id=eq.${cls(k)}`);
   const by = new Map();

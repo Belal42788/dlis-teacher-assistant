@@ -5,15 +5,29 @@ import "./i18n.js";
 import { S, kid, kidName, loadAccount, forget, refreshUnread } from "./data.js";
 import { viewHome, viewWeek, viewFiles, viewGrades, viewNews } from "./study.js";
 import { viewMessages } from "./talk.js";
+import { viewCalendar } from "./calendar.js";
+import { lastSeen, isNew } from "./fresh.js";
+import { pubs, news } from "./data.js";
 
 const app = document.getElementById("app");
 const NAV = [["home", "home"], ["study", "study"], ["talk", "talk"]];
-const SUBS = { study: [["week", "week"], ["files", "folder"], ["grades", "grades"]], talk: [["messages", "mail"], ["news", "news"]] };
+const SUBS = { study: [["week", "week"], ["files", "folder"], ["grades", "grades"], ["calendar", "cal"]], talk: [["messages", "mail"], ["news", "news"]] };
 const route = { tab: "home", sub: { study: "week", talk: "messages" } };
 let leave = [], poll = null;
 const onLeave = (fn) => leave.push(fn);
 const stopAll = () => { leave.forEach((f) => f()); leave = []; };
 const dot = () => h("span", { class: "dot", "data-b": "1", hidden: !S.unread }, S.unread);
+const fresh = (name) => h("span", { class: "dot new", "data-n": name, hidden: true });
+// the green numbers for what was published since this device last opened Files / Announcements
+async function paintNew() {
+  if (!S.kids.length) return;
+  const k = kid(), set = (name, n) => document.querySelectorAll(`[data-n="${name}"]`).forEach((b) => { b.textContent = n; b.hidden = !n; });
+  try {
+    const [files, notes] = await Promise.all([pubs(k), news()]);
+    const nf = files.filter((p) => isNew(p, lastSeen(k.code, "files"))).length, nn = notes.filter((a) => isNew(a, lastSeen("all", "news"))).length;
+    set("files", nf); set("study", nf); set("news", nn);
+  } catch { /* the marks are a courtesy: no marks if the server is slow */ }
+}
 const paintBadge = () => document.querySelectorAll("[data-b]").forEach((b) => { b.textContent = S.unread; b.hidden = !S.unread; });
 const school = () => (state.lang === "ar" ? CFG.schoolAr : CFG.schoolEn) || t("school");
 
@@ -76,13 +90,13 @@ function topBar() {
     : kids.length ? h("span", { class: "pill" }, icon("user"), kidName(kid())) : null;
   return h("header", { class: "top" },
     h("div", { class: "brand" }, h("span", { class: "mark" }, h("img", { src: "img/logo-mark.png", alt: "" })), h("div", {}, h("b", {}, t("app")), h("small", {}, school()))),
-    kids.length ? h("nav", { class: "tabs", role: "tablist" }, NAV.map(([id, ic]) => h("button", { class: "tab", role: "tab", "aria-selected": route.tab === id ? "true" : "false", onclick: () => go(id) }, icon(ic), t(id), id === "talk" ? dot() : null))) : h("span", { class: "grow tabs" }),
+    kids.length ? h("nav", { class: "tabs", role: "tablist" }, NAV.map(([id, ic]) => h("button", { class: "tab", role: "tab", "aria-selected": route.tab === id ? "true" : "false", onclick: () => go(id) }, icon(ic), t(id), id === "talk" ? dot() : id === "study" ? fresh("study") : null))) : h("span", { class: "grow tabs" }),
     h("div", { class: "tools" }, who, h("button", { class: "pill role" + (S.role === "student" ? " student" : ""), title: t("account"), onclick: () => go("account") }, icon("user"), S.role === "student" ? t("student") : t("parent")),
       h("button", { class: "pill", id: "lang", onclick: () => { setLang(state.lang === "ar" ? "en" : "ar"); render(); } }, t("lang"))));
 }
 function subBar() {
   const subs = SUBS[route.tab]; if (!subs) return null;
-  return h("nav", { class: "sub" }, subs.map(([id, ic]) => h("button", { "aria-current": route.sub[route.tab] === id ? "page" : "false", onclick: () => go(route.tab, id) }, icon(ic), t(id), id === "messages" ? dot() : null)));
+  return h("nav", { class: "sub" }, subs.map(([id, ic]) => h("button", { "aria-current": route.sub[route.tab] === id ? "page" : "false", onclick: () => go(route.tab, id) }, icon(ic), t(id), id === "messages" ? dot() : id === "files" ? fresh("files") : id === "news" ? fresh("news") : null)));
 }
 const addKidBox = () => {
   const code = h("input", { type: "text", dir: "ltr", autocapitalize: "characters", placeholder: "XXXX-XXXX", "aria-label": t("code") }), msg = h("div", {});
@@ -105,9 +119,9 @@ async function render() {
     if (!S.kids.length && S.role === "parent") { clear(body, S.flash ? h("div", { class: "note bad" }, S.flash) : null, addKidBox()); if (route.tab === "account") account(body); return; }
     const ctx = { onLeave, badge: paintBadge };
     if (route.tab === "account") return account(body);
-    if (route.tab === "home") { await refreshUnread(); paintBadge(); return await viewHome(body, go); }
-    const view = { week: viewWeek, files: viewFiles, grades: viewGrades, messages: viewMessages, news: viewNews }[route.sub[route.tab]];
-    await view(body, ctx);
+    if (route.tab === "home") { await refreshUnread(); paintBadge(); await viewHome(body, go); return paintNew(); }
+    const view = { week: viewWeek, files: viewFiles, grades: viewGrades, messages: viewMessages, news: viewNews, calendar: viewCalendar }[route.sub[route.tab]];
+    await view(body, ctx); paintNew();
   } catch (e) {
     if (e.message === "signedout") return loginScreen(false);
     clear(body, h("div", { class: "note bad" }, errText(e)), h("button", { class: "btn", onclick: () => { forget(); render(); } }, t("retry")));
@@ -120,7 +134,7 @@ async function boot() {
   if (S.role !== "parent" && S.role !== "student") { store.set(null); return loginScreen(false, t("staffAccount")); }
   route.tab = "home";
   render();
-  clearInterval(poll); poll = setInterval(async () => { if (!store.get() || document.hidden) return; await refreshUnread().catch(() => {}); paintBadge(); }, 20000);
+  clearInterval(poll); poll = setInterval(async () => { if (!store.get() || document.hidden) return; await refreshUnread().catch(() => {}); paintBadge(); paintNew(); }, 20000);
 }
 
 setLang(state.lang);

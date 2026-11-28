@@ -11,12 +11,12 @@ DB = {
     "grades": [{"trimester": 0, "week": w, "subject": "ICT", "item": it, "score": sc, "max_score": mx} for w, rows in ((8, (("Behavior", 5, 5), ("Homework", 4, 5), ("Quiz", 17, 20), ("Total", 26, 30))), (7, (("Behavior", 5, 5), ("Homework", 5, 5), ("Total", 10, 10)))) for it, sc, mx in rows]
               + [{"trimester": 0, "week": 8, "subject": "Math", "item": "Total", "score": 9, "max_score": 10}],
     "publications": [
-        {"id": "p1", "kind": "link", "title": "Video lesson", "url": "https://youtu.be/x", "file_path": "", "created_at": "2026-10-30T08:00:00Z", "note": "Watch before class", "trimester": 0, "week": 8, "body": ""},
+        {"id": "p1", "kind": "link", "title": "Video lesson", "url": "https://youtu.be/x", "file_path": "", "created_at": "2026-11-28T08:00:00Z", "note": "Watch before class", "trimester": 0, "week": 8, "body": ""},
         {"id": "p2", "kind": "presentation", "title": "Fractions slides", "url": "", "file_path": "t1/fractions.pptx", "created_at": "2026-10-29T08:00:00Z", "note": "", "trimester": 0, "week": 8, "body": ""},
         {"id": "p3", "kind": "quiz", "title": "Quiz 3", "url": "", "file_path": "t1/q3.pdf", "created_at": "2026-10-20T08:00:00Z", "note": "", "trimester": 0, "week": 6, "body": ""},
         {"id": "p4", "kind": "other", "title": "Term books list", "url": "https://x.org/books", "file_path": "", "created_at": "2026-09-01T08:00:00Z", "note": "", "trimester": None, "week": None, "body": ""}],
     "week_plans": [{"trimester": 0, "week": 8, "subject": "ICT", "homework": ["Page 12", "Exercise 4"], "material": [{"title": "Site", "url": "https://x.org"}], "quiz_alerts": ["Quiz on Sunday"]}],
-    "announcements": [{"title": "School trip", "body": "Bring food", "starts_on": "2026-10-30", "image_path": ""}],
+    "announcements": [{"title": "School trip", "body": "Bring food", "starts_on": "2026-11-28", "image_path": "", "created_at": "2026-11-28T07:00:00Z"}],
     "teacher_classes": [{"teacher_id": TEACHER, "subject": "ICT", "teacher_name": "Mr Ahmed"}, {"teacher_id": "u-t2", "subject": "Math", "teacher_name": "Ms Mona"}],
     "threads": [{"id": "th1", "kind": "parent_teacher", "teacher_id": TEACHER, "student_code": "s1", "last_at": "2026-11-20T10:00:00Z"}],
     "messages": [{"id": "m1", "thread_id": "th1", "sender_id": TEACHER, "sender_role": "teacher", "sender_name": "Mr Ahmed", "body": "Ali did well today", "created_at": "2026-11-20T10:00:00Z"}],
@@ -67,7 +67,7 @@ def shot(pg, name):
     if SHOTS: os.makedirs(SHOTS, exist_ok=True); pg.screenshot(path=f"{SHOTS}/{name}.png")
 
 def fresh(b, width):
-    ctx = b.new_context(viewport={"width": width, "height": 860}, device_scale_factor=1); pg = ctx.new_page(); errs = []
+    ctx = b.new_context(viewport={"width": width, "height": 860}, device_scale_factor=1); ctx.clock.set_fixed_time("2026-11-30T10:00:00"); pg = ctx.new_page(); errs = []
     pg.on("pageerror", lambda e: errs.append(str(e))); pg.on("console", lambda m: errs.append(m.text) if m.type == "error" and "Failed to load resource" not in m.text else None)
     pg.route("**/config.js", lambda r: r.fulfill(body=f'window.PORTAL={{url:"http://127.0.0.1:{fake.server_port}",key:"K"}};', content_type="text/javascript"))
     pg.goto(f"http://127.0.0.1:{site.server_port}/index.html"); return pg, errs
@@ -85,11 +85,17 @@ with sync_playwright() as p:
     assert any(s[0] == "POST" and "claim_student" in s[1] and s[2] == {"p_code": "K7M2-9QX4"} for s in seen), seen
     assert pg.inner_text(".pill.role").strip() == "ولي الأمر", "the account must say it is a parent"
     shot(pg, "02-home")
+    pg.wait_for_selector(".tabs [data-n=study]:not([hidden])"); assert pg.inner_text(".tabs [data-n=study]").strip() == "1", "the Study tab must say one new file"
+    assert pg.is_visible(".card:has(h2:has-text('قريبًا في المدرسة'))"), "the home page must show what is coming up at school"
     nav(pg, "الدراسة"); pg.wait_for_selector("text=Page 12"); pg.wait_for_selector("text=Quiz on Sunday"); shot(pg, "03-week")
     sub(pg, "الملفات"); pg.wait_for_selector("a[href='https://youtu.be/x']"); assert pg.is_visible(".tree .count"); shot(pg, "04-files")
+    assert pg.is_visible(".chip.new"), "a file published after the last visit must say New"
+    pg.wait_for_selector(".sub [data-n=files][hidden]", state="attached"); assert not pg.is_visible(".tabs [data-n=study]"), "after opening Files nothing is new any more"
     pg.click(".tree >> text=الأسبوع 6"); pg.wait_for_selector("text=Quiz 3"); assert not pg.is_visible("text=Video lesson")
     pg.click(".tree >> text=ملفات عامة"); pg.wait_for_selector("text=Term books list")
     sub(pg, "الدرجات"); pg.wait_for_selector("text=17"); pg.wait_for_selector("h2:has-text('Math')"); shot(pg, "05-grades")
+    sub(pg, "التقويم"); pg.wait_for_selector("text=الفصل الدراسي 2 · الأسبوع 1"); pg.wait_for_selector("text=إجازة الشتاء"); pg.wait_for_selector("text=KG – G5")
+    assert not pg.is_visible("text=(G6 – G8)") and not pg.is_visible("text=Staff"), "events of other grades and staff days must not show"; shot(pg, "05b-calendar")
     nav(pg, "التواصل"); pg.wait_for_selector(".thread"); pg.click(".thread"); pg.wait_for_selector("text=Ali did well today")
     assert "المدرس" in pg.inner_text(".bubble .who"), "the teacher's message must be labelled"; shot(pg, "06-chat")
     pg.fill(".compose textarea", "Thank you, teacher"); pg.click(".compose .btn.primary"); pg.wait_for_selector(".bubble.mine >> text=Thank you, teacher")
