@@ -39,6 +39,13 @@ function row(r, today) {
     h("div", { class: "tx" }, h("b", {}, r.name), h("small", {}, range(r))), r.to >= today ? h("span", { class: "muted small" }, when(r.from > today ? r.from : today, today)) : null, chipFor(r.kind));
 }
 
+// "Sunday 29 November · Term 2 · Week 1" for the top of the home page
+export async function todayLine() {
+  const today = startOfToday(), parts = [fmt(today, { weekday: "long", day: "numeric", month: "long" })];
+  try { const at = where(await loadCalendar(), today); if (at) parts.push(`${termName(at.term)} · ${t("wk")} ${at.week}`); } catch { /* no calendar: just the date */ }
+  return parts;
+}
+
 // the three coming things, for the home page
 export async function upcoming(n = 3) {
   const cal = await loadCalendar(), k = kid(), today = startOfToday();

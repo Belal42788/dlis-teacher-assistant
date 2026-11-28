@@ -128,8 +128,9 @@ async function render() {
   }
 }
 
+const bootScreen = () => h("div", { class: "boot" }, h("img", { src: "img/logo-mark.png", alt: "" }), h("span", {}, "DLIS"), h("i", {}));
 async function boot() {
-  clear(app, h("main", {}, h("p", { class: "muted" }, t("loading"))));
+  clear(app, bootScreen());
   try { await loadAccount(); } catch (e) { if (e.message === "signedout") return loginScreen(false); return clear(app, h("main", {}, h("div", { class: "note bad" }, errText(e)), h("button", { class: "btn", onclick: boot }, t("retry")))); }
   if (S.role !== "parent" && S.role !== "student") { store.set(null); return loginScreen(false, t("staffAccount")); }
   route.tab = "home";

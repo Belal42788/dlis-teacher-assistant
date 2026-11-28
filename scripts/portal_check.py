@@ -151,5 +151,15 @@ with sync_playwright() as p:
     pg.click("text=أول مرة"); pg.fill("input[type=email]", "n@x.com"); pg.fill("input[type=password]", "password1"); pg.fill("#cd", "WRONG-000"); pg.click("button[type=submit]")
     pg.wait_for_selector("text=الكود مش صح")
     pg.fill(".card input[dir=ltr]", "LOCK-0000"); pg.click("text=إضافة"); pg.wait_for_selector("text=اتقفل")
+    # ------------------------------------------------ a new family with nothing published yet: the cards say what will appear, the loading screen is the app's
+    ROLE.update(v="parent", nokids=False)
+    for name in ("publications", "week_plans", "announcements", "threads", "messages"): DB[name] = []
+    pg, errs = fresh(b, 1920)
+    assert pg.is_visible(".boot img[src='img/logo-mark.png']") or pg.query_selector(".boot") is None, "the first screen must be the same logo loading screen as the app"
+    pg.fill("#em", "p@x.com"); pg.fill("#pw", "password1"); pg.click("button[type=submit]"); pg.wait_for_selector("text=أهلًا، علي حسن")
+    pg.wait_for_selector(".hollow"); assert pg.locator(".hollow").count() == 4, "each empty card must say what will appear there"; shot(pg, "15-empty-home")
+    assert pg.is_visible(".hero-chips .chip.green"), "the home page says which term and week it is"
+    assert pg.evaluate("document.documentElement.scrollWidth <= innerWidth"), "overflow on a wide screen"
+    assert not errs, errs; pg.context.close()
     b.close()
 print("portal ok")

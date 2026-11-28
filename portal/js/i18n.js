@@ -34,6 +34,7 @@ const ar = {
   report: "إبلاغ", reportWhy: "سبب البلاغ (اختياري)", reportSend: "إرسال البلاغ", reportDone: "وصل البلاغ للإدارة.", reportAgain: "أنت بلّغت عن الرسالة دي قبل كده.", cancel: "إلغاء",
   watched: "إدارة المدرسة تقدر تراجع المحادثات للحماية. الرسائل نص فقط، وما بتتعدلش بعد الإرسال.", you: "أنت", sendFail: "الرسالة ما اتبعتتش. جرّب تاني.",
   // calendar and new
+  noWeekHint: "الواجبات والمواد الإضافية وتنبيهات الكويزات هتظهر هنا أول ما المدرس ينشر خطة الأسبوع.", noFilesHint: "العروض والكويزات والمراجعات اللي المدرسين بيشاركوها هتظهر هنا.", noNewsHint: "إعلانات المدرسة ورحلاتها وتنبيهاتها هتظهر هنا.", noUnreadHint: "لما مدرس يراسلك أو يرد عليك هتلاقي الرسالة هنا.",
   calendar: "التقويم", comingUp: "قريبًا في المدرسة", today: "النهارده", tomorrow: "بكرة", inDays: "بعد {n} يوم", noTerm: "إحنا دلوقتي بين فصلين دراسيين أو في الإجازة.", calKind: { holiday: "إجازة", exam: "امتحانات ومراجعة", event: "فعالية" },
   calNote: "ده تقويم المدرسة. المواعيد ممكن تتغير، والمدرسة بتعلن أي تغيير في الإعلانات.", newWord: "جديد",
   forWho: "لـ", textOnly: "نص فقط", chars: "حرف",
@@ -63,6 +64,7 @@ const en = {
   readOnly: "This is the {who} conversation. You can read it only.", writeHere: "Write your message…", sendBtn: "Send", noMsgs: "No messages yet. Start by saying hello.", back: "Back",
   report: "Report", reportWhy: "Reason (optional)", reportSend: "Send report", reportDone: "The report reached the school office.", reportAgain: "You already reported this message.", cancel: "Cancel",
   watched: "The school office can review conversations for safety. Messages are text only and cannot be edited after sending.", you: "You", sendFail: "The message was not sent. Try again.",
+  noWeekHint: "Homework, extra material and quiz alerts appear here as soon as the teacher publishes the week plan.", noFilesHint: "Presentations, quizzes and revision sheets the teachers share appear here.", noNewsHint: "School announcements, trips and reminders appear here.", noUnreadHint: "When a teacher writes to you or replies, the message appears here.",
   calendar: "Calendar", comingUp: "Coming up at school", today: "Today", tomorrow: "Tomorrow", inDays: "in {n} days", noTerm: "We are between terms or on holiday right now.", calKind: { holiday: "Holiday", exam: "Exams and revision", event: "Event" },
   calNote: "This is the school calendar. Dates can change, and the school announces any change in Announcements.", newWord: "New",
   forWho: "To", textOnly: "Text only", chars: "chars",

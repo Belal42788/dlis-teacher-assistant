@@ -3,13 +3,15 @@
 import { h, clear, icon, t, api, CFG, safeUrl, fmtDay, errText, toast } from "./core.js";
 import { S, kid, kidName, pubs, plans, grades, news, weekIndex } from "./data.js";
 import { enter, lastSeen, isNew } from "./fresh.js";
-import { upcoming, upcomingRow } from "./calendar.js";
+import { upcoming, upcomingRow, todayLine } from "./calendar.js";
 
 const newChip = () => h("span", { class: "chip green new" }, t("newWord"));
 
 const KIND_ICON = { presentation: "slides", quiz: "quiz", revision: "revision", link: "link", other: "file", message: "mail" };
 const termName = (tri) => `${t("term")} ${tri + 1}`;
 const weekName = (w) => `${t("wk")} ${w.wk}`;
+// a card with nothing in it yet says what will appear there, so the page never looks abandoned
+const hollow = (ic, title, hint, action) => h("div", { class: "hollow" }, h("span", { class: "orb" }, icon(ic)), h("b", {}, title), h("span", { class: "muted small" }, hint), action || null);
 const empty = (ic, title, text) => h("div", { class: "empty" }, icon(ic), h("b", {}, title), text ? h("span", {}, text) : null);
 
 async function openStored(btn, path) {
@@ -35,20 +37,21 @@ function planCard(w, short) {
 // ---------------------------------------------------------------- home
 export async function viewHome(box, go) {
   const k = kid();
-  const [files, planRows, notes, soon] = await Promise.all([pubs(k), plans(k), news(), upcoming(3).catch(() => [])]);
+  const [files, planRows, notes, soon, today] = await Promise.all([pubs(k), plans(k), news(), upcoming(3).catch(() => []), todayLine()]);
   const seenFiles = lastSeen(k.code, "files"), seenNews = lastSeen("all", "news");
   const weeks = weekIndex(files, planRows), now = weeks[0];
   const hello = h("div", { class: "card hero" }, h("img", { src: "img/logo-mark.png", alt: "" }), h("div", {}, h("h1", {}, `${t("hello")}، ${kidName(k)}`),
-    h("div", { class: "muted" }, S.role === "student" ? t("studentAcc") : `${t("parentAcc")} · ${t("following")} ${kidName(k)}`)));
-  const weekCard = h("div", { class: "card" }, h("h2", {}, icon("week"), t("homeWeek")), now ? [h("p", { class: "muted" }, `${termName(now.tri)} · ${weekName(now)}`),
+    h("div", { class: "muted" }, S.role === "student" ? t("studentAcc") : `${t("parentAcc")} · ${t("following")} ${kidName(k)}`),
+    h("div", { class: "chips hero-chips" }, today.map((x, i) => h("span", { class: "chip" + (i === 1 ? " green" : "") }, x)))));
+  const weekCard = h("div", { class: "card span2" }, h("h2", {}, icon("week"), t("homeWeek")), now ? [h("p", { class: "muted" }, `${termName(now.tri)} · ${weekName(now)}`),
     now.plans.length ? now.plans.slice(0, 2).map((w) => [w.subject ? h("span", { class: "chip" }, w.subject) : null, (w.homework || []).length ? list(w.homework.slice(0, 3)) : h("p", { class: "muted" }, "—")]) : h("p", { class: "muted" }, t("noWeek")),
-    h("button", { class: "btn small", onclick: () => go("study", "week") }, t("seeAll"))] : h("p", { class: "muted" }, t("noWeek")));
-  const filesCard = h("div", { class: "card" }, h("h2", {}, icon("folder"), t("homeFiles")), files.length ? [files.slice(0, 4).map((p) => fileRow(p, seenFiles)), h("button", { class: "btn small", onclick: () => go("study", "files") }, t("seeAll"))] : h("p", { class: "muted" }, t("noFiles")));
-  const newsCard = h("div", { class: "card" }, h("h2", {}, icon("news"), t("homeNews")), notes.length ? [notes.slice(0, 2).map((a) => h("div", { class: "row" }, h("span", { class: "ic" }, icon("news")), h("div", { class: "tx" }, h("b", {}, a.title), h("small", {}, a.body)), isNew(a, seenNews) ? newChip() : null)), h("button", { class: "btn small", onclick: () => go("talk", "news") }, t("seeAll"))] : h("p", { class: "muted" }, t("noNews")));
-  const talkCard = h("div", { class: "card" }, h("h2", {}, icon("talk"), t("homeTalk")), S.unread ? h("p", {}, h("span", { class: "dot" }, S.unread), " ", t("unread")) : h("p", { class: "muted" }, t("noUnread")),
-    h("button", { class: "btn small primary", onclick: () => go("talk", "messages") }, S.unread ? t("open") : t("startTalk")));
+    h("button", { class: "btn small", onclick: () => go("study", "week") }, t("seeAll"))] : hollow("week", t("noWeek"), t("noWeekHint")));
+  const filesCard = h("div", { class: "card" }, h("h2", {}, icon("folder"), t("homeFiles")), files.length ? [files.slice(0, 4).map((p) => fileRow(p, seenFiles)), h("button", { class: "btn small", onclick: () => go("study", "files") }, t("seeAll"))] : hollow("folder", t("noFiles"), t("noFilesHint")));
+  const newsCard = h("div", { class: "card" }, h("h2", {}, icon("news"), t("homeNews")), notes.length ? [notes.slice(0, 2).map((a) => h("div", { class: "row" }, h("span", { class: "ic" }, icon("news")), h("div", { class: "tx" }, h("b", {}, a.title), h("small", {}, a.body)), isNew(a, seenNews) ? newChip() : null)), h("button", { class: "btn small", onclick: () => go("talk", "news") }, t("seeAll"))] : hollow("news", t("noNews"), t("noNewsHint")));
+  const talkCard = h("div", { class: "card" }, h("h2", {}, icon("talk"), t("homeTalk")), S.unread ? [h("p", {}, h("span", { class: "dot" }, S.unread), " ", t("unread")), h("button", { class: "btn small primary", onclick: () => go("talk", "messages") }, t("open"))]
+      : hollow("talk", t("noUnread"), t("noUnreadHint"), h("button", { class: "btn small primary", onclick: () => go("talk", "messages") }, t("startTalk"))));
   const soonCard = soon.length ? h("div", { class: "card" }, h("h2", {}, icon("cal"), t("comingUp")), soon.map(upcomingRow), h("button", { class: "btn small", onclick: () => go("study", "calendar") }, t("seeAll"))) : null;
-  clear(box, hello, h("div", { class: "grid" }, weekCard, talkCard, filesCard, newsCard, soonCard));
+  clear(box, hello, h("div", { class: "grid home" }, weekCard, talkCard, filesCard, newsCard, soonCard));
 }
 
 // ---------------------------------------------------------------- this week
