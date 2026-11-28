@@ -37,7 +37,7 @@ _TYPES = {".js": "application/javascript", ".mjs": "application/javascript", ".c
           ".ico": "image/x-icon", ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf", ".otf": "font/otf"}
 
 
-_SLOW = re.compile(r"/api/ai/(chat|test|models|lesson|quiz|trimester|revision)|/api/tools/run|/api/grades/upload|/api/slides/(source|plan|image|image-test)|/api/sources/use|/api/cloud/(login|test|backup)|/api/announcements|/api/messages|/api/reports/|/api/publications|/api/library/|/api/codes/prepare|/api/inspection-pack|/api/parent-week/|/api/status/|/api/sources/(import|url|[0-9a-f]+/(read|digest))")
+_SLOW = re.compile(r"/api/ai/(chat|test|models|lesson|quiz|trimester|revision)|/api/tools/run|/api/grades/upload|/api/slides/(source|plan|image|image-test)|/api/sources/use|/api/cloud/(login|test|backup)|/api/announcements|/api/messages|/api/reports/|/api/yearend/server|/api/publications|/api/library/|/api/codes/prepare|/api/inspection-pack|/api/parent-week/|/api/status/|/api/sources/(import|url|[0-9a-f]+/(read|digest))")
 
 
 class AppServer(ThreadingHTTPServer):
@@ -327,6 +327,11 @@ class Handler(BaseHTTPRequestHandler):
             ("POST", r"/api/structure/build", lambda m, b: svc.build_structure(b.get("selection", {}))),
             ("GET", r"/api/rooms/([a-z0-9_-]+)/students", lambda m, b: svc.get_students(m.group(1))),
             ("PUT", r"/api/rooms/([a-z0-9_-]+)/students", lambda m, b: svc.put_students(m.group(1), b.get("names", []), b.get("english"))),
+            ("GET", r"/api/yearend", lambda m, b: svc.yearend_preview()),
+            ("POST", r"/api/yearend", lambda m, b: svc.yearend_run(b)),
+            ("POST", r"/api/yearend/server", lambda m, b: svc.yearend_server_run(b)),
+            ("POST", r"/api/students/import-all/preview", lambda m, b: svc.students_all_preview(b)),
+            ("POST", r"/api/students/import-all", lambda m, b: svc.students_all_import(b)),
             ("POST", r"/api/students/export", lambda m, b: svc.export_students(str(b.get("room_id", "")))),
             ("GET", r"/api/students/all", lambda m, b: svc.all_students()),
             ("POST", r"/api/students/parse", lambda m, b: svc.parse_students(b)),

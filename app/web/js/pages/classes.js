@@ -1,5 +1,6 @@
 import { hubTabs } from "../components/hubtabs.js";
 import { h, icon, toast, modal, confirmBox, debounce, readFileB64 } from "../dom.js";
+import { schoolImportDialog } from "../components/school_import.js";
 import { api, guarded } from "../api.js";
 import { t, getLang } from "../i18n.js";
 import { state } from "../state.js";
@@ -242,7 +243,7 @@ export async function renderClasses(root) {
 
   root.replaceChildren(h("div", { class: "page" }, hubTabs("classes", "classes"),
     h("div", { class: "page-head" }, h("div", {}, h("h1", {}, t("nav_classes")), h("p", {}, t("classes_page_lead"))),
-      h("div", { class: "row" }, h("button", { class: "btn", onClick: () => exportNames("") }, icon("file"), t("export_all")), h("button", { class: "btn primary", onClick: addClasses }, icon("plus"), t("add_classes")))),
+      h("div", { class: "row" }, h("button", { class: "btn", onClick: () => exportNames("") }, icon("file"), t("export_all")), h("button", { class: "btn", onClick: () => schoolImportDialog(() => reload(false)) }, icon("upload"), t("import_school")), h("button", { class: "btn primary", onClick: addClasses }, icon("plus"), t("add_classes")))),
     findWrap,
     h("div", { class: "split" }, treeBox, detail)));
   drawTree(); await drawDetail();

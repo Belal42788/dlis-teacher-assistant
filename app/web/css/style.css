@@ -1310,3 +1310,16 @@ html.still *, html.still *::before, html.still *::after { animation: none !impor
   .ms-log { max-height: 55vh; }
   .ms { padding-bottom: 5rem; }   /* the round assistant button floats over the bottom corner */
 }
+
+/* ---- Settings > End of the year */
+.ye-steps { margin-block: .6rem; padding-inline-start: 1.3rem; display: grid; gap: .3rem; }
+.ye-rooms { display: grid; gap: .5rem; margin-block: .6rem; }
+.ye-room summary { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; cursor: pointer; }
+.ye-names { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: .3rem .8rem; margin-top: .6rem; }
+.ye-name { display: flex; align-items: center; gap: .5rem; }
+.ye-ok { margin-block: 1rem .6rem; align-items: flex-start; }
+
+/* ---- Import the whole school */
+.si-table { width: 100%; border-collapse: collapse; margin-block: .5rem; }
+.si-table th, .si-table td { padding: .3rem .6rem; text-align: start; border-bottom: 1px solid var(--line, #dfe3ee); }
+.si-table th { color: var(--ink-2); font-weight: 600; font-size: .85rem; }

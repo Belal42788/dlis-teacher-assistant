@@ -13,6 +13,7 @@ import { cloudPanel } from "../components/cloud_panel.js";
 import { reminderPanel } from "../components/reminder_panel.js";
 import { openWhatsNew } from "../components/whatsnew.js";
 import { healthPanel } from "../components/health_panel.js";
+import { yearEndPanel } from "../components/yearend_panel.js";
 
 // Shared with the first-run guide.
 export async function importOldDialog(done) {
@@ -114,6 +115,8 @@ export async function renderSettings(root, { reloadApp }) {
       h("p", { class: "small" }, t("df_benefit")))],
 
     ["health", t("hl_title"), healthPanel({ reloadApp })],
+
+    ["year", t("ye_title"), yearEndPanel({ reloadApp })],
 
     ["rem", t("rem_title"), reminderPanel()],
 

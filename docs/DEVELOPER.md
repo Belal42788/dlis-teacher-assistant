@@ -57,6 +57,8 @@ Feature files (each is a mixin of `Service`):
 | `CoverageMixin` | `app/server/coverage_service.py` | 117 |
 | `CloudMixin` | `app/server/cloud_service.py` | 480 |
 | `MessagesMixin` | `app/server/messages_service.py` | 163 |
+| `YearEndMixin` | `app/server/yearend_service.py` | 167 |
+| `SchoolStudentsMixin` | `app/server/school_students_service.py` | 75 |
 | `DocsMixin` | `app/server/docs_service.py` | 418 |
 | `AiMixin` | `app/server/ai_service.py` | 424 |
 | `AiChatMixin` | `app/server/ai_chat_service.py` | 101 |
@@ -81,7 +83,7 @@ Tabs inside a menu page: `reminders` (tab of `tasks`), `tools` (tab of `docs`), 
 <!-- /AUTO:pages -->
 
 Files in the teacher's data folder: <!-- AUTO:datafiles -->
-`ai_prompts.json`, `behavior.json`, `bell_schedule.json`, `calendar.json`, `chats.json`, `cloud.json`, `cloud_students.json`, `config.json`, `data_version.json`, `exam_basket.json`, `grades.json`, `lesson_log.json`, `library.json`, `map.json`, `parent_week.json`, `plans.json`, `question_bank.json`, `reminders.json`, `schedule.json`, `seating.json`, `sources.json`, `structure.json`, `tasks.json`, `weekly.json` (plus `data_version.json`, written by the store).
+`ai_prompts.json`, `behavior.json`, `bell_schedule.json`, `calendar.json`, `chats.json`, `cloud.json`, `cloud_students.json`, `config.json`, `data_version.json`, `exam_basket.json`, `grades.json`, `lesson_log.json`, `library.json`, `map.json`, `parent_week.json`, `plans.json`, `question_bank.json`, `reminders.json`, `schedule.json`, `seating.json`, `sources.json`, `structure.json`, `tasks.json`, `weekly.json`, `yearend.json` (plus `data_version.json`, written by the store).
 <!-- /AUTO:datafiles -->
 
 ## Keeping the code healthy
@@ -239,6 +241,11 @@ The server listens on 127.0.0.1 only and every request carries the secret token 
 | POST | `/api/structure/build` | `build_structure` |
 | GET | `/api/rooms/([a-z0-9_-]+)/students` | `get_students` |
 | PUT | `/api/rooms/([a-z0-9_-]+)/students` | `put_students` |
+| GET | `/api/yearend` | `yearend_preview` |
+| POST | `/api/yearend` | `yearend_run` |
+| POST | `/api/yearend/server` | `yearend_server_run` |
+| POST | `/api/students/import-all/preview` | `students_all_preview` |
+| POST | `/api/students/import-all` | `students_all_import` |
 | POST | `/api/students/export` | `export_students` |
 | GET | `/api/students/all` | `all_students` |
 | POST | `/api/students/parse` | `parse_students` |
